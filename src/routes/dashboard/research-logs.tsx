@@ -299,13 +299,14 @@ function DoseCalendar({
 }
 
 function StackCard({
-  stack, vial, dosesTaken, onDelete, onEdit,
+  stack, vial, dosesTaken, onDelete, onEdit, onChangeVialStatus,
 }: {
   stack: Stack;
   vial: Vial | null;
   dosesTaken: number;
   onDelete: () => void;
   onEdit: () => void;
+  onChangeVialStatus: (vialId: string, status: string) => void;
 }) {
   const start = new Date(stack.start_date);
   const daysElapsed = Math.max(0, differenceInDays(new Date(), start));
@@ -318,6 +319,11 @@ function StackCard({
   const { remaining, total, percentLeft } = computeRemainingDoses(stack, vial?.vial_size_mg ?? null, dosesTaken, conc);
   const stackColor = colorFor(stack.id);
 
+  const vialStatusColor = !vial ? ""
+    : vial.status === "open" ? "bg-primary/15 text-primary border-primary/30"
+    : vial.status === "sealed" ? "bg-muted text-foreground/80 border-border"
+    : "bg-destructive/10 text-destructive border-destructive/30";
+
   return (
     <div className="sayne-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
@@ -328,11 +334,24 @@ function StackCard({
             <div className="text-xs text-muted-foreground">Started {format(start, "MMM d, yyyy")}</div>
           </div>
         </div>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
+          {vial && (
+            <Select value={vial.status} onValueChange={(s) => onChangeVialStatus(vial.id, s)}>
+              <SelectTrigger className={cn("h-7 w-[92px] text-xs capitalize font-medium", vialStatusColor)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {VIAL_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize text-xs">{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button size="sm" variant="ghost" onClick={onEdit} className="h-8"><Pencil className="size-4" /></Button>
           <Button size="sm" variant="ghost" onClick={onDelete} className="h-8 text-destructive hover:text-destructive"><Trash2 className="size-4" /></Button>
         </div>
       </div>
+
 
       <div className="grid grid-cols-2 gap-2">
         {stack.dose != null && (
