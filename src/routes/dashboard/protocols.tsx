@@ -428,8 +428,8 @@ const emptyRow = (): CompoundRow => ({
 });
 
 function BuildStackModal({
-  open, onClose, onSaved, userId,
-}: { open: boolean; onClose: () => void; onSaved: () => void; userId: string | null }) {
+  open, onClose, onSaved, userId, editing,
+}: { open: boolean; onClose: () => void; onSaved: () => void; userId: string | null; editing?: { name: string; rows: Stack[] } | null }) {
   const [name, setName] = useState("");
   const [rows, setRows] = useState<CompoundRow[]>([emptyRow()]);
   const [route, setRoute] = useState<typeof ROUTES[number]>("Subcutaneous");
