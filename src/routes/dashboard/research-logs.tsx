@@ -255,21 +255,29 @@ function DoseCalendar({
   );
 }
 
-function StackCard({ stack, onDelete, onEdit }: { stack: Stack; onDelete: () => void; onEdit: () => void }) {
+function StackCard({
+  stack, vial, dosesTaken, onDelete, onEdit,
+}: {
+  stack: Stack;
+  vial: Vial | null;
+  dosesTaken: number;
+  onDelete: () => void;
+  onEdit: () => void;
+}) {
   const start = new Date(stack.start_date);
   const daysElapsed = Math.max(0, differenceInDays(new Date(), start));
   const daysRemaining = Math.max(0, stack.cycle_length_days - daysElapsed);
   const pct = Math.min(100, Math.round((daysElapsed / stack.cycle_length_days) * 100));
   const done = daysElapsed >= stack.cycle_length_days;
   const freqLabel = FREQUENCIES.find((f) => f.value === stack.frequency)?.label ?? stack.frequency;
+  const { remaining, total, percentLeft } = computeRemainingDoses(stack, vial?.vial_size_mg ?? null, dosesTaken);
+  const stackColor = colorFor(stack.id);
 
   return (
     <div className="sayne-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="size-10 rounded-md grid place-items-center" style={{ background: `${colorFor(stack.id)}25`, color: colorFor(stack.id) }}>
-            <FlaskConical className="size-5" />
-          </div>
+          <VialVisual fillPercent={percentLeft} color={stackColor} size="md" />
           <div>
             <div className="font-display text-lg font-semibold leading-tight">{stack.peptide_name}</div>
             <div className="text-xs text-muted-foreground">Started {format(start, "MMM d, yyyy")}</div>
@@ -281,15 +289,30 @@ function StackCard({ stack, onDelete, onEdit }: { stack: Stack; onDelete: () => 
         </div>
       </div>
 
-      {stack.dose != null && (
-        <div className="rounded-md bg-muted/40 p-3 flex items-baseline gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Dose</span>
-          <span className="font-mono tabular-nums text-lg font-semibold">{stack.dose}</span>
-          <span className="text-sm text-muted-foreground font-mono">{stack.dose_unit}</span>
-          <span className="text-muted-foreground mx-1">·</span>
-          <span className="text-sm">{freqLabel}</span>
+      <div className="grid grid-cols-2 gap-2">
+        {stack.dose != null && (
+          <div className="rounded-md bg-muted/40 p-3 flex items-baseline gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Dose</span>
+            <span className="font-mono tabular-nums text-lg font-semibold">{stack.dose}</span>
+            <span className="text-sm text-muted-foreground font-mono">{stack.dose_unit}</span>
+          </div>
+        )}
+        <div
+          className="rounded-md p-3 flex items-baseline gap-2 border"
+          style={{ background: `${stackColor}12`, borderColor: `${stackColor}40` }}
+        >
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Remaining</span>
+          {remaining != null && total != null ? (
+            <>
+              <span className="font-mono tabular-nums text-lg font-semibold">{remaining}</span>
+              <span className="text-xs text-muted-foreground font-mono">/ {total} doses</span>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">Link a vial to track</span>
+          )}
         </div>
-      )}
+      </div>
+
 
       <div className="flex flex-wrap gap-2">
         <Badge variant="outline" className="gap-1">
