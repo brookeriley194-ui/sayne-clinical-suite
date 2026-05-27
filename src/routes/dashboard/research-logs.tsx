@@ -424,11 +424,15 @@ function StackSheet({
   const [reconDate, setReconDate] = useState<Date | undefined>(editing?.reconstituted_at ? new Date(editing.reconstituted_at) : undefined);
   const [timeOfDay, setTimeOfDay] = useState(editing?.time_of_day ?? "AM");
   const [fasted, setFasted] = useState(editing?.fasted ?? false);
-  const [cycleLength, setCycleLength] = useState(String(editing?.cycle_length_days ?? 30));
+  const editingOngoing = editing ? editing.cycle_length_days >= ONGOING_CYCLE_DAYS : false;
+  const [ongoing, setOngoing] = useState(editingOngoing);
+  const [cycleLength, setCycleLength] = useState(editingOngoing ? "30" : String(editing?.cycle_length_days ?? 30));
   const [startDate, setStartDate] = useState<Date>(editing ? new Date(editing.start_date) : new Date());
   const [dose, setDose] = useState(editing?.dose != null ? String(editing.dose) : "");
   const [doseUnit, setDoseUnit] = useState(editing?.dose_unit ?? "mg");
-  const [frequency, setFrequency] = useState(editing?.frequency ?? "daily");
+  const editingCustom = editing ? parseCustomDays(editing.frequency) : null;
+  const [frequency, setFrequency] = useState(editingCustom ? "custom" : (editing?.frequency ?? "daily"));
+  const [customDays, setCustomDays] = useState<number[]>(editingCustom ?? []);
   const [saving, setSaving] = useState(false);
 
   const onVialChange = (id: string) => {
