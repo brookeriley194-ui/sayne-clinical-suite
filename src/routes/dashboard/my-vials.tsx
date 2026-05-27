@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ReorderReminders } from "@/components/dose-shared";
+import { ReorderReminders, VialVisual, doseToMg } from "@/components/dose-shared";
 
 export const Route = createFileRoute("/dashboard/my-vials")({ component: Page });
 
