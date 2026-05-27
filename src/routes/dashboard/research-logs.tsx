@@ -114,9 +114,9 @@ function Page() {
     load();
   };
 
-  const toggleDose = async (stack: Stack, date: Date) => {
+  const toggleDose = async (stack: Stack, date: Date, period: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    const existing = doses.find((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr);
+    const existing = doses.find((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
     if (existing) {
       const { error } = await supabase.from("stack_doses").delete().eq("id", existing.id);
       if (error) return toast.error(error.message);
@@ -125,7 +125,7 @@ function Page() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return toast.error("Not signed in");
       const { data, error } = await supabase.from("stack_doses").insert({
-        doctor_id: u.user.id, stack_id: stack.id, dose_date: dateStr,
+        doctor_id: u.user.id, stack_id: stack.id, dose_date: dateStr, period,
       }).select().single();
       if (error) return toast.error(error.message);
       setDoses((prev) => [...prev, data as DoseLog]);
