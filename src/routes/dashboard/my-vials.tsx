@@ -346,6 +346,7 @@ function Metric({ label, value, unit }: { label: string; value: string; unit: st
 }
 
 function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const navigate = useNavigate();
   const [compound, setCompound] = useState("");
   const [vialSize, setVialSize] = useState("");
   const [vialUnit, setVialUnit] = useState<"mg" | "mL">("mg");
@@ -361,10 +362,10 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       ? (Number(vialSize) / Number(bacWater)).toFixed(2)
       : null;
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const save = async (goToCalculator: boolean) => {
     if (!compound.trim() || !vialSize) {
-      return toast.error("Compound and vial size are required");
+      toast.error("Compound and vial size are required");
+      return;
     }
     setSaving(true);
     const { data: u } = await supabase.auth.getUser();
@@ -384,8 +385,22 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Vial added");
-    onSaved();
+
+    if (goToCalculator) {
+      sessionStorage.setItem("calc:prefill", JSON.stringify({
+        compound: compound.trim(),
+        vialAmount: Number(vialSize),
+        vialUnit,
+        bacWater: bacWater ? Number(bacWater) : 2,
+      }));
+      navigate({ to: "/dashboard/calculator" });
+    } else {
+      onSaved();
+    }
   };
+
+  const submit = (e: React.FormEvent) => { e.preventDefault(); save(false); };
+
 
   return (
     <SheetContent className="w-full sm:max-w-md overflow-y-auto">
