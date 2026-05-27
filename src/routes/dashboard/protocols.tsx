@@ -243,6 +243,12 @@ function Page() {
         protocol={sendTarget}
         onClose={() => setSendTarget(null)}
       />
+
+      <ImportProtocolModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSaved={() => { setImportOpen(false); void load(); }}
+      />
     </>
   );
 }
