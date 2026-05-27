@@ -26,7 +26,7 @@ import {
 
 export const Route = createFileRoute("/dashboard/research-logs")({ component: Page });
 
-type Vial = { id: string; compound: string; reconstituted_at: string | null; vial_size_mg: number };
+type Vial = { id: string; compound: string; reconstituted_at: string | null; vial_size_mg: number; concentration_mg_per_ml: number | null; bac_water_ml: number | null };
 const DOSE_UNITS = ["mg", "mcg", "units", "mL"];
 
 function Page() {
@@ -44,7 +44,7 @@ function Page() {
     const past30 = format(addDays(new Date(), -30), "yyyy-MM-dd");
     const [s, v, d, dc] = await Promise.all([
       supabase.from("stacks").select("*").order("created_at", { ascending: false }),
-      supabase.from("vials").select("id, compound, reconstituted_at, vial_size_mg"),
+      supabase.from("vials").select("id, compound, reconstituted_at, vial_size_mg, concentration_mg_per_ml, bac_water_ml"),
       supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
       supabase.from("stack_doses").select("stack_id"),
     ]);
@@ -270,14 +270,16 @@ function StackCard({
   const pct = Math.min(100, Math.round((daysElapsed / stack.cycle_length_days) * 100));
   const done = daysElapsed >= stack.cycle_length_days;
   const freqLabel = FREQUENCIES.find((f) => f.value === stack.frequency)?.label ?? stack.frequency;
-  const { remaining, total, percentLeft } = computeRemainingDoses(stack, vial?.vial_size_mg ?? null, dosesTaken);
+  const conc = vial?.concentration_mg_per_ml ??
+    (vial?.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
+  const { remaining, total, percentLeft } = computeRemainingDoses(stack, vial?.vial_size_mg ?? null, dosesTaken, conc);
   const stackColor = colorFor(stack.id);
 
   return (
     <div className="sayne-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <VialVisual fillPercent={percentLeft} color={stackColor} size="md" />
+          <VialVisual fillPercent={percentLeft} size="md" />
           <div>
             <div className="font-display text-lg font-semibold leading-tight">{stack.peptide_name}</div>
             <div className="text-xs text-muted-foreground">Started {format(start, "MMM d, yyyy")}</div>

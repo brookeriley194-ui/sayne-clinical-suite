@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Plus, Trash2, FlaskConical, Calendar as CalendarIcon, Droplet, PackageX } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyCard } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ReorderReminders } from "@/components/dose-shared";
+import { ReorderReminders, VialVisual, doseToMg } from "@/components/dose-shared";
 
 export const Route = createFileRoute("/dashboard/my-vials")({ component: Page });
 
@@ -40,20 +40,74 @@ function potencyFromDays(days: number) {
   return Math.max(0, Math.round(100 - (days * 100) / 60));
 }
 
+type VialUsage = {
+  mgUsed: number;
+  percentLeft: number; // 0–100 remaining
+  remainingDoses: number | null;
+  totalDoses: number | null;
+  doseLabel: string | null; // e.g. "0.25 mg"
+};
+
 function Page() {
   const [vials, setVials] = useState<Vial[]>([]);
+  const [usage, setUsage] = useState<Record<string, VialUsage>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"all" | "open" | "sealed" | "used">("all");
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("vials")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    setVials((data ?? []) as Vial[]);
+    const [v, s, d] = await Promise.all([
+      supabase.from("vials").select("*").order("created_at", { ascending: false }),
+      supabase.from("stacks").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
+      supabase.from("stack_doses").select("stack_id"),
+    ]);
+    if (v.error) toast.error(v.error.message);
+    const vialList = (v.data ?? []) as Vial[];
+    setVials(vialList);
+
+    const stacks = (s.data ?? []) as { id: string; vial_id: string; dose: number | null; dose_unit: string; created_at: string }[];
+    const doses = (d.data ?? []) as { stack_id: string }[];
+    const countByStack = new Map<string, number>();
+    for (const dd of doses) countByStack.set(dd.stack_id, (countByStack.get(dd.stack_id) ?? 0) + 1);
+
+    const u: Record<string, VialUsage> = {};
+    for (const vial of vialList) {
+      const conc = vial.concentration_mg_per_ml ??
+        (vial.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
+      const linked = stacks
+        .filter((st) => st.vial_id === vial.id)
+        .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+
+      let mgUsed = 0;
+      for (const st of linked) {
+        if (!st.dose) continue;
+        const mg = doseToMg(st.dose, st.dose_unit, conc);
+        if (mg == null) continue;
+        mgUsed += mg * (countByStack.get(st.id) ?? 0);
+      }
+      const mgRemaining = Math.max(0, vial.vial_size_mg - mgUsed);
+      const percentLeft = vial.vial_size_mg > 0
+        ? Math.max(0, Math.min(100, (mgRemaining / vial.vial_size_mg) * 100))
+        : 0;
+
+      // Estimate doses left using first linked stack with a parseable dose
+      let remainingDoses: number | null = null;
+      let totalDoses: number | null = null;
+      let doseLabel: string | null = null;
+      const primary = linked.find((st) => st.dose && doseToMg(st.dose, st.dose_unit, conc) != null);
+      if (primary && primary.dose) {
+        const mgPer = doseToMg(primary.dose, primary.dose_unit, conc)!;
+        if (mgPer > 0) {
+          totalDoses = Math.floor(vial.vial_size_mg / mgPer);
+          remainingDoses = Math.floor(mgRemaining / mgPer);
+          doseLabel = `${primary.dose} ${primary.dose_unit}`;
+        }
+      }
+
+      u[vial.id] = { mgUsed, percentLeft, remainingDoses, totalDoses, doseLabel };
+    }
+    setUsage(u);
     setLoading(false);
   };
 
@@ -141,6 +195,7 @@ function Page() {
             <VialCard
               key={v.id}
               vial={v}
+              usage={usage[v.id]}
               onDelete={() => remove(v.id)}
               onMarkEmpty={() => markEmpty(v.id)}
             />
@@ -151,7 +206,7 @@ function Page() {
   );
 }
 
-function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () => void; onMarkEmpty: () => void }) {
+function VialCard({ vial, usage, onDelete, onMarkEmpty }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void }) {
   const days = vial.reconstituted_at
     ? differenceInDays(new Date(), new Date(vial.reconstituted_at))
     : null;
@@ -165,13 +220,14 @@ function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () =>
     : vial.status === "sealed" ? "bg-muted text-foreground/80"
     : "bg-destructive/10 text-destructive border-destructive/30";
 
+  const isUsed = vial.status === "used";
+  const percentLeft = isUsed ? 0 : (usage?.percentLeft ?? 100);
+
   return (
     <div className="sayne-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="size-9 rounded-md bg-primary/10 text-primary grid place-items-center">
-            <FlaskConical className="size-4" />
-          </div>
+        <div className="flex items-center gap-3">
+          <VialVisual fillPercent={percentLeft} size="sm" empty={isUsed} />
           <div>
             <div className="font-display text-lg font-semibold leading-tight">{vial.compound}</div>
             {vial.lot_number && (
@@ -183,6 +239,34 @@ function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () =>
         </div>
         <Badge variant="outline" className={cn("capitalize", statusColor)}>{vial.status}</Badge>
       </div>
+
+      {!isUsed && (
+        <div className="rounded-md border bg-sky-500/5 border-sky-500/20 p-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Remaining doses</span>
+            <span className="text-[10px] font-mono text-muted-foreground">{Math.round(percentLeft)}% left</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2 flex-wrap">
+            {usage?.remainingDoses != null && usage.totalDoses != null ? (
+              <>
+                <span className="font-mono tabular-nums text-2xl font-semibold">{usage.remainingDoses}</span>
+                <span className="text-xs text-muted-foreground font-mono">/ {usage.totalDoses} doses</span>
+                {usage.doseLabel && (
+                  <span className="ml-auto text-[10px] text-muted-foreground font-mono">@ {usage.doseLabel}</span>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                Link this vial to a stack entry to estimate doses
+              </span>
+            )}
+          </div>
+          <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-sky-500 transition-all" style={{ width: `${percentLeft}%` }} />
+          </div>
+        </div>
+      )}
+
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <Metric label="Size" value={`${vial.vial_size_mg}`} unit="mg" />
