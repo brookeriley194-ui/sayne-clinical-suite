@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ReorderReminders, VialVisual, doseToMg } from "@/components/dose-shared";
 import { SyringeVisualizer, SYRINGE_SPECS, type SyringeType } from "@/components/syringe-visualizer";
+import { PeptideCombobox } from "@/components/peptide-combobox";
 
 export const Route = createFileRoute("/dashboard/my-vials")({ component: Page });
 
