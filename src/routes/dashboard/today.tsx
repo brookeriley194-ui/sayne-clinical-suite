@@ -742,7 +742,7 @@ function ProtocolStacksSection() {
   return (
     <>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-xl font-semibold">Current Stack</h2>
+        <h2 className="font-display text-xl font-bold">Current Stack</h2>
         <span className="text-xs text-muted-foreground">
           {grouped.length} stack{grouped.length === 1 ? "" : "s"} · {rows.length} compound{rows.length === 1 ? "" : "s"}
         </span>
