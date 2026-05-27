@@ -22,6 +22,9 @@ export type Stack = {
 };
 export type DoseLog = { id: string; stack_id: string; dose_date: string; period: string };
 
+export const ONGOING_CYCLE_DAYS = 99999;
+export const isOngoing = (s: { cycle_length_days: number }) => s.cycle_length_days >= ONGOING_CYCLE_DAYS;
+
 export const FREQUENCIES = [
   { value: "daily", label: "Daily", interval: 1 },
   { value: "every_other_day", label: "Every other day", interval: 2 },
@@ -29,7 +32,16 @@ export const FREQUENCIES = [
   { value: "weekly", label: "Weekly", interval: 7 },
   { value: "bi_weekly", label: "Bi-weekly", interval: 14 },
   { value: "monthly", label: "Monthly", interval: 30 },
+  { value: "custom", label: "Custom days", interval: -2 },
 ];
+
+// Frequency may be one of the values above OR "custom:0,2,4" where numbers are
+// JS day-of-week indices (0 = Sun … 6 = Sat).
+export function parseCustomDays(freq: string): number[] | null {
+  if (!freq.startsWith("custom:")) return null;
+  const parts = freq.slice(7).split(",").map((n) => Number(n)).filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+  return parts.length ? parts : [];
+}
 
 export function colorFor(id: string) {
   let h = 0;
@@ -41,13 +53,17 @@ export function isScheduled(stack: Stack, date: Date): boolean {
   const start = startOfDay(new Date(stack.start_date));
   const d = startOfDay(date);
   const diff = differenceInDays(d, start);
-  if (diff < 0 || diff >= stack.cycle_length_days) return false;
+  if (diff < 0) return false;
+  if (!isOngoing(stack) && diff >= stack.cycle_length_days) return false;
+  const customDays = parseCustomDays(stack.frequency);
+  if (customDays) return customDays.includes(d.getDay());
   const freq = FREQUENCIES.find((f) => f.value === stack.frequency);
   if (!freq) return true;
   if (freq.value === "twice_weekly") {
     const day = d.getDay();
     return day === 1 || day === 4;
   }
+  if (freq.interval <= 0) return true;
   return diff % freq.interval === 0;
 }
 
