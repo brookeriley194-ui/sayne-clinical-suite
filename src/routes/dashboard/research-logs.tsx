@@ -132,7 +132,14 @@ function Page() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {stacks.map((s) => (
-            <StackCard key={s.id} stack={s} onDelete={() => remove(s.id)} onEdit={() => openEdit(s)} />
+            <StackCard
+              key={s.id}
+              stack={s}
+              vial={vials.find((v) => v.id === s.vial_id) ?? null}
+              dosesTaken={doseCounts[s.id] ?? 0}
+              onDelete={() => remove(s.id)}
+              onEdit={() => openEdit(s)}
+            />
           ))}
         </div>
       )}
