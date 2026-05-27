@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX, Undo2, ReceiptText, Upload, Calculator as CalcIcon, Loader2, X } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX, Undo2, ReceiptText, Upload, Calculator as CalcIcon, Loader2, X, Save, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyCard } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ReorderReminders, VialVisual, doseToMg } from "@/components/dose-shared";
+import { SyringeVisualizer, SYRINGE_SPECS, type SyringeType } from "@/components/syringe-visualizer";
 
 export const Route = createFileRoute("/dashboard/my-vials")({ component: Page });
 
