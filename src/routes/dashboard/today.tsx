@@ -268,7 +268,7 @@ function DoseCalendar({
     <div className="sayne-card p-5">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
-          <h2 className="font-display text-xl font-semibold">
+          <h2 className="font-display text-xl font-bold">
             {view === "month" ? "30-Day" : view === "week" ? "Week" : "Day"} Dose Calendar
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">AM on top, PM on bottom. Check off each dose as you take it.</p>
@@ -742,7 +742,7 @@ function ProtocolStacksSection() {
   return (
     <>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-xl font-semibold">Current Stack</h2>
+        <h2 className="font-display text-xl font-bold">Current Stack</h2>
         <span className="text-xs text-muted-foreground">
           {grouped.length} stack{grouped.length === 1 ? "" : "s"} · {rows.length} compound{rows.length === 1 ? "" : "s"}
         </span>
@@ -806,7 +806,7 @@ function MyVialsSection({
   return (
     <>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-xl font-semibold">My Vials</h2>
+        <h2 className="font-display text-xl font-bold">My Vials</h2>
         <span className="text-xs text-muted-foreground">{vials.length} vial{vials.length === 1 ? "" : "s"}</span>
       </div>
       {vials.length === 0 ? (

@@ -119,7 +119,7 @@ function HomePage() {
       {/* Day view */}
       <section>
         <div className="flex items-baseline justify-between mb-3">
-          <h2 className="font-display text-xl font-semibold">Today's Stack</h2>
+          <h2 className="font-display text-xl font-bold">Today's Stack</h2>
           <Link to="/dashboard/research-logs" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
             Open full calendar <ArrowRight className="size-3" />
           </Link>
@@ -150,7 +150,7 @@ function HomePage() {
       <section>
         <div className="flex items-baseline justify-between mb-3">
           <div>
-            <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+            <h2 className="font-display text-xl font-bold flex items-center gap-2">
               <Newspaper className="size-5 text-primary" /> Peptide Research & News
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">Hand-picked clinical research and trusted peptide blogs.</p>
@@ -183,7 +183,7 @@ function VialsSection({ vials, loading }: { vials: Vial[]; loading: boolean }) {
   return (
     <section className="sayne-card p-5 flex flex-col">
       <div className="flex items-baseline justify-between mb-4">
-        <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+        <h2 className="font-display text-xl font-bold flex items-center gap-2">
           <Beaker className="size-5 text-primary" /> My Vials
         </h2>
         <Link to="/dashboard/my-vials" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
@@ -269,7 +269,7 @@ function QuickCalculator() {
   return (
     <section className="sayne-card p-5 flex flex-col">
       <div className="flex items-baseline justify-between mb-4">
-        <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+        <h2 className="font-display text-xl font-bold flex items-center gap-2">
           <Calculator className="size-5 text-primary" /> Quick Calculator
         </h2>
         <Link to="/dashboard/calculator" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
