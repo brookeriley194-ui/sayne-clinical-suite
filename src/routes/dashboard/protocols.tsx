@@ -510,6 +510,21 @@ function BuildStackModal({
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-xs">Link vial <span className="text-muted-foreground">(optional — autofills compound &amp; dose)</span></Label>
+                  <Select value={r.vial_id} onValueChange={(v) => handleVialChange(i, v)}>
+                    <SelectTrigger><SelectValue placeholder="No vial linked" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No vial linked</SelectItem>
+                      {vials.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.compound} · {v.vial_size_mg}mg ({v.status})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-xs">Peptide</Label>
                   <PeptideCombobox value={r.compound} onChange={(v) => updateRow(i, { compound: v })} />
                   {r.compound === "Other" && (
@@ -519,41 +534,25 @@ function BuildStackModal({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Dose</Label>
-                    <div className="flex gap-2">
-                      <Input type="number" inputMode="decimal" step="any" min="0"
-                        value={r.dose} onChange={(e) => updateRow(i, { dose: e.target.value })}
-                        required className="flex-1 font-mono" />
-                      <div className="inline-flex rounded-md border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                        {UNITS.map((u) => (
-                          <button key={u} type="button" onClick={() => updateRow(i, { dose_unit: u })}
-                            className="px-2.5 text-xs font-mono transition-colors"
-                            style={{
-                              backgroundColor: r.dose_unit === u ? "var(--primary)" : "transparent",
-                              color: r.dose_unit === u ? "var(--primary-foreground, #fff)" : "var(--muted-foreground)",
-                            }}>{u}</button>
-                        ))}
-                      </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Dose</Label>
+                  <div className="flex gap-2">
+                    <Input type="number" inputMode="decimal" step="any" min="0"
+                      value={r.dose} onChange={(e) => updateRow(i, { dose: e.target.value })}
+                      required className="flex-1 font-mono" />
+                    <div className="inline-flex rounded-md border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                      {UNITS.map((u) => (
+                        <button key={u} type="button" onClick={() => updateRow(i, { dose_unit: u })}
+                          className="px-2.5 text-xs font-mono transition-colors"
+                          style={{
+                            backgroundColor: r.dose_unit === u ? "var(--primary)" : "transparent",
+                            color: r.dose_unit === u ? "var(--primary-foreground, #fff)" : "var(--muted-foreground)",
+                          }}>{u}</button>
+                      ))}
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs">Link vial <span className="text-muted-foreground">(optional)</span></Label>
-                    <Select value={r.vial_id} onValueChange={(v) => updateRow(i, { vial_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="No vial linked" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No vial linked</SelectItem>
-                        {vials.map((v) => (
-                          <SelectItem key={v.id} value={v.id}>
-                            {v.compound} · {v.vial_size_mg}mg ({v.status})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
+
               </div>
             ))}
           </div>
