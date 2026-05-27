@@ -423,7 +423,7 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
 
     const { error } = await supabase.from("vials").insert({
       doctor_id: u.user.id,
-      compound: compound.trim(),
+      compound: finalCompound,
       vial_size_mg: Number(vialSize),
       bac_water_ml: bacWater ? Number(bacWater) : null,
       concentration_mg_per_ml: conc ? Number(conc) : null,
@@ -438,7 +438,7 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
 
     if (goToCalculator) {
       sessionStorage.setItem("calc:prefill", JSON.stringify({
-        compound: compound.trim(),
+        compound: finalCompound,
         vialAmount: Number(vialSize),
         vialUnit,
         bacWater: bacWater ? Number(bacWater) : 2,
