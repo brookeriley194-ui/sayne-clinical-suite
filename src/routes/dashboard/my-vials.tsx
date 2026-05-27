@@ -224,7 +224,7 @@ function Page() {
   );
 }
 
-function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void; onRestore: (status: "open" | "sealed") => void }) {
+function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChangeStatus }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void; onRestore: (status: "open" | "sealed") => void; onChangeStatus: (status: string) => void }) {
   const days = vial.reconstituted_at
     ? differenceInDays(new Date(), new Date(vial.reconstituted_at))
     : null;
@@ -233,9 +233,9 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore }: { vial: Via
     vial.concentration_mg_per_ml ??
     (vial.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
 
-  const statusColor =
+  const triggerColor =
     vial.status === "open" ? "bg-primary/15 text-primary border-primary/30"
-    : vial.status === "sealed" ? "bg-muted text-foreground/80"
+    : vial.status === "sealed" ? "bg-muted text-foreground/80 border-border"
     : "bg-destructive/10 text-destructive border-destructive/30";
 
   const isUsed = vial.status === "used";
@@ -255,8 +255,18 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore }: { vial: Via
             )}
           </div>
         </div>
-        <Badge variant="outline" className={cn("capitalize", statusColor)}>{vial.status}</Badge>
+        <Select value={vial.status} onValueChange={onChangeStatus}>
+          <SelectTrigger className={cn("h-7 w-[100px] text-xs capitalize font-medium", triggerColor)}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUSES.map((s) => (
+              <SelectItem key={s} value={s} className="capitalize text-xs">{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
 
       {!isUsed && (
         <div className="rounded-md border bg-sky-500/5 border-sky-500/20 p-3">
