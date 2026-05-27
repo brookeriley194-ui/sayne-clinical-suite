@@ -243,7 +243,7 @@ function DoseCalendar({
   stacks, doses, onToggle,
 }: { stacks: Stack[]; doses: DoseLog[]; onToggle: (s: Stack, d: Date, p: string) => void }) {
   const today = startOfDay(new Date());
-  const [view, setView] = useState<"day" | "week" | "month">("month");
+  const [view, setView] = useState<"day" | "week" | "month">("day");
   const [weekOffset, setWeekOffset] = useState(0);
   const [dayOffset, setDayOffset] = useState(0);
 
