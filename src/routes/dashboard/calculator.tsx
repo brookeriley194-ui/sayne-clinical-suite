@@ -61,6 +61,7 @@ function SyringeIcon({ scale, selected }: { scale: number; selected: boolean }) 
 }
 
 function Page() {
+  const navigate = useNavigate();
   const [compound, setCompound] = useState("BPC-157");
   const [vialAmount, setVialAmount] = useState(5);
   const [vialUnit, setVialUnit] = useState<MassUnit>("mg");
@@ -70,6 +71,33 @@ function Page() {
   const [doseValue, setDoseValue] = useState(250);
   const [syringeType, setSyringeType] = useState<SyringeType>("insulin_1");
   const [reconDate, setReconDate] = useState<Date | undefined>(new Date());
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("calc:prefill");
+    if (!raw) return;
+    sessionStorage.removeItem("calc:prefill");
+    try {
+      const p = JSON.parse(raw);
+      if (p.compound) {
+        if (!COMPOUNDS.includes(p.compound)) COMPOUNDS.push(p.compound);
+        setCompound(p.compound);
+      }
+      if (p.vialAmount) setVialAmount(p.vialAmount);
+      if (p.vialUnit) setVialUnit(p.vialUnit);
+      if (p.bacWater) setBacWater(p.bacWater);
+    } catch { /* ignore */ }
+  }, []);
+
+  const addToStack = () => {
+    sessionStorage.setItem("stack:prefill", JSON.stringify({
+      peptide_name: compound,
+      dose: doseValue,
+      dose_unit: doseUnit,
+      reconstituted_at: reconDate ? reconDate.toISOString() : null,
+    }));
+    navigate({ to: "/dashboard/research-logs" });
+  };
+
 
   // If vial is sold as a pre-mixed liquid (mL), assume entered value is the
   // total mL and treat mass as the same number of mg (user can override via BAC).
