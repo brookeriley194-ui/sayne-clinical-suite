@@ -38,7 +38,7 @@ type Stack = {
   notes: string | null;
   created_at: string;
 };
-type DoseLog = { id: string; stack_id: string; dose_date: string };
+type DoseLog = { id: string; stack_id: string; dose_date: string; period: string };
 
 const FREQUENCIES = [
   { value: "daily", label: "Daily", interval: 1 },
