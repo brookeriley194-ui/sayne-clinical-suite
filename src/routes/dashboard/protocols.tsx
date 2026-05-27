@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, ClipboardPaste, Sparkles, Check, BookOpen, Share2, CircleDot } from "lucide-react";
+import { Plus, ClipboardPaste, Sparkles, Check, BookOpen, Share2, CircleDot, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/dashboard-ui";
