@@ -87,7 +87,7 @@ function Page() {
     const [s, v, d] = await Promise.all([
       supabase.from("stacks").select("*").order("created_at", { ascending: false }),
       supabase.from("vials").select("id, compound, reconstituted_at"),
-      supabase.from("stack_doses").select("id, stack_id, dose_date").gte("dose_date", past30).lte("dose_date", in30),
+      supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
     ]);
     if (s.error) toast.error(s.error.message);
     setStacks((s.data ?? []) as Stack[]);
