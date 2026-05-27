@@ -99,22 +99,35 @@ function Page() {
         }
       />
 
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-lg font-semibold">My Stacks</h2>
-        <span className="text-xs text-muted-foreground font-mono">{stacks.length} total</span>
-      </div>
+      <Tabs defaultValue="stacks">
+        <TabsList className="mb-4">
+          <TabsTrigger value="stacks">My Stacks</TabsTrigger>
+          <TabsTrigger value="log">Research Log</TabsTrigger>
+        </TabsList>
 
-      {loading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : stacks.length === 0 ? (
-        <div className="sayne-card p-10 text-center">
-          <p className="text-sm text-muted-foreground">No stacks yet. Build one or import from AI to get started.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {stacks.map((s) => <StackCard key={s.id} s={s} />)}
-        </div>
-      )}
+        <TabsContent value="stacks">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-display text-lg font-semibold">My Stacks</h2>
+            <span className="text-xs text-muted-foreground font-mono">{stacks.length} total</span>
+          </div>
+
+          {loading ? (
+            <div className="text-sm text-muted-foreground">Loading…</div>
+          ) : stacks.length === 0 ? (
+            <div className="sayne-card p-10 text-center">
+              <p className="text-sm text-muted-foreground">No stacks yet. Build one or import from AI to get started.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {stacks.map((s) => <StackCard key={s.id} s={s} />)}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="log">
+          <ResearchLog stacks={stacks} loading={loading} />
+        </TabsContent>
+      </Tabs>
 
       <ImportFromAIModal
         open={importOpen}
