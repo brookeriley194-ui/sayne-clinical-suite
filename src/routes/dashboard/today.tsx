@@ -231,11 +231,11 @@ function Page() {
 
       <div className="mt-6" />
 
-      <MyVialsSection vials={vials} usage={vialUsage} onReload={load} />
+      <ProtocolStacksSection />
 
       <div className="mt-6" />
 
-      <ProtocolStacksSection />
+      <MyVialsSection vials={vials} usage={vialUsage} onReload={load} />
 
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
