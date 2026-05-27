@@ -500,41 +500,54 @@ function ImportProtocolModal({
   }
 
   const detectedCount = parsed
-    ? [parsed.compound, parsed.dose, parsed.frequency, parsed.route,
-       (parsed.ongoing || parsed.duration_days), parsed.notes]
-        .filter((v) => v !== null && v !== undefined && v !== "" && v !== false).length
+    ? ([
+        parsed.compound,
+        parsed.dose,
+        parsed.frequency,
+        parsed.route,
+        parsed.ongoing ? "ongoing" : parsed.duration_days,
+        parsed.notes,
+      ].filter((v) => v !== null && v !== undefined && v !== "").length)
     : 0;
 
   async function handleSave() {
     if (!user) { toast.error("Not signed in"); return; }
     if (!parsed) return;
     if (!agreed) { toast.error("Please acknowledge the disclaimer"); return; }
+
+    const compound = (COMPOUNDS as readonly string[]).includes(parsed.compound ?? "")
+      ? (parsed.compound as string) : "Other";
+    const dose_unit = (UNITS as readonly string[]).includes(parsed.dose_unit ?? "")
+      ? (parsed.dose_unit as string) : "mcg";
+    const frequency = (FREQUENCIES as readonly string[]).includes(parsed.frequency ?? "")
+      ? (parsed.frequency as string) : "Once Daily";
+    const route = (ROUTES as readonly string[]).includes(parsed.route ?? "")
+      ? (parsed.route as string) : "Subcutaneous";
+
+    if (!parsed.dose || parsed.dose <= 0) { toast.error("Dose is required"); return; }
+
     const payload = {
-      name: name.trim() || `${parsed.compound ?? "Imported"} Protocol`,
-      compound: (COMPOUNDS as readonly string[]).includes(parsed.compound ?? "")
-        ? parsed.compound : "Other",
+      name: name.trim() || `${compound} Protocol`,
+      compound,
       dose: parsed.dose,
-      dose_unit: (UNITS as readonly string[]).includes(parsed.dose_unit ?? "")
-        ? parsed.dose_unit : "mcg",
-      frequency: (FREQUENCIES as readonly string[]).includes(parsed.frequency ?? "")
-        ? parsed.frequency : "Once Daily",
-      route: (ROUTES as readonly string[]).includes(parsed.route ?? "")
-        ? parsed.route : "Subcutaneous",
+      dose_unit,
+      frequency,
+      route,
       ongoing: parsed.ongoing || !parsed.duration_days,
       duration_days: parsed.ongoing ? null : parsed.duration_days,
       notes: parsed.notes,
+      doctor_id: user.id,
+      source: "ai_import",
     };
-    if (!payload.dose || payload.dose <= 0) { toast.error("Dose is required"); return; }
 
     setSaving(true);
-    const { error } = await supabase.from("protocols").insert({
-      ...payload, doctor_id: user.id, source: "ai_import",
-    });
+    const { error } = await supabase.from("protocols").insert(payload);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Protocol imported successfully");
     onSaved();
   }
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
