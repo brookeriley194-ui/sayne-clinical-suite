@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyCard } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
@@ -139,6 +139,13 @@ function Page() {
     load();
   };
 
+  const restore = async (id: string, status: "open" | "sealed") => {
+    const { error } = await supabase.from("vials").update({ status }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(`Moved back to ${status}`);
+    load();
+  };
+
   return (
     <>
       <PageHeader
@@ -198,6 +205,7 @@ function Page() {
               usage={usage[v.id]}
               onDelete={() => remove(v.id)}
               onMarkEmpty={() => markEmpty(v.id)}
+              onRestore={(s) => restore(v.id, s)}
             />
           ))}
         </div>
@@ -206,7 +214,7 @@ function Page() {
   );
 }
 
-function VialCard({ vial, usage, onDelete, onMarkEmpty }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void }) {
+function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void; onRestore: (status: "open" | "sealed") => void }) {
   const days = vial.reconstituted_at
     ? differenceInDays(new Date(), new Date(vial.reconstituted_at))
     : null;
@@ -298,7 +306,16 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty }: { vial: Vial; usage?: 
             : `Added ${format(new Date(vial.created_at), "MMM d")}`}
         </span>
         <div className="flex items-center gap-1">
-          {vial.status !== "used" && (
+          {vial.status === "used" ? (
+            <>
+              <Button size="sm" variant="outline" onClick={() => onRestore("open")} className="h-7 text-xs gap-1.5">
+                <Undo2 className="size-3.5" /> Open
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => onRestore("sealed")} className="h-7 text-xs gap-1.5">
+                Sealed
+              </Button>
+            </>
+          ) : (
             <Button
               size="sm"
               variant="outline"
@@ -331,6 +348,7 @@ function Metric({ label, value, unit }: { label: string; value: string; unit: st
 function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [compound, setCompound] = useState("");
   const [vialSize, setVialSize] = useState("");
+  const [vialUnit, setVialUnit] = useState<"mg" | "mL">("mg");
   const [bacWater, setBacWater] = useState("");
   const [reconDate, setReconDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<string>("sealed");
@@ -361,7 +379,7 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       reconstituted_at: reconDate ? reconDate.toISOString() : null,
       status,
       lot_number: lot.trim() || null,
-      notes: notes.trim() || null,
+      notes: (vialUnit === "mL" ? `Vial size entered in mL. ` : "") + (notes.trim() || "") || null,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
@@ -382,8 +400,22 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label>Vial size (mg) *</Label>
-            <Input type="number" step="0.1" value={vialSize} onChange={(e) => setVialSize(e.target.value)} placeholder="5" />
+            <Label>Vial size *</Label>
+            <div className="flex gap-2">
+              <Input type="number" step="0.1" value={vialSize} onChange={(e) => setVialSize(e.target.value)} placeholder="5" className="flex-1" />
+              <div className="inline-flex rounded-md border bg-background p-0.5">
+                {(["mg", "mL"] as const).map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => setVialUnit(u)}
+                    className={`px-2.5 text-xs rounded ${vialUnit === u ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>BAC water (mL)</Label>

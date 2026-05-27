@@ -11,8 +11,26 @@ import { SyringeVisualizer, SYRINGE_SPECS, type SyringeType } from "@/components
 
 export const Route = createFileRoute("/dashboard/calculator")({ component: Page });
 
-const COMPOUNDS = ["BPC-157", "TB-500", "Ipamorelin", "CJC-1295", "Selank", "Semax", "PT-141"];
-type DoseUnit = "mcg" | "units" | "mL";
+const COMPOUNDS = [
+  "NAD+", "BPC-157", "TB-500", "Thymosin Alpha-1", "Thymosin Beta-4", "Ipamorelin", "CJC-1295",
+  "CJC-1295 DAC", "CJC-1295 No DAC", "Sermorelin", "Tesamorelin", "GHRP-2", "GHRP-6", "Hexarelin",
+  "MK-677 (Ibutamoren)", "Selank", "Semax", "N-Acetyl Selank", "N-Acetyl Semax", "PT-141 (Bremelanotide)",
+  "Melanotan I", "Melanotan II", "Semaglutide", "Tirzepatide", "Retatrutide", "Liraglutide", "Cagrilintide",
+  "AOD-9604", "HGH (Somatropin)", "IGF-1 LR3", "IGF-1 DES", "MGF", "PEG-MGF", "Follistatin 344",
+  "Follistatin 315", "Epitalon (Epithalon)", "Pinealon", "Cerebrolysin", "DSIP", "GHK-Cu", "AHK-Cu",
+  "Snap-8", "Argireline", "Matrixyl", "Kisspeptin-10", "Gonadorelin", "HCG", "Triptorelin",
+  "Adipotide (FTPP)", "5-Amino-1MQ", "SS-31 (Elamipretide)", "MOTS-c", "Humanin", "Pinealon",
+  "Oxytocin", "Vasopressin", "Glutathione", "Methylene Blue", "L-Carnitine", "Glow (GHK-Cu+...)",
+  "KPV", "LL-37", "Thymalin", "Thymogen", "Lipo-C (MIC)", "Glycine", "Taurine", "NAC",
+  "Tirzepatide+Retatrutide", "Survodutide", "Mazdutide", "Orforglipron", "Bremelanotide",
+  "BPC-157 Arginate", "TB-4 Frag", "Larazotide", "DLA", "P21", "Dihexa", "Cortagen", "Vesugen",
+  "Bronchogen", "Prostagen", "Cardiogen", "Pancragen", "Ovagen", "Testagen", "Livagen",
+  "Thymalin", "Glandokort", "Pinealon", "Pancragen", "Cardiogen", "Endoluten", "Sigumir",
+  "Vladonix", "Chelohart", "Cerluten", "Bonothyrk", "Crystagen", "Honluten", "Stamakort",
+  "Suprefort", "Ventfort", "Visoluten", "Zhenoluten", "Ovariamin",
+];
+type MassUnit = "mg" | "mL";
+type DoseUnit = "mcg" | "mg" | "units" | "mL";
 type DiluentUnit = "mL" | "units" | "mcg";
 
 const SYRINGE_OPTIONS: { type: SyringeType; label: string; sub: string }[] = [
@@ -44,13 +62,18 @@ function SyringeIcon({ scale, selected }: { scale: number; selected: boolean }) 
 
 function Page() {
   const [compound, setCompound] = useState("BPC-157");
-  const [vialMg, setVialMg] = useState(5);
+  const [vialAmount, setVialAmount] = useState(5);
+  const [vialUnit, setVialUnit] = useState<MassUnit>("mg");
   const [bacWater, setBacWater] = useState(2);
   const [bacUnit, setBacUnit] = useState<DiluentUnit>("mL");
   const [doseUnit, setDoseUnit] = useState<DoseUnit>("mcg");
   const [doseValue, setDoseValue] = useState(250);
   const [syringeType, setSyringeType] = useState<SyringeType>("insulin_1");
   const [reconDate, setReconDate] = useState<Date | undefined>(new Date());
+
+  // If vial is sold as a pre-mixed liquid (mL), assume entered value is the
+  // total mL and treat mass as the same number of mg (user can override via BAC).
+  const vialMg = vialUnit === "mg" ? vialAmount : vialAmount;
 
   // Convert diluent to mL. units = 0.01 mL each (U-100). mcg isn't a volume —
   // treat as mL with a small advisory note.
@@ -62,6 +85,8 @@ function Page() {
   const doseMcg =
     doseUnit === "mcg"
       ? doseValue
+      : doseUnit === "mg"
+      ? doseValue * 1000
       : doseUnit === "mL"
       ? doseValue * concentration_mcg_per_ml
       : doseValue * 0.01 * concentration_mcg_per_ml;
@@ -97,10 +122,33 @@ function Page() {
               </select>
             </label>
 
-            <label className="block">
-              <span className="text-muted-foreground">Vial size (mg)</span>
-              <input type="number" value={vialMg} onChange={(e) => setVialMg(+e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
-            </label>
+            <div>
+              <span className="text-muted-foreground">Vial size</span>
+              <div className="mt-1 flex gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={vialAmount}
+                  onChange={(e) => setVialAmount(+e.target.value)}
+                  className="flex-1 rounded-md border bg-background px-3 py-2"
+                />
+                <div className="inline-flex rounded-md border bg-background p-0.5">
+                  {(["mg", "mL"] as MassUnit[]).map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => setVialUnit(u)}
+                      className={`px-3 py-1 text-xs rounded ${vialUnit === u ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {vialUnit === "mL" && (
+                <div className="mt-1 text-xs text-muted-foreground">Pre-mixed liquid vials — total volume in mL.</div>
+              )}
+            </div>
 
             {/* Bac. water with unit toggle */}
             <div>
@@ -144,7 +192,7 @@ function Page() {
                   className="flex-1 rounded-md border bg-background px-3 py-2"
                 />
                 <div className="inline-flex rounded-md border bg-background p-0.5">
-                  {(["mcg", "units", "mL"] as DoseUnit[]).map((u) => (
+                  {(["mcg", "mg", "units", "mL"] as DoseUnit[]).map((u) => (
                     <button
                       key={u}
                       type="button"
