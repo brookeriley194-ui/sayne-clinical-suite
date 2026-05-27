@@ -142,6 +142,51 @@ export type Database = {
         }
         Relationships: []
       }
+      vials: {
+        Row: {
+          bac_water_ml: number | null
+          compound: string
+          concentration_mg_per_ml: number | null
+          created_at: string
+          doctor_id: string
+          id: string
+          lot_number: string | null
+          notes: string | null
+          reconstituted_at: string | null
+          status: string
+          updated_at: string
+          vial_size_mg: number
+        }
+        Insert: {
+          bac_water_ml?: number | null
+          compound: string
+          concentration_mg_per_ml?: number | null
+          created_at?: string
+          doctor_id: string
+          id?: string
+          lot_number?: string | null
+          notes?: string | null
+          reconstituted_at?: string | null
+          status?: string
+          updated_at?: string
+          vial_size_mg: number
+        }
+        Update: {
+          bac_water_ml?: number | null
+          compound?: string
+          concentration_mg_per_ml?: number | null
+          created_at?: string
+          doctor_id?: string
+          id?: string
+          lot_number?: string | null
+          notes?: string | null
+          reconstituted_at?: string | null
+          status?: string
+          updated_at?: string
+          vial_size_mg?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
