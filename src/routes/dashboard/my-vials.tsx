@@ -78,6 +78,13 @@ function Page() {
     load();
   };
 
+  const markEmpty = async (id: string) => {
+    const { error } = await supabase.from("vials").update({ status: "used" }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Vial marked empty");
+    load();
+  };
+
   return (
     <>
       <PageHeader
