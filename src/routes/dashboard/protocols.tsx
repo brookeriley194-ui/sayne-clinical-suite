@@ -302,14 +302,22 @@ function BuildStackModal({
   const [ongoing, setOngoing] = useState(false);
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
+  const [vialId, setVialId] = useState<string>("none");
+  const [vials, setVials] = useState<VialOpt[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setName(""); setCompound("BPC-157"); setDose(""); setDoseUnit("mcg");
       setFrequency("Once Daily"); setRoute("Subcutaneous"); setOngoing(false);
-      setDuration(""); setNotes(""); setSaving(false);
+      setDuration(""); setNotes(""); setVialId("none"); setSaving(false);
+      return;
     }
+    void supabase.from("vials")
+      .select("id, compound, vial_size_mg, status")
+      .neq("status", "used")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setVials((data ?? []) as VialOpt[]));
   }, [open]);
 
   const compoundsSorted = useMemo(
