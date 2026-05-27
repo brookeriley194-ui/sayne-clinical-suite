@@ -628,10 +628,15 @@ function BuildStackModal({
     }));
 
     setSaving(true);
+    if (editing) {
+      const oldIds = editing.rows.map((r) => r.id);
+      const { error: delErr } = await supabase.from("protocols").delete().in("id", oldIds);
+      if (delErr) { setSaving(false); toast.error(delErr.message); return; }
+    }
     const { error } = await supabase.from("protocols").insert(inserts);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(inserts.length > 1 ? `Stack with ${inserts.length} compounds saved` : "Stack saved");
+    toast.success(editing ? "Stack updated" : (inserts.length > 1 ? `Stack with ${inserts.length} compounds saved` : "Stack saved"));
     onSaved();
   }
 
