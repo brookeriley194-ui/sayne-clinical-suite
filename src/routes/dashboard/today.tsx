@@ -235,7 +235,7 @@ function Page() {
 
       <div className="mt-6" />
 
-      <MyVialsSection vials={vials} usage={vialUsage} onReload={load} />
+      <MyVialsSection vials={vials} usage={vialUsage} stacks={stacks} onReload={load} />
 
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -789,8 +789,12 @@ function ProtocolStacksSection() {
 }
 
 function MyVialsSection({
-  vials, usage, onReload,
-}: { vials: Vial[]; usage: Record<string, VialUsage>; onReload: () => void }) {
+  vials, usage, stacks, onReload,
+}: { vials: Vial[]; usage: Record<string, VialUsage>; stacks: Stack[]; onReload: () => void }) {
+  const [filter, setFilter] = useState<"all" | "stack">("all");
+  const stackVialIds = useMemo(() => new Set(stacks.map((s) => s.vial_id).filter(Boolean) as string[]), [stacks]);
+  const filtered = filter === "stack" ? vials.filter((v) => stackVialIds.has(v.id)) : vials;
+
   const remove = async (id: string) => {
     const { error } = await supabase.from("vials").delete().eq("id", id);
     if (error) return toast.error(error.message);
@@ -805,15 +809,36 @@ function MyVialsSection({
   };
   return (
     <>
-      <div className="mb-3 flex items-baseline justify-between">
+      <div className="mb-3 flex items-baseline justify-between gap-3 flex-wrap">
         <h2 className="font-display text-xl font-bold">My Vials</h2>
-        <span className="text-xs text-muted-foreground">{vials.length} vial{vials.length === 1 ? "" : "s"}</span>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border bg-muted/30 p-0.5">
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className={`px-3 py-1 text-xs rounded-sm transition ${filter === "all" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              All vials
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("stack")}
+              className={`px-3 py-1 text-xs rounded-sm transition ${filter === "stack" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Current stack
+            </button>
+          </div>
+          <span className="text-xs text-muted-foreground">{filtered.length} vial{filtered.length === 1 ? "" : "s"}</span>
+        </div>
       </div>
-      {vials.length === 0 ? (
-        <EmptyCard title="No vials yet" body="Add vials in My Vials to see them here." />
+      {filtered.length === 0 ? (
+        <EmptyCard
+          title={filter === "stack" ? "No vials in your current stack" : "No vials yet"}
+          body={filter === "stack" ? "Link vials to stack entries to see them here." : "Add vials in My Vials to see them here."}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {vials.map((v) => (
+          {filtered.map((v) => (
             <VialCard
               key={v.id}
               vial={v}
