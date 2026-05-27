@@ -395,6 +395,7 @@ function Metric({ label, value, unit }: { label: string; value: string; unit: st
 function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const navigate = useNavigate();
   const [compound, setCompound] = useState("");
+  const [customCompound, setCustomCompound] = useState("");
   const [vialSize, setVialSize] = useState("");
   const [vialUnit, setVialUnit] = useState<"mg" | "mL">("mg");
   const [bacWater, setBacWater] = useState("");
