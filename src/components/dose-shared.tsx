@@ -157,10 +157,18 @@ export type ReorderItem = {
   percent: number;
 };
 
-export function doseToMg(dose: number, unit: string): number | null {
+export function doseToMg(
+  dose: number,
+  unit: string,
+  concentrationMgPerMl?: number | null,
+): number | null {
   if (unit === "mg") return dose;
   if (unit === "mcg") return dose / 1000;
-  return null; // units / mL: can't convert without concentration
+  if (!concentrationMgPerMl || concentrationMgPerMl <= 0) return null;
+  if (unit === "mL") return dose * concentrationMgPerMl;
+  // U-100 insulin syringe convention: 100 units = 1 mL
+  if (unit === "units") return (dose / 100) * concentrationMgPerMl;
+  return null;
 }
 
 export async function fetchReorderItems(): Promise<ReorderItem[]> {
