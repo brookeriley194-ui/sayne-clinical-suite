@@ -63,7 +63,7 @@ function Page() {
     setLoading(true);
     const [v, s, d] = await Promise.all([
       supabase.from("vials").select("*").order("created_at", { ascending: false }),
-      supabase.from("stacks").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
+      supabase.from("protocols").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
       supabase.from("stack_doses").select("stack_id"),
     ]);
     if (v.error) toast.error(v.error.message);
