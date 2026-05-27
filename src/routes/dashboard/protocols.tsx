@@ -43,7 +43,10 @@ type Stack = {
   id: string; name: string; compound: string; dose: number; dose_unit: string;
   frequency: string; route: string; duration_days: number | null;
   ongoing: boolean; notes: string | null; created_at: string; source?: string | null;
+  vial_id?: string | null;
 };
+
+type VialOpt = { id: string; compound: string; vial_size_mg: number; status: string };
 
 const schema = z.object({
   name: z.string().trim().min(1, "Give your stack a name").max(120),
