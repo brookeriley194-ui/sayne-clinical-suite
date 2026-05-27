@@ -51,7 +51,7 @@ function PatientPage() {
           <div className="text-sm text-muted-foreground">Loading your protocol…</div>
         ) : error ? (
           <div className="sayne-card p-8 text-center">
-            <h1 className="font-display text-xl font-semibold mb-2">Link unavailable</h1>
+            <h1 className="font-display text-xl font-bold mb-2">Link unavailable</h1>
             <p className="text-sm text-muted-foreground">{error}</p>
           </div>
         ) : protocol ? (
