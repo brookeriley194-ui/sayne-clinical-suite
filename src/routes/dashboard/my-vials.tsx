@@ -26,7 +26,7 @@ import { PeptideCombobox } from "@/components/peptide-combobox";
 
 export const Route = createFileRoute("/dashboard/my-vials")({ component: Page });
 
-type Vial = {
+export type Vial = {
   id: string;
   compound: string;
   vial_size_mg: number;
@@ -41,17 +41,61 @@ type Vial = {
 
 const STATUSES = ["sealed", "open", "used"] as const;
 
-function potencyFromDays(days: number) {
+export function potencyFromDays(days: number) {
   return Math.max(0, Math.round(100 - (days * 100) / 60));
 }
 
-type VialUsage = {
+export type VialUsage = {
   mgUsed: number;
   percentLeft: number; // 0–100 remaining
   remainingDoses: number | null;
   totalDoses: number | null;
   doseLabel: string | null; // e.g. "0.25 mg"
 };
+
+export function computeVialUsages(
+  vialList: Vial[],
+  stacks: { id: string; vial_id: string; dose: number | null; dose_unit: string; created_at: string }[],
+  doses: { stack_id: string }[],
+): Record<string, VialUsage> {
+  const countByStack = new Map<string, number>();
+  for (const dd of doses) countByStack.set(dd.stack_id, (countByStack.get(dd.stack_id) ?? 0) + 1);
+  const u: Record<string, VialUsage> = {};
+  for (const vial of vialList) {
+    const conc = vial.concentration_mg_per_ml ??
+      (vial.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
+    const linked = stacks
+      .filter((st) => st.vial_id === vial.id)
+      .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+
+    let mgUsed = 0;
+    for (const st of linked) {
+      if (!st.dose) continue;
+      const mg = doseToMg(st.dose, st.dose_unit, conc);
+      if (mg == null) continue;
+      mgUsed += mg * (countByStack.get(st.id) ?? 0);
+    }
+    const mgRemaining = Math.max(0, vial.vial_size_mg - mgUsed);
+    const percentLeft = vial.vial_size_mg > 0
+      ? Math.max(0, Math.min(100, (mgRemaining / vial.vial_size_mg) * 100))
+      : 0;
+
+    let remainingDoses: number | null = null;
+    let totalDoses: number | null = null;
+    let doseLabel: string | null = null;
+    const primary = linked.find((st) => st.dose && doseToMg(st.dose, st.dose_unit, conc) != null);
+    if (primary && primary.dose) {
+      const mgPer = doseToMg(primary.dose, primary.dose_unit, conc)!;
+      if (mgPer > 0) {
+        totalDoses = Math.floor(vial.vial_size_mg / mgPer);
+        remainingDoses = Math.floor(mgRemaining / mgPer);
+        doseLabel = `${primary.dose} ${primary.dose_unit}`;
+      }
+    }
+    u[vial.id] = { mgUsed, percentLeft, remainingDoses, totalDoses, doseLabel };
+  }
+  return u;
+}
 
 function Page() {
   const [vials, setVials] = useState<Vial[]>([]);
