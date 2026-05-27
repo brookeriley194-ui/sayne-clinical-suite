@@ -673,3 +673,87 @@ function StackSheet({
     </SheetContent>
   );
 }
+
+type ProtocolRow = {
+  id: string; name: string; compound: string; dose: number; dose_unit: string;
+  frequency: string; route: string; duration_days: number | null;
+  ongoing: boolean; time_of_day: string; fasted: boolean; created_at: string;
+};
+
+function ProtocolStacksSection() {
+  const [rows, setRows] = useState<ProtocolRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    const { data } = await supabase.from("protocols").select("*").order("created_at", { ascending: false });
+    setRows((data ?? []) as ProtocolRow[]);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    load();
+    const channel = supabase
+      .channel("protocols-today")
+      .on("postgres_changes", { event: "*", schema: "public", table: "protocols" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const grouped = (() => {
+    const map = new Map<string, ProtocolRow[]>();
+    for (const r of rows) {
+      const arr = map.get(r.name) ?? [];
+      arr.push(r);
+      map.set(r.name, arr);
+    }
+    return Array.from(map.entries());
+  })();
+
+  return (
+    <>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="font-display text-xl font-semibold">Current Stack</h2>
+        <span className="text-xs text-muted-foreground">
+          {grouped.length} stack{grouped.length === 1 ? "" : "s"} · {rows.length} compound{rows.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      {loading ? (
+        <div className="sayne-card p-10 text-center text-sm text-muted-foreground">Loading…</div>
+      ) : grouped.length === 0 ? (
+        <EmptyCard title="Your stack is empty" body="Head to My Stacks to build one — it'll show up here in real time." />
+      ) : (
+        <div className="space-y-6">
+          {grouped.map(([name, items]) => {
+            const first = items[0];
+            return (
+              <div key={name} className="sayne-card p-5">
+                <div className="mb-3">
+                  <h3 className="font-display text-2xl font-semibold">{name}</h3>
+                  <div className="text-xs text-muted-foreground mt-1 font-mono">
+                    {items.length} compound{items.length === 1 ? "" : "s"} · {first.route} · {first.ongoing ? "Ongoing" : first.duration_days ? `${first.duration_days}d cycle` : ""}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {items.map((r) => (
+                    <div key={r.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="font-semibold text-sm">{r.compound}</div>
+                      <div className="flex items-baseline gap-1.5 font-mono">
+                        <span className="text-xl font-semibold tabular-nums">{r.dose}</span>
+                        <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="outline" className="text-[10px]">{r.frequency}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{r.time_of_day}</Badge>
+                        {r.fasted && <Badge variant="outline" className="text-[10px]">Fasted</Badge>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
