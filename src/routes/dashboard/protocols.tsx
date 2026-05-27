@@ -652,17 +652,6 @@ function BuildStackModal({
             </Select>
           </div>
 
-            <div className="space-y-2">
-              <Label>How are you taking it?</Label>
-              <Select value={route} onValueChange={(v) => setRoute(v as typeof ROUTES[number])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROUTES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="duration">How long is this cycle? (days)</Label>
