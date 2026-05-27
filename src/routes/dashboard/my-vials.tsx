@@ -548,6 +548,8 @@ const SYRINGE_OPTIONS: { type: SyringeType; label: string; sub: string }[] = [
 function VialCalcSheet({ vial, onUpdated }: { vial: Vial; onUpdated: () => void }) {
   const navigate = useNavigate();
 
+  const [size, setSize] = useState<string>(String(vial.vial_size_mg));
+  const [sizeUnit, setSizeUnit] = useState<"mg" | "mL">("mg");
   const [bacWater, setBacWater] = useState<string>(vial.bac_water_ml ? String(vial.bac_water_ml) : "");
   const [reconDate, setReconDate] = useState<Date | undefined>(
     vial.reconstituted_at ? new Date(vial.reconstituted_at) : undefined,
@@ -557,21 +559,24 @@ function VialCalcSheet({ vial, onUpdated }: { vial: Vial; onUpdated: () => void 
   const [syringeType, setSyringeType] = useState<SyringeType>("insulin_1");
   const [saving, setSaving] = useState(false);
 
+  // If sold pre-mixed in mL, treat numeric value as mg-equivalent of solution volume basis.
+  const sizeMg = size ? Number(size) : 0;
   const bacMl = bacWater ? Number(bacWater) : null;
-  const conc = bacMl && bacMl > 0 ? vial.vial_size_mg / bacMl : null;
+  const conc = bacMl && bacMl > 0 ? sizeMg / bacMl : null;
   const concMcgMl = conc ? conc * 1000 : 0;
 
   const mg = dose ? doseToMg(Number(dose), unit, conc) : null;
   const doseMcg = mg != null ? mg * 1000 : 0;
   const volumeMl = mg != null && conc && conc > 0 ? mg / conc : null;
   const units100 = volumeMl != null ? volumeMl * 100 : null;
-  const dosesPerVial = mg && mg > 0 ? Math.floor(vial.vial_size_mg / mg) : null;
+  const dosesPerVial = mg && mg > 0 && sizeMg > 0 ? Math.floor(sizeMg / mg) : null;
 
   const days = reconDate ? Math.max(0, Math.floor((Date.now() - reconDate.getTime()) / 86400000)) : 0;
   const potency = reconDate ? potencyFromDays(days) : 100;
 
   const persistVial = async () => {
-    const patch: { bac_water_ml?: number | null; concentration_mg_per_ml?: number | null; reconstituted_at?: string | null } = {};
+    const patch: { vial_size_mg?: number; bac_water_ml?: number | null; concentration_mg_per_ml?: number | null; reconstituted_at?: string | null } = {};
+    if (sizeMg > 0 && sizeMg !== vial.vial_size_mg) patch.vial_size_mg = sizeMg;
     if (bacMl != null && bacMl !== vial.bac_water_ml) patch.bac_water_ml = bacMl;
     if (conc != null && conc !== vial.concentration_mg_per_ml) patch.concentration_mg_per_ml = conc;
     const newRecon = reconDate ? reconDate.toISOString() : null;
