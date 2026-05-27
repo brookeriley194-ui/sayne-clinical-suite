@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.get-patient-protocol]
 verify_jwt = false
+
+[functions.parse-protocol]
+verify_jwt = false

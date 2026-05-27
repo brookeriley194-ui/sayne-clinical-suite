@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Pencil, Send, Copy, Check, Mail } from "lucide-react";
+import { Pencil, Send, Copy, Check, Mail, ClipboardPaste, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/dashboard-ui";
@@ -10,12 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/dashboard/protocols")({ component: Page });
 
@@ -29,10 +33,14 @@ const EXPIRY_OPTIONS = [
   { value: "never", label: "Never" },
 ] as const;
 
+const LAVENDER = "#C9A8F5";
+const MINT = "#98E4B2";
+const PINK = "#F8C8D0";
+
 type Protocol = {
   id: string; name: string; compound: string; dose: number; dose_unit: string;
   frequency: string; route: string; duration_days: number | null;
-  ongoing: boolean; notes: string | null; created_at: string;
+  ongoing: boolean; notes: string | null; created_at: string; source?: string | null;
 };
 
 const schema = z.object({
@@ -53,6 +61,7 @@ function Page() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sendTarget, setSendTarget] = useState<Protocol | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [compound, setCompound] = useState<typeof COMPOUNDS[number]>("BPC-157");
@@ -105,9 +114,23 @@ function Page() {
 
   return (
     <>
-      <PageHeader title="Protocols" subtitle="Design and assign peptide protocols for your patients." />
+      <PageHeader
+        title="Protocols"
+        subtitle="Design and assign peptide protocols for your patients."
+        action={
+          <Button
+            onClick={() => setImportOpen(true)}
+            className="gap-2 text-[#1a1a2e] hover:opacity-90"
+            style={{ backgroundColor: LAVENDER }}
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Import from AI
+          </Button>
+        }
+      />
 
       <div className="sayne-card p-6 md:p-8 mb-8">
+        
         <h2 className="font-display text-lg font-semibold mb-1">Create Protocol</h2>
         <p className="text-sm text-muted-foreground mb-6">Define the compound, dosing, and route before sending to a patient.</p>
 
@@ -220,16 +243,34 @@ function Page() {
         protocol={sendTarget}
         onClose={() => setSendTarget(null)}
       />
+
+      <ImportProtocolModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSaved={() => { setImportOpen(false); void load(); }}
+      />
     </>
   );
 }
 
 function ProtocolCard({ p, onSend }: { p: Protocol; onSend: () => void }) {
+  const isAi = p.source === "ai_import";
   return (
     <div className="sayne-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 truncate">{p.name}</div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground truncate">{p.name}</div>
+            {isAi && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold text-[#1a1a2e]"
+                style={{ backgroundColor: LAVENDER }}
+              >
+                <Sparkles className="h-2.5 w-2.5" />
+                AI Import
+              </span>
+            )}
+          </div>
           <h3 className="font-display text-xl font-semibold leading-tight truncate" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
             {p.compound}
           </h3>
@@ -246,6 +287,9 @@ function ProtocolCard({ p, onSend }: { p: Protocol; onSend: () => void }) {
         <span className="text-sm text-muted-foreground mx-1">·</span>
         <span className="text-sm">{p.frequency}</span>
       </div>
+
+
+
 
       <div className="flex items-center gap-2 flex-wrap">
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
@@ -400,3 +444,339 @@ function SendToPatientSheet({ protocol, onClose }: { protocol: Protocol | null; 
     </Sheet>
   );
 }
+
+type Parsed = {
+  compound: string | null;
+  dose: number | null;
+  dose_unit: string | null;
+  frequency: string | null;
+  route: string | null;
+  duration_days: number | null;
+  ongoing: boolean;
+  notes: string | null;
+};
+
+const EMPTY_PARSED: Parsed = {
+  compound: null, dose: null, dose_unit: null, frequency: null,
+  route: null, duration_days: null, ongoing: false, notes: null,
+};
+
+function ImportProtocolModal({
+  open, onClose, onSaved,
+}: { open: boolean; onClose: () => void; onSaved: () => void }) {
+  const { user } = useAuth();
+  const [text, setText] = useState("");
+  const [parsing, setParsing] = useState(false);
+  const [parsed, setParsed] = useState<Parsed | null>(null);
+  const [name, setName] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setText(""); setParsed(null); setName(""); setAgreed(false);
+      setParsing(false); setSaving(false);
+    }
+  }, [open]);
+
+  async function handleParse() {
+    if (text.trim().length < 5) { toast.error("Paste a protocol first"); return; }
+    setParsing(true);
+    const { data, error } = await supabase.functions.invoke("parse-protocol", {
+      body: { text: text.trim() },
+    });
+    setParsing(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "Could not parse protocol");
+      return;
+    }
+    const p = (data as any).parsed as Parsed;
+    setParsed({ ...EMPTY_PARSED, ...p });
+    if (!name && p.compound) setName(`${p.compound} Imported Protocol`);
+  }
+
+  function updateField<K extends keyof Parsed>(key: K, value: Parsed[K]) {
+    setParsed((prev) => (prev ? { ...prev, [key]: value } : prev));
+  }
+
+  const detectedCount = parsed
+    ? ([
+        parsed.compound,
+        parsed.dose,
+        parsed.frequency,
+        parsed.route,
+        parsed.ongoing ? "ongoing" : parsed.duration_days,
+        parsed.notes,
+      ].filter((v) => v !== null && v !== undefined && v !== "").length)
+    : 0;
+
+  async function handleSave() {
+    if (!user) { toast.error("Not signed in"); return; }
+    if (!parsed) return;
+    if (!agreed) { toast.error("Please acknowledge the disclaimer"); return; }
+
+    const compound = (COMPOUNDS as readonly string[]).includes(parsed.compound ?? "")
+      ? (parsed.compound as string) : "Other";
+    const dose_unit = (UNITS as readonly string[]).includes(parsed.dose_unit ?? "")
+      ? (parsed.dose_unit as string) : "mcg";
+    const frequency = (FREQUENCIES as readonly string[]).includes(parsed.frequency ?? "")
+      ? (parsed.frequency as string) : "Once Daily";
+    const route = (ROUTES as readonly string[]).includes(parsed.route ?? "")
+      ? (parsed.route as string) : "Subcutaneous";
+
+    if (!parsed.dose || parsed.dose <= 0) { toast.error("Dose is required"); return; }
+
+    const payload = {
+      name: name.trim() || `${compound} Protocol`,
+      compound,
+      dose: parsed.dose,
+      dose_unit,
+      frequency,
+      route,
+      ongoing: parsed.ongoing || !parsed.duration_days,
+      duration_days: parsed.ongoing ? null : parsed.duration_days,
+      notes: parsed.notes,
+      doctor_id: user.id,
+      source: "ai_import",
+    };
+
+    setSaving(true);
+    const { error } = await supabase.from("protocols").insert(payload);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Protocol imported successfully");
+    onSaved();
+  }
+
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl flex items-center gap-2">
+            <Sparkles className="h-5 w-5" style={{ color: LAVENDER }} />
+            Import Protocol from AI
+          </DialogTitle>
+          <DialogDescription>
+            Paste a protocol generated by ChatGPT, Claude, Gemini, or any other AI tool and Sayne will parse it into a tracked protocol.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 pt-2">
+          <div className="space-y-2">
+            <Label>Paste your AI-generated protocol here</Label>
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={6}
+              maxLength={8000}
+              placeholder="e.g. BPC-157 250mcg subcutaneous once daily for 12 weeks, reconstituted in 2mL bacteriostatic water..."
+              className="font-mono text-sm"
+              style={{ backgroundColor: `color-mix(in oklab, ${LAVENDER} 14%, transparent)`, borderColor: `color-mix(in oklab, ${LAVENDER} 40%, transparent)` }}
+            />
+          </div>
+
+          <Button
+            onClick={handleParse}
+            disabled={parsing}
+            className="w-full text-[#1a1a2e] hover:opacity-90"
+            style={{ backgroundColor: LAVENDER }}
+          >
+            <Sparkles className="h-4 w-4" />
+            {parsing ? "Parsing…" : "Parse Protocol"}
+          </Button>
+
+          {parsed && (
+            <div className="sayne-card p-5 space-y-4">
+              <div>
+                <div className="flex items-baseline justify-between mb-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Sayne detected {detectedCount} of 6 fields
+                  </span>
+                  <span className="text-xs font-mono tabular-nums" style={{ color: MINT }}>
+                    {Math.round((detectedCount / 6) * 100)}%
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "var(--panel)" }}>
+                  <div
+                    className="h-full transition-all"
+                    style={{ width: `${(detectedCount / 6) * 100}%`, backgroundColor: MINT }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">Protocol Name</Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Name this protocol"
+                  maxLength={120}
+                />
+              </div>
+
+              <ParsedRow label="Compound" value={parsed.compound}>
+                <Select
+                  value={parsed.compound ?? ""}
+                  onValueChange={(v) => updateField("compound", v)}
+                >
+                  <SelectTrigger className="h-8"><SelectValue placeholder="Pick a compound" /></SelectTrigger>
+                  <SelectContent>
+                    {COMPOUNDS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </ParsedRow>
+
+              <ParsedRow label="Dose" value={parsed.dose != null ? `${parsed.dose} ${parsed.dose_unit ?? ""}` : null}>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={parsed.dose ?? ""}
+                    onChange={(e) => updateField("dose", e.target.value ? Number(e.target.value) : null)}
+                    className="h-8 font-mono"
+                    placeholder="Dose"
+                  />
+                  <Select
+                    value={parsed.dose_unit ?? "mcg"}
+                    onValueChange={(v) => updateField("dose_unit", v)}
+                  >
+                    <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {UNITS.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </ParsedRow>
+
+              <ParsedRow label="Frequency" value={parsed.frequency}>
+                <Select
+                  value={parsed.frequency ?? ""}
+                  onValueChange={(v) => updateField("frequency", v)}
+                >
+                  <SelectTrigger className="h-8"><SelectValue placeholder="Pick a frequency" /></SelectTrigger>
+                  <SelectContent>
+                    {FREQUENCIES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </ParsedRow>
+
+              <ParsedRow label="Route" value={parsed.route}>
+                <Select
+                  value={parsed.route ?? ""}
+                  onValueChange={(v) => updateField("route", v)}
+                >
+                  <SelectTrigger className="h-8"><SelectValue placeholder="Pick a route" /></SelectTrigger>
+                  <SelectContent>
+                    {ROUTES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </ParsedRow>
+
+              <ParsedRow
+                label="Duration"
+                value={parsed.ongoing ? "Ongoing" : parsed.duration_days ? `${parsed.duration_days} days` : null}
+              >
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="3650"
+                    value={parsed.duration_days ?? ""}
+                    onChange={(e) => updateField("duration_days", e.target.value ? Number(e.target.value) : null)}
+                    disabled={parsed.ongoing}
+                    className="h-8 font-mono flex-1"
+                    placeholder="Days"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateField("ongoing", !parsed.ongoing)}
+                    className="text-xs px-2.5 py-1 rounded-full whitespace-nowrap"
+                    style={{
+                      backgroundColor: parsed.ongoing ? "var(--primary)" : "var(--panel)",
+                      color: parsed.ongoing ? "#fff" : "var(--foreground)",
+                    }}
+                  >
+                    {parsed.ongoing ? "Ongoing ✓" : "Mark ongoing"}
+                  </button>
+                </div>
+              </ParsedRow>
+
+              <ParsedRow label="Notes" value={parsed.notes}>
+                <Textarea
+                  value={parsed.notes ?? ""}
+                  onChange={(e) => updateField("notes", e.target.value)}
+                  rows={2}
+                  maxLength={2000}
+                  placeholder="Special instructions"
+                  className="text-sm"
+                />
+              </ParsedRow>
+            </div>
+          )}
+
+          {parsed && (
+            <>
+              <p
+                className="text-xs italic"
+                style={{ color: `color-mix(in oklab, ${LAVENDER} 70%, var(--muted-foreground))` }}
+              >
+                This protocol was generated by an external AI tool and imported by you for tracking purposes. Sayne does not provide medical advice. Always consult your physician before beginning any protocol.
+              </p>
+
+              <label className="flex items-start gap-2 cursor-pointer">
+                <Checkbox checked={agreed} onCheckedChange={(v) => setAgreed(v === true)} className="mt-0.5" />
+                <span className="text-xs text-muted-foreground">
+                  I understand this protocol was AI-generated and acknowledge the disclaimer above.
+                </span>
+              </label>
+
+              <Button
+                onClick={handleSave}
+                disabled={!agreed || saving}
+                className="w-full text-[#1a1a2e] hover:opacity-90"
+                style={{ backgroundColor: MINT }}
+              >
+                <Check className="h-4 w-4" />
+                {saving ? "Saving…" : "Save to My Protocols"}
+              </Button>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ParsedRow({
+  label, value, children,
+}: { label: string; value: string | number | null; children: React.ReactNode }) {
+  const detected = value !== null && value !== undefined && value !== "";
+  return (
+    <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
+      <div className="text-xs uppercase tracking-wider text-muted-foreground pt-1.5">{label}</div>
+      <div className="min-w-0">
+        {detected ? (
+          <div
+            className="text-sm font-medium"
+            style={{ color: "var(--foreground)", fontFamily: label === "Compound" ? "'Space Grotesk', sans-serif" : undefined }}
+          >
+            {String(value)}
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+              style={{ backgroundColor: PINK, color: "#7a2d3d" }}
+            >
+              Not detected
+            </span>
+            {children}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
