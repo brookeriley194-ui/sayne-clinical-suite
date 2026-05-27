@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SayneLogo } from "@/components/sayne-logo";
+import { SyringeVisualizer } from "@/components/syringe-visualizer";
 
 export const Route = createFileRoute("/p/$token")({ component: PatientPage });
 
@@ -66,16 +67,19 @@ function PatientPage() {
 }
 
 function ProtocolView({ p }: { p: Protocol }) {
-  // Compute draw volume assuming 5mg vial reconstituted in 2mL (display reference)
-  const drawVolMl = (() => {
-    const mg = p.dose_unit === "mcg" ? p.dose / 1000 : p.dose_unit === "mg" ? p.dose : null;
-    if (!mg) return null;
-    const concentration = 5 / 2; // mg/mL example
-    return mg / concentration;
-  })();
+  // Normalize to mcg + assume a reference reconstitution of 5mg in 2mL → 2500 mcg/mL.
+  // (Doctors can override per-protocol once vials are wired up.)
+  const dose_mcg =
+    p.dose_unit === "mcg" ? p.dose :
+    p.dose_unit === "mg" ? p.dose * 1000 :
+    p.dose; // IU treated 1:1 for display
+  const concentration_mcg_per_ml = 2500;
+
+  // Mock potency for now (real value will come from vial reconstitution date).
+  const potency_score = 92;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">{p.name}</div>
         <h1
@@ -86,36 +90,26 @@ function ProtocolView({ p }: { p: Protocol }) {
         </h1>
       </div>
 
-      <SyringeVisualizer drawMl={drawVolMl} dose={p.dose} unit={p.dose_unit} />
+      <SyringeVisualizer
+        compound={p.compound}
+        dose_mcg={dose_mcg}
+        concentration_mcg_per_ml={concentration_mcg_per_ml}
+        potency_score={potency_score}
+      />
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="sayne-card p-4">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Dose</div>
-          <div className="font-mono text-xl font-semibold">
-            {p.dose} <span className="text-sm text-muted-foreground">{p.dose_unit}</span>
-          </div>
+      <div className="sayne-card p-5">
+        <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Instructions</div>
+        <p className="text-base">{p.frequency}</p>
+        <div className="flex items-center gap-2 flex-wrap mt-3">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
+            style={{ backgroundColor: "var(--panel)", color: "var(--foreground)", border: "1px solid var(--border)" }}>
+            {p.route}
+          </span>
+          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-mono"
+            style={{ backgroundColor: "color-mix(in oklab, var(--secondary) 35%, transparent)", color: "var(--foreground)" }}>
+            {p.ongoing ? "Ongoing" : `${p.duration_days ?? "—"} days`}
+          </span>
         </div>
-        <div className="sayne-card p-4">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Draw Volume</div>
-          <div className="font-mono text-xl font-semibold" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            {drawVolMl != null ? `${drawVolMl.toFixed(2)} mL` : "—"}
-          </div>
-        </div>
-        <div className="sayne-card p-4 col-span-2">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Frequency</div>
-          <div className="text-base">{p.frequency}</div>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium"
-          style={{ backgroundColor: "var(--panel)", color: "var(--foreground)", border: "1px solid var(--border)" }}>
-          {p.route}
-        </span>
-        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-mono"
-          style={{ backgroundColor: "color-mix(in oklab, var(--secondary) 35%, transparent)", color: "var(--foreground)" }}>
-          {p.ongoing ? "Ongoing" : `${p.duration_days ?? "—"} days`}
-        </span>
       </div>
 
       {p.notes && (
@@ -124,28 +118,6 @@ function ProtocolView({ p }: { p: Protocol }) {
           <p className="text-sm whitespace-pre-wrap leading-relaxed">{p.notes}</p>
         </div>
       )}
-    </div>
-  );
-}
-
-function SyringeVisualizer({ drawMl, dose, unit }: { drawMl: number | null; dose: number; unit: string }) {
-  const totalMl = 1; // 1mL syringe reference
-  const pct = drawMl != null ? Math.min(100, Math.max(2, (drawMl / totalMl) * 100)) : 0;
-  return (
-    <div className="sayne-card p-5">
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">Syringe (1 mL reference)</div>
-      <div className="relative h-10 w-full rounded-full overflow-hidden border" style={{ borderColor: "var(--border)", backgroundColor: "var(--panel)" }}>
-        <div
-          className="absolute inset-y-0 left-0 transition-all"
-          style={{ width: `${pct}%`, backgroundColor: "var(--primary)" }}
-        />
-        <div className="absolute inset-0 flex items-center justify-between px-3 font-mono text-xs"
-          style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          <span>0.0 mL</span>
-          <span className="font-semibold">{drawMl != null ? `${drawMl.toFixed(2)} mL` : `${dose}${unit}`}</span>
-          <span>1.0 mL</span>
-        </div>
-      </div>
     </div>
   );
 }
