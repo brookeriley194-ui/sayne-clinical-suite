@@ -820,7 +820,7 @@ function BuildStackModal({
             <Button type="submit" disabled={saving}
               className="hover:opacity-90"
               style={{ backgroundColor: BABY_BLUE, color: NAVY }}>
-              {saving ? "Saving…" : "Save Stack"}
+              {saving ? "Saving…" : editing ? "Save Changes" : "Save Stack"}
             </Button>
           </div>
         </form>
