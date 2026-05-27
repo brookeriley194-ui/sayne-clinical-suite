@@ -328,42 +328,40 @@ function BuildStackModal({
 }: { open: boolean; onClose: () => void; onSaved: () => void; userId: string | null }) {
   const [name, setName] = useState("");
   const [rows, setRows] = useState<CompoundRow[]>([emptyRow()]);
-  const [frequency, setFrequency] = useState<typeof FREQUENCIES[number]>("Once Daily");
-  const [customDays, setCustomDays] = useState<number[]>([]);
   const [route, setRoute] = useState<typeof ROUTES[number]>("Subcutaneous");
   const [ongoing, setOngoing] = useState(false);
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
   const [vials, setVials] = useState<VialOpt[]>([]);
-  const [vialProtocols, setVialProtocols] = useState<Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean }>>({});
+  const [vialProtocols, setVialProtocols] = useState<Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean; time_of_day: string; fasted: boolean }>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setName(""); setRows([emptyRow()]);
-      setFrequency("Once Daily"); setCustomDays([]);
       setRoute("Subcutaneous"); setOngoing(false);
       setDuration(""); setNotes(""); setSaving(false);
       return;
     }
     void supabase.from("vials")
-      .select("id, compound, vial_size_mg, status")
+      .select("id, compound, vial_size_mg, status, default_dose, default_dose_unit")
       .neq("status", "used")
       .order("created_at", { ascending: false })
       .then(({ data }) => setVials((data ?? []) as VialOpt[]));
 
     // Pull most recent protocol per vial so we can autofill dose/freq/cycle
     void supabase.from("protocols")
-      .select("vial_id, dose, dose_unit, frequency, duration_days, ongoing, created_at")
+      .select("vial_id, dose, dose_unit, frequency, duration_days, ongoing, time_of_day, fasted, created_at")
       .not("vial_id", "is", null)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        const map: Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean }> = {};
+        const map: Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean; time_of_day: string; fasted: boolean }> = {};
         for (const p of (data ?? []) as any[]) {
           if (p.vial_id && !map[p.vial_id]) {
             map[p.vial_id] = {
               dose: p.dose, dose_unit: p.dose_unit, frequency: p.frequency,
               duration_days: p.duration_days, ongoing: p.ongoing,
+              time_of_day: p.time_of_day ?? "AM", fasted: !!p.fasted,
             };
           }
         }
@@ -402,18 +400,27 @@ function BuildStackModal({
         patch.compound = "Other";
         patch.customCompound = vial.compound;
       }
+      // Prefer the dose stored directly on the vial (from My Vials calculator)
+      if (vial.default_dose != null) patch.dose = String(vial.default_dose);
+      if (vial.default_dose_unit && (UNITS as readonly string[]).includes(vial.default_dose_unit)) {
+        patch.dose_unit = vial.default_dose_unit as typeof UNITS[number];
+      }
     }
     const prior = vialProtocols[vialId];
     if (prior) {
-      if (prior.dose != null) patch.dose = String(prior.dose);
-      if (prior.dose_unit && (UNITS as readonly string[]).includes(prior.dose_unit)) {
+      if (patch.dose == null && prior.dose != null) patch.dose = String(prior.dose);
+      if (patch.dose_unit == null && prior.dose_unit && (UNITS as readonly string[]).includes(prior.dose_unit)) {
         patch.dose_unit = prior.dose_unit as typeof UNITS[number];
       }
-      // Only set shared schedule if this is the first row being linked
+      if (prior.frequency && (FREQUENCIES as readonly string[]).includes(prior.frequency)) {
+        patch.frequency = prior.frequency as typeof FREQUENCIES[number];
+      }
+      if (prior.time_of_day && (TIMES as readonly string[]).includes(prior.time_of_day)) {
+        patch.time_of_day = prior.time_of_day as typeof TIMES[number];
+      }
+      patch.fasted = !!prior.fasted;
+      // Cycle is shared across the stack — only apply when the first vial is linked
       if (i === 0) {
-        if (prior.frequency && (FREQUENCIES as readonly string[]).includes(prior.frequency)) {
-          setFrequency(prior.frequency as typeof FREQUENCIES[number]);
-        }
         if (prior.ongoing) { setOngoing(true); setDuration(""); }
         else if (prior.duration_days != null) { setOngoing(false); setDuration(String(prior.duration_days)); }
       }
@@ -428,29 +435,41 @@ function BuildStackModal({
   function removeRow(i: number) {
     setRows((prev) => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
   }
-  function toggleDay(d: number) {
-    setCustomDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort());
+  function toggleRowDay(i: number, d: number) {
+    setRows((prev) => prev.map((r, idx) => {
+      if (idx !== i) return r;
+      const has = r.customDays.includes(d);
+      return { ...r, customDays: has ? r.customDays.filter((x) => x !== d) : [...r.customDays, d].sort() };
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!userId) { toast.error("Not signed in"); return; }
 
-    const compoundsPayload = rows.map((r) => ({
-      compound: (r.compound === "Other" ? r.customCompound : r.compound).trim(),
-      dose: Number(r.dose),
-      dose_unit: r.dose_unit,
-      vial_id: r.vial_id === "none" ? null : r.vial_id,
-    }));
+    const compoundsPayload = rows.map((r) => {
+      let freqValue: string = r.frequency;
+      if (r.frequency === "Custom") {
+        freqValue = r.customDays.length
+          ? `Custom (${r.customDays.map((d) => DAY_LABELS[d]).join(", ")})`
+          : "Custom";
+      }
+      return {
+        compound: (r.compound === "Other" ? r.customCompound : r.compound).trim(),
+        dose: Number(r.dose),
+        dose_unit: r.dose_unit,
+        vial_id: r.vial_id === "none" ? null : r.vial_id,
+        frequency: freqValue,
+        time_of_day: r.time_of_day,
+        fasted: r.fasted,
+      };
+    });
 
-    let freqValue: string = frequency;
-    if (frequency === "Custom") {
-      if (customDays.length === 0) { toast.error("Pick at least one day for Custom"); return; }
-      freqValue = `Custom (${customDays.map((d) => DAY_LABELS[d]).join(", ")})`;
-    }
+    const badCustom = rows.findIndex((r) => r.frequency === "Custom" && r.customDays.length === 0);
+    if (badCustom !== -1) { toast.error(`Compound #${badCustom + 1}: pick at least one day for Custom`); return; }
 
     const parsed = schema.safeParse({
-      name, compounds: compoundsPayload, frequency: freqValue, route, ongoing,
+      name, compounds: compoundsPayload, route, ongoing,
       duration_days: ongoing ? null : (duration ? Number(duration) : null), notes,
     });
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
@@ -461,7 +480,9 @@ function BuildStackModal({
       compound: c.compound,
       dose: c.dose,
       dose_unit: c.dose_unit,
-      frequency: parsed.data.frequency,
+      frequency: c.frequency,
+      time_of_day: c.time_of_day,
+      fasted: c.fasted,
       route: parsed.data.route,
       ongoing: parsed.data.ongoing,
       duration_days: parsed.data.duration_days,
