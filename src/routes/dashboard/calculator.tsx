@@ -190,7 +190,7 @@ function Page() {
                   className="flex-1 rounded-md border bg-background px-3 py-2"
                 />
                 <div className="inline-flex rounded-md border bg-background p-0.5">
-                  {(["mcg", "units", "mL"] as DoseUnit[]).map((u) => (
+                  {(["mcg", "mg", "units", "mL"] as DoseUnit[]).map((u) => (
                     <button
                       key={u}
                       type="button"
