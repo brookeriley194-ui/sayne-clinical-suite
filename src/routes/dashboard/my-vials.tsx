@@ -151,7 +151,7 @@ function Page() {
   );
 }
 
-function VialCard({ vial, onDelete }: { vial: Vial; onDelete: () => void }) {
+function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () => void; onMarkEmpty: () => void }) {
   const days = vial.reconstituted_at
     ? differenceInDays(new Date(), new Date(vial.reconstituted_at))
     : null;
