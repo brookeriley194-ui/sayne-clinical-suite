@@ -89,7 +89,7 @@ function Page() {
       toast.success("Added to stack — finish setting it up");
       await load();
       setEditing(data as Stack);
-      setPrefill(null);
+
       setSheetOpen(true);
     })();
   }, []);
