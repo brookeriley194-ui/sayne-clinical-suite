@@ -379,7 +379,7 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       reconstituted_at: reconDate ? reconDate.toISOString() : null,
       status,
       lot_number: lot.trim() || null,
-      notes: notes.trim() || null,
+      notes: (vialUnit === "mL" ? `Vial size entered in mL. ` : "") + (notes.trim() || "") || null,
     });
     setSaving(false);
     if (error) return toast.error(error.message);
