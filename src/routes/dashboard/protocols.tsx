@@ -646,7 +646,7 @@ function BuildStackModal({
         <DialogHeader>
           <DialogTitle className="font-display text-xl flex items-center gap-2">
             <Plus className="h-5 w-5" style={{ color: BABY_BLUE }} />
-            Build a Stack
+            {editing ? "Edit Stack" : "Build a Stack"}
           </DialogTitle>
           <DialogDescription>
             Stack one or more compounds, link vials, and set the schedule.
