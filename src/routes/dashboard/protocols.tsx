@@ -797,3 +797,35 @@ function ParsedRow({
     </div>
   );
 }
+
+function ResearchLog({ stacks, loading }: { stacks: Stack[]; loading: boolean }) {
+  if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  const withNotes = stacks.filter((s) => s.notes && s.notes.trim().length > 0);
+  if (stacks.length === 0) {
+    return (
+      <div className="sayne-card p-10 text-center">
+        <p className="text-sm text-muted-foreground">No stacks yet — add notes to a stack to start a research log.</p>
+      </div>
+    );
+  }
+  if (withNotes.length === 0) {
+    return (
+      <div className="sayne-card p-10 text-center">
+        <p className="text-sm text-muted-foreground">No journal entries yet. Add notes when building or editing a stack.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {withNotes.map((s) => (
+        <div key={s.id} className="sayne-card p-5">
+          <div className="flex items-baseline justify-between mb-2 gap-2 flex-wrap">
+            <h3 className="font-display text-base font-semibold">{s.compound}</h3>
+            <span className="text-[11px] text-muted-foreground font-mono">{format(new Date(s.created_at), "MMM d, yyyy")}</span>
+          </div>
+          <p className="text-sm whitespace-pre-wrap text-foreground/90">{s.notes}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
