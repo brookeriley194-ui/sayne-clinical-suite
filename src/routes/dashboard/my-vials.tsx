@@ -458,7 +458,16 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       <form onSubmit={submit} className="space-y-4 py-4">
         <div className="space-y-2">
           <Label>Compound *</Label>
-          <Input value={compound} onChange={(e) => setCompound(e.target.value)} placeholder="e.g. Semaglutide" />
+          <PeptideCombobox value={compound} onChange={setCompound} placeholder="Select peptide…" />
+          {compound === "Other" && (
+            <Input
+              autoFocus
+              value={customCompound}
+              onChange={(e) => setCustomCompound(e.target.value)}
+              placeholder="Enter peptide name"
+              className="mt-2"
+            />
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
