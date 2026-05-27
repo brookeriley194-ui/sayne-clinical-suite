@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, ClipboardPaste, Sparkles, Check, BookOpen, Share2, CircleDot } from "lucide-react";
+import { Plus, ClipboardPaste, Sparkles, Check, BookOpen, Share2, CircleDot, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/dashboard-ui";
@@ -43,7 +43,7 @@ type Stack = {
   id: string; name: string; compound: string; dose: number; dose_unit: string;
   frequency: string; route: string; duration_days: number | null;
   ongoing: boolean; notes: string | null; created_at: string; source?: string | null;
-  vial_id?: string | null;
+  vial_id?: string | null; time_of_day: string; fasted: boolean;
 };
 
 type VialOpt = {
@@ -78,6 +78,7 @@ function Page() {
   const [loading, setLoading] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
+  const [editingStack, setEditingStack] = useState<{ name: string; rows: Stack[] } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -93,6 +94,30 @@ function Page() {
     if (sessionStorage.getItem("stack:prefill")) setBuildOpen(true);
   }, []);
 
+  const groupedStacks = (() => {
+    const map = new Map<string, Stack[]>();
+    for (const s of stacks) {
+      const arr = map.get(s.name) ?? [];
+      arr.push(s);
+      map.set(s.name, arr);
+    }
+    return Array.from(map.entries()).map(([name, rows]) => ({ name, rows }));
+  })();
+
+  async function handleDeleteStack(name: string, rows: Stack[]) {
+    if (!confirm(`Delete the entire "${name}" stack? This removes ${rows.length} compound${rows.length === 1 ? "" : "s"}.`)) return;
+    const ids = rows.map((r) => r.id);
+    const { error } = await supabase.from("protocols").delete().in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Stack deleted");
+    void load();
+  }
+
+  function handleEditStack(name: string, rows: Stack[]) {
+    setEditingStack({ name, rows });
+    setBuildOpen(true);
+  }
+
   return (
     <>
       <PageHeader
@@ -101,7 +126,7 @@ function Page() {
         action={
           <div className="flex gap-2 flex-wrap">
             <Button
-              onClick={() => setBuildOpen(true)}
+              onClick={() => { setEditingStack(null); setBuildOpen(true); }}
               className="gap-2 hover:opacity-90"
               style={{ backgroundColor: BABY_BLUE, color: NAVY }}
             >
@@ -129,18 +154,26 @@ function Page() {
         <TabsContent value="stacks">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-display text-lg font-semibold">My Stacks</h2>
-            <span className="text-xs text-muted-foreground font-mono">{stacks.length} total</span>
+            <span className="text-xs text-muted-foreground font-mono">{groupedStacks.length} stack{groupedStacks.length === 1 ? "" : "s"}</span>
           </div>
 
           {loading ? (
             <div className="text-sm text-muted-foreground">Loading…</div>
-          ) : stacks.length === 0 ? (
+          ) : groupedStacks.length === 0 ? (
             <div className="sayne-card p-10 text-center">
               <p className="text-sm text-muted-foreground">No stacks yet. Build one or import from AI to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {stacks.map((s) => <StackCard key={s.id} s={s} />)}
+            <div className="space-y-6">
+              {groupedStacks.map((g) => (
+                <StackGroup
+                  key={g.name}
+                  name={g.name}
+                  rows={g.rows}
+                  onEdit={() => handleEditStack(g.name, g.rows)}
+                  onDelete={() => handleDeleteStack(g.name, g.rows)}
+                />
+              ))}
             </div>
           )}
         </TabsContent>
@@ -158,11 +191,82 @@ function Page() {
 
       <BuildStackModal
         open={buildOpen}
-        onClose={() => setBuildOpen(false)}
-        onSaved={() => { setBuildOpen(false); void load(); }}
+        onClose={() => { setBuildOpen(false); setEditingStack(null); }}
+        onSaved={() => { setBuildOpen(false); setEditingStack(null); void load(); }}
         userId={user?.id ?? null}
+        editing={editingStack}
       />
     </>
+  );
+}
+
+function StackGroup({
+  name, rows, onEdit, onDelete,
+}: { name: string; rows: Stack[]; onEdit: () => void; onDelete: () => void }) {
+  const first = rows[0];
+  const status = deriveStatus(first);
+  const remaining = daysRemaining(first);
+  return (
+    <div className="sayne-card p-5">
+      <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+              style={{ backgroundColor: `color-mix(in oklab, ${status.color} 35%, transparent)`, color: NAVY }}
+            >
+              {status.label}
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+              {rows.length} compound{rows.length === 1 ? "" : "s"} · {first.route} · {first.ongoing ? "Ongoing" : remaining != null ? `${remaining}d left` : `${first.duration_days}d`}
+            </span>
+          </div>
+          <h3
+            className="text-2xl font-semibold leading-tight truncate"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            {name}
+          </h3>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={onEdit} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button size="sm" variant="outline" onClick={onDelete}
+            className="gap-1.5 text-destructive hover:text-destructive">
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {rows.map((r) => (
+          <div key={r.id} className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)" }}>
+            <div className="font-semibold text-sm">{r.compound}</div>
+            <div className="flex items-baseline gap-1.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <span className="text-xl font-semibold tabular-nums">{r.dose}</span>
+              <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
+                style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
+                {r.frequency}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
+                style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
+                {r.time_of_day}
+              </span>
+              {r.fasted && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
+                  style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
+                  Fasted
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -324,8 +428,8 @@ const emptyRow = (): CompoundRow => ({
 });
 
 function BuildStackModal({
-  open, onClose, onSaved, userId,
-}: { open: boolean; onClose: () => void; onSaved: () => void; userId: string | null }) {
+  open, onClose, onSaved, userId, editing,
+}: { open: boolean; onClose: () => void; onSaved: () => void; userId: string | null; editing?: { name: string; rows: Stack[] } | null }) {
   const [name, setName] = useState("");
   const [rows, setRows] = useState<CompoundRow[]>([emptyRow()]);
   const [route, setRoute] = useState<typeof ROUTES[number]>("Subcutaneous");
@@ -368,6 +472,37 @@ function BuildStackModal({
         setVialProtocols(map);
       });
 
+    // Prefill from existing stack when editing
+    if (editing && editing.rows.length) {
+      const first = editing.rows[0];
+      setName(editing.name);
+      setRoute((ROUTES as readonly string[]).includes(first.route) ? (first.route as typeof ROUTES[number]) : "Subcutaneous");
+      setOngoing(first.ongoing);
+      setDuration(first.duration_days != null ? String(first.duration_days) : "");
+      setNotes(first.notes ?? "");
+      setRows(editing.rows.map((s) => {
+        const r = emptyRow();
+        if ((COMPOUNDS as readonly string[]).includes(s.compound)) r.compound = s.compound;
+        else { r.compound = "Other"; r.customCompound = s.compound; }
+        r.dose = String(s.dose);
+        if ((UNITS as readonly string[]).includes(s.dose_unit)) r.dose_unit = s.dose_unit as typeof UNITS[number];
+        r.vial_id = s.vial_id ?? "none";
+        if ((FREQUENCIES as readonly string[]).includes(s.frequency)) {
+          r.frequency = s.frequency as typeof FREQUENCIES[number];
+        } else if (s.frequency.startsWith("Custom")) {
+          r.frequency = "Custom";
+          const match = s.frequency.match(/\(([^)]+)\)/);
+          if (match) {
+            r.customDays = match[1].split(",").map((d) => DAY_LABELS.indexOf(d.trim())).filter((i) => i >= 0);
+          }
+        }
+        if ((TIMES as readonly string[]).includes(s.time_of_day)) r.time_of_day = s.time_of_day as typeof TIMES[number];
+        r.fasted = !!s.fasted;
+        return r;
+      }));
+      return;
+    }
+
     const raw = sessionStorage.getItem("stack:prefill");
     if (raw) {
       sessionStorage.removeItem("stack:prefill");
@@ -386,7 +521,7 @@ function BuildStackModal({
         setRows([r]);
       } catch { /* ignore */ }
     }
-  }, [open]);
+  }, [open, editing]);
 
   function handleVialChange(i: number, vialId: string) {
     if (vialId === "none") { updateRow(i, { vial_id: "none" }); return; }
@@ -493,10 +628,15 @@ function BuildStackModal({
     }));
 
     setSaving(true);
+    if (editing) {
+      const oldIds = editing.rows.map((r) => r.id);
+      const { error: delErr } = await supabase.from("protocols").delete().in("id", oldIds);
+      if (delErr) { setSaving(false); toast.error(delErr.message); return; }
+    }
     const { error } = await supabase.from("protocols").insert(inserts);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(inserts.length > 1 ? `Stack with ${inserts.length} compounds saved` : "Stack saved");
+    toast.success(editing ? "Stack updated" : (inserts.length > 1 ? `Stack with ${inserts.length} compounds saved` : "Stack saved"));
     onSaved();
   }
 
@@ -506,7 +646,7 @@ function BuildStackModal({
         <DialogHeader>
           <DialogTitle className="font-display text-xl flex items-center gap-2">
             <Plus className="h-5 w-5" style={{ color: BABY_BLUE }} />
-            Build a Stack
+            {editing ? "Edit Stack" : "Build a Stack"}
           </DialogTitle>
           <DialogDescription>
             Stack one or more compounds, link vials, and set the schedule.
@@ -680,7 +820,7 @@ function BuildStackModal({
             <Button type="submit" disabled={saving}
               className="hover:opacity-90"
               style={{ backgroundColor: BABY_BLUE, color: NAVY }}>
-              {saving ? "Saving…" : "Save Stack"}
+              {saving ? "Saving…" : editing ? "Save Changes" : "Save Stack"}
             </Button>
           </div>
         </form>
