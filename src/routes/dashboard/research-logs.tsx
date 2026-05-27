@@ -44,7 +44,7 @@ function Page() {
     const past30 = format(addDays(new Date(), -30), "yyyy-MM-dd");
     const [s, v, d, dc] = await Promise.all([
       supabase.from("stacks").select("*").order("created_at", { ascending: false }),
-      supabase.from("vials").select("id, compound, reconstituted_at, vial_size_mg"),
+      supabase.from("vials").select("id, compound, reconstituted_at, vial_size_mg, concentration_mg_per_ml, bac_water_ml"),
       supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
       supabase.from("stack_doses").select("stack_id"),
     ]);
