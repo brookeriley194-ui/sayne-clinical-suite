@@ -571,7 +571,7 @@ function VialCalcSheet({ vial, onUpdated }: { vial: Vial; onUpdated: () => void 
   const potency = reconDate ? potencyFromDays(days) : 100;
 
   const persistVial = async () => {
-    const patch: Record<string, unknown> = {};
+    const patch: { bac_water_ml?: number | null; concentration_mg_per_ml?: number | null; reconstituted_at?: string | null } = {};
     if (bacMl != null && bacMl !== vial.bac_water_ml) patch.bac_water_ml = bacMl;
     if (conc != null && conc !== vial.concentration_mg_per_ml) patch.concentration_mg_per_ml = conc;
     const newRecon = reconDate ? reconDate.toISOString() : null;
