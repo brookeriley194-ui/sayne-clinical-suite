@@ -400,11 +400,16 @@ function StackCard({
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="text-muted-foreground">Cycle progress</span>
           <span className="font-mono tabular-nums">
-            {done ? "Complete" : `${daysRemaining}d remaining`} · {daysElapsed}/{stack.cycle_length_days}
+            {ongoing
+              ? `Ongoing · day ${daysElapsed + 1}`
+              : `${done ? "Complete" : `${daysRemaining}d remaining`} · ${daysElapsed}/${stack.cycle_length_days}`}
           </span>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div className={cn("h-full transition-all", done ? "bg-muted-foreground" : "bg-primary")} style={{ width: `${pct}%` }} />
+          <div
+            className={cn("h-full transition-all", ongoing ? "bg-primary/60" : done ? "bg-muted-foreground" : "bg-primary")}
+            style={{ width: ongoing ? "100%" : `${pct}%` }}
+          />
         </div>
       </div>
     </div>
