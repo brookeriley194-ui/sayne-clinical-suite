@@ -120,10 +120,33 @@ function Page() {
               </select>
             </label>
 
-            <label className="block">
-              <span className="text-muted-foreground">Vial size (mg)</span>
-              <input type="number" value={vialMg} onChange={(e) => setVialMg(+e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
-            </label>
+            <div>
+              <span className="text-muted-foreground">Vial size</span>
+              <div className="mt-1 flex gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={vialAmount}
+                  onChange={(e) => setVialAmount(+e.target.value)}
+                  className="flex-1 rounded-md border bg-background px-3 py-2"
+                />
+                <div className="inline-flex rounded-md border bg-background p-0.5">
+                  {(["mg", "mL"] as MassUnit[]).map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => setVialUnit(u)}
+                      className={`px-3 py-1 text-xs rounded ${vialUnit === u ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {vialUnit === "mL" && (
+                <div className="mt-1 text-xs text-muted-foreground">Pre-mixed liquid vials — total volume in mL.</div>
+              )}
+            </div>
 
             {/* Bac. water with unit toggle */}
             <div>
