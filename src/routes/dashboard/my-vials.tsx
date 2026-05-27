@@ -56,6 +56,7 @@ function Page() {
   const [usage, setUsage] = useState<Record<string, VialUsage>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [tab, setTab] = useState<"all" | "open" | "sealed" | "used">("all");
 
   const load = async () => {
