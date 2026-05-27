@@ -85,6 +85,8 @@ function Page() {
   const doseMcg =
     doseUnit === "mcg"
       ? doseValue
+      : doseUnit === "mg"
+      ? doseValue * 1000
       : doseUnit === "mL"
       ? doseValue * concentration_mcg_per_ml
       : doseValue * 0.01 * concentration_mcg_per_ml;
