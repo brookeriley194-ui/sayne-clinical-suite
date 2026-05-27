@@ -121,12 +121,50 @@ export type Database = {
         }
         Relationships: []
       }
+      stack_doses: {
+        Row: {
+          created_at: string
+          doctor_id: string
+          dose_date: string
+          id: string
+          stack_id: string
+          taken_at: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id: string
+          dose_date: string
+          id?: string
+          stack_id: string
+          taken_at?: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string
+          dose_date?: string
+          id?: string
+          stack_id?: string
+          taken_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stack_doses_stack_id_fkey"
+            columns: ["stack_id"]
+            isOneToOne: false
+            referencedRelation: "stacks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stacks: {
         Row: {
           created_at: string
           cycle_length_days: number
           doctor_id: string
+          dose: number | null
+          dose_unit: string
           fasted: boolean
+          frequency: string
           id: string
           notes: string | null
           peptide_name: string
@@ -140,7 +178,10 @@ export type Database = {
           created_at?: string
           cycle_length_days?: number
           doctor_id: string
+          dose?: number | null
+          dose_unit?: string
           fasted?: boolean
+          frequency?: string
           id?: string
           notes?: string | null
           peptide_name: string
@@ -154,7 +195,10 @@ export type Database = {
           created_at?: string
           cycle_length_days?: number
           doctor_id?: string
+          dose?: number | null
+          dose_unit?: string
           fasted?: boolean
+          frequency?: string
           id?: string
           notes?: string | null
           peptide_name?: string
