@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { DayCell, type Stack, type DoseLog } from "@/components/dose-shared";
+import { DayCell, ReorderReminders, type Stack, type DoseLog } from "@/components/dose-shared";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/home")({ component: HomePage });
