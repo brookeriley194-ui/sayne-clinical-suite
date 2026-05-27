@@ -1,20 +1,57 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { PageHeader, StatCard } from "@/components/dashboard-ui";
-import { SyringeVisualizer } from "@/components/syringe-visualizer";
+import { SyringeVisualizer, SYRINGE_SPECS, type SyringeType } from "@/components/syringe-visualizer";
 
 export const Route = createFileRoute("/dashboard/calculator")({ component: Page });
 
 const COMPOUNDS = ["BPC-157", "TB-500", "Ipamorelin", "CJC-1295", "Selank", "Semax", "PT-141"];
+type DoseUnit = "mcg" | "units" | "mL";
+
+const SYRINGE_OPTIONS: { type: SyringeType; label: string; sub: string }[] = [
+  { type: "insulin_0_3", label: "0.3 mL", sub: "30 units · insulin" },
+  { type: "insulin_0_5", label: "0.5 mL", sub: "50 units · insulin" },
+  { type: "insulin_1",   label: "1 mL",   sub: "100 units · insulin" },
+  { type: "standard_1",  label: "1 mL",   sub: "tuberculin" },
+  { type: "standard_3",  label: "3 mL",   sub: "standard" },
+];
+
+// Mini SVG preview of a syringe at scale (longer barrel = larger capacity)
+function SyringeIcon({ scale, selected }: { scale: number; selected: boolean }) {
+  const barrelW = 30 + scale * 50; // 30..80
+  const stroke = selected ? "var(--primary)" : "var(--muted-foreground)";
+  return (
+    <svg viewBox="0 0 110 28" className="w-full h-8">
+      <rect x={4} y={9} width={barrelW} height={10} rx={2} fill="none" stroke={stroke} strokeWidth={1.2} />
+      <rect x={barrelW + 4} y={11} width={12} height={6} fill={stroke} opacity={0.6} />
+      <rect x={barrelW + 16} y={13} width={22} height={2} fill={stroke} />
+      <polygon points={`${barrelW + 38},14 ${barrelW + 44},13 ${barrelW + 44},15`} fill={stroke} />
+    </svg>
+  );
+}
 
 function Page() {
   const [compound, setCompound] = useState("BPC-157");
-  const [doseMcg, setDoseMcg] = useState(250);
   const [vialMg, setVialMg] = useState(5);
   const [bacWaterMl, setBacWaterMl] = useState(2);
+  const [doseUnit, setDoseUnit] = useState<DoseUnit>("mcg");
+  const [doseValue, setDoseValue] = useState(250);
   const [potency, setPotency] = useState(92);
+  const [syringeType, setSyringeType] = useState<SyringeType>("insulin_1");
 
   const concentration_mcg_per_ml = (vialMg * 1000) / Math.max(bacWaterMl, 0.01);
+
+  // Convert input dose to mcg (the canonical unit the visualizer expects)
+  // - mcg: as-is
+  // - units: on an insulin (U-100) syringe, 1 unit = 0.01 mL → mcg = 0.01 * concentration
+  // - mL: mcg = mL * concentration
+  const doseMcg =
+    doseUnit === "mcg"
+      ? doseValue
+      : doseUnit === "mL"
+      ? doseValue * concentration_mcg_per_ml
+      : doseValue * 0.01 * concentration_mcg_per_ml;
+
   const perDoseMl = doseMcg / concentration_mcg_per_ml;
   const dosesPerVial = Math.floor((vialMg * 1000) / Math.max(doseMcg, 1));
 
@@ -29,7 +66,7 @@ function Page() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-lg border bg-card p-6 space-y-4">
+        <div className="rounded-lg border bg-card p-6 space-y-5">
           <h3 className="font-medium">Inputs</h3>
           <div className="space-y-3 text-sm">
             <label className="block">
@@ -38,22 +75,75 @@ function Page() {
                 {COMPOUNDS.map((c) => <option key={c}>{c}</option>)}
               </select>
             </label>
-            <label className="block">
-              <span className="text-muted-foreground">Vial size (mg)</span>
-              <input type="number" value={vialMg} onChange={(e) => setVialMg(+e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
-            </label>
-            <label className="block">
-              <span className="text-muted-foreground">Bac. water (mL)</span>
-              <input type="number" step="0.1" value={bacWaterMl} onChange={(e) => setBacWaterMl(+e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
-            </label>
-            <label className="block">
-              <span className="text-muted-foreground">Dose (mcg)</span>
-              <input type="number" value={doseMcg} onChange={(e) => setDoseMcg(+e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
-            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-muted-foreground">Vial size (mg)</span>
+                <input type="number" value={vialMg} onChange={(e) => setVialMg(+e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
+              </label>
+              <label className="block">
+                <span className="text-muted-foreground">Bac. water (mL)</span>
+                <input type="number" step="0.1" value={bacWaterMl} onChange={(e) => setBacWaterMl(+e.target.value)} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
+              </label>
+            </div>
+
+            {/* Dose with unit toggle */}
+            <div>
+              <span className="text-muted-foreground">Dose</span>
+              <div className="mt-1 flex gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={doseValue}
+                  onChange={(e) => setDoseValue(+e.target.value)}
+                  className="flex-1 rounded-md border bg-background px-3 py-2"
+                />
+                <div className="inline-flex rounded-md border bg-background p-0.5">
+                  {(["mcg", "units", "mL"] as DoseUnit[]).map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => setDoseUnit(u)}
+                      className={`px-3 py-1 text-xs rounded ${doseUnit === u ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {u}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {doseUnit !== "mcg" && (
+                <div className="mt-1 text-xs text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  ≈ {doseMcg.toFixed(1)} mcg
+                </div>
+              )}
+            </div>
+
             <label className="block">
               <span className="text-muted-foreground">Potency score: {potency}%</span>
               <input type="range" min={0} max={100} value={potency} onChange={(e) => setPotency(+e.target.value)} className="mt-1 w-full" />
             </label>
+          </div>
+
+          {/* Syringe type selector */}
+          <div>
+            <div className="text-sm text-muted-foreground mb-2">Which syringe do you have?</div>
+            <div className="grid grid-cols-2 gap-2">
+              {SYRINGE_OPTIONS.map((opt) => {
+                const selected = syringeType === opt.type;
+                const scale = SYRINGE_SPECS[opt.type].maxMl / 3; // 0..1
+                return (
+                  <button
+                    key={opt.type}
+                    type="button"
+                    onClick={() => setSyringeType(opt.type)}
+                    className={`text-left rounded-md border p-3 transition-colors ${selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                  >
+                    <SyringeIcon scale={scale} selected={selected} />
+                    <div className="mt-2 text-sm font-medium">{opt.label}</div>
+                    <div className="text-xs text-muted-foreground">{opt.sub}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -63,6 +153,7 @@ function Page() {
             dose_mcg={doseMcg}
             concentration_mcg_per_ml={concentration_mcg_per_ml}
             potency_score={potency}
+            syringe_type={syringeType}
           />
         </div>
       </div>

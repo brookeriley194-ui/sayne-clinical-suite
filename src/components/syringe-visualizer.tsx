@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 
+export type SyringeType = "insulin_0_3" | "insulin_0_5" | "insulin_1" | "standard_1" | "standard_3";
+
+export const SYRINGE_SPECS: Record<SyringeType, { label: string; maxMl: number; unitMarks: boolean; majorTickMl: number }> = {
+  insulin_0_3: { label: "0.3 mL insulin (30u)", maxMl: 0.3, unitMarks: true, majorTickMl: 0.05 },
+  insulin_0_5: { label: "0.5 mL insulin (50u)", maxMl: 0.5, unitMarks: true, majorTickMl: 0.05 },
+  insulin_1:   { label: "1 mL insulin (100u)",  maxMl: 1.0, unitMarks: true, majorTickMl: 0.1 },
+  standard_1:  { label: "1 mL tuberculin",      maxMl: 1.0, unitMarks: false, majorTickMl: 0.1 },
+  standard_3:  { label: "3 mL standard",        maxMl: 3.0, unitMarks: false, majorTickMl: 0.5 },
+};
+
 type Props = {
   compound: string;
   dose_mcg: number;
@@ -7,6 +17,7 @@ type Props = {
   potency_score: number; // 0-100
   /** Optional: days until potency dips below 70%. If omitted, estimated from potency_score. */
   days_until_degraded?: number;
+  syringe_type?: SyringeType;
 };
 
 function fluidColor(score: number) {
@@ -22,20 +33,26 @@ export function SyringeVisualizer({
   concentration_mcg_per_ml,
   potency_score,
   days_until_degraded,
+  syringe_type = "insulin_1",
 }: Props) {
+  const spec = SYRINGE_SPECS[syringe_type];
+  const maxMl = spec.maxMl;
+
   // Calc draw volume in mL
   const drawMl = useMemo(() => {
     if (!concentration_mcg_per_ml || concentration_mcg_per_ml <= 0) return 0;
     return Math.max(0, dose_mcg / concentration_mcg_per_ml);
   }, [dose_mcg, concentration_mcg_per_ml]);
 
-  // Animate fluid from 0 -> drawMl on mount and when dose changes
+  const overfill = drawMl > maxMl;
+
+  // Animate fluid from 0 -> drawMl on mount and when dose/syringe changes
   const [animatedMl, setAnimatedMl] = useState(0);
   useEffect(() => {
     setAnimatedMl(0);
-    const id = requestAnimationFrame(() => setAnimatedMl(drawMl));
+    const id = requestAnimationFrame(() => setAnimatedMl(Math.min(drawMl, maxMl)));
     return () => cancelAnimationFrame(id);
-  }, [drawMl]);
+  }, [drawMl, maxMl]);
 
   const score = Math.max(0, Math.min(100, potency_score));
   const color = fluidColor(score);
@@ -45,7 +62,6 @@ export function SyringeVisualizer({
   const barrelW = 280;
   const barrelY = 38;
   const barrelH = 44;
-  const maxMl = 1.0; // 1 mL reference syringe
   const fillW = Math.min(1, animatedMl / maxMl) * barrelW;
   const plungerX = barrelX + fillW;
 
@@ -56,8 +72,9 @@ export function SyringeVisualizer({
     return Math.round(((score - 70) / 30) * 60); // up to ~60 days at 100%
   }, [days_until_degraded, score]);
 
-  // Generate 11 major ticks (0.0 -> 1.0) with 0.1mL minor subdivisions
-  const ticks = Array.from({ length: 11 }, (_, i) => i / 10);
+  // Generate ticks based on syringe spec
+  const tickCount = Math.round(maxMl / spec.majorTickMl) + 1;
+  const ticks = Array.from({ length: tickCount }, (_, i) => i * spec.majorTickMl);
 
   return (
     <div className="w-[60%] sm:w-full max-w-xl mx-auto">
@@ -230,7 +247,7 @@ export function SyringeVisualizer({
                       fill="#9B8EC4"
                       style={{ fontFamily: "'JetBrains Mono', monospace" }}
                     >
-                      {t.toFixed(1)}
+                      {spec.unitMarks ? `${Math.round(t * 100)}` : t.toFixed(1)}
                     </text>
                   )}
                 </g>
@@ -304,7 +321,18 @@ export function SyringeVisualizer({
             {drawMl.toFixed(2)}
             <span className="text-2xl text-muted-foreground ml-2">mL</span>
           </div>
+          {spec.unitMarks && (
+            <div className="mt-1 text-sm text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              {Math.round(drawMl * 100)} units on {spec.label}
+            </div>
+          )}
+          {overfill && (
+            <div className="mt-2 text-xs text-destructive">
+              Exceeds syringe capacity ({maxMl} mL). Choose a larger syringe.
+            </div>
+          )}
         </div>
+
 
         <div className="flex items-center gap-3 flex-wrap justify-center">
           {/* Potency badge */}
