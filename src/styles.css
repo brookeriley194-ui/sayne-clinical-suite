@@ -106,7 +106,7 @@
 
 @utility sayne-card {
   background-color: var(--card);
-  border: 1px solid color-mix(in oklab, var(--border) 100%, transparent 60%);
+  border: 1px solid color-mix(in oklab, var(--border) 40%, transparent);
   border-radius: var(--radius);
   box-shadow: var(--shadow-card);
 }
