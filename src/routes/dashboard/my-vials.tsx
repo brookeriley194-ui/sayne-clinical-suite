@@ -44,6 +44,7 @@ function Page() {
   const [vials, setVials] = useState<Vial[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"all" | "open" | "sealed" | "used">("all");
 
   const load = async () => {
     setLoading(true);
