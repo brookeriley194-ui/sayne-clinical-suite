@@ -235,7 +235,7 @@ function Page() {
 
       <div className="mt-6" />
 
-      <MyVialsSection vials={vials} usage={vialUsage} onReload={load} />
+      <MyVialsSection vials={vials} usage={vialUsage} stacks={stacks} onReload={load} />
 
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
