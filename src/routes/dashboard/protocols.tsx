@@ -259,6 +259,24 @@ function ProtocolCard({ p, onSend }: { p: Protocol; onSend: () => void }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1 truncate">{p.name}</div>
+function ProtocolCard({ p, onSend }: { p: Protocol; onSend: () => void }) {
+  const isAi = p.source === "ai_import";
+  return (
+    <div className="sayne-card p-5 flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground truncate">{p.name}</div>
+            {isAi && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold text-[#1a1a2e]"
+                style={{ backgroundColor: LAVENDER }}
+              >
+                <Sparkles className="h-2.5 w-2.5" />
+                AI Import
+              </span>
+            )}
+          </div>
           <h3 className="font-display text-xl font-semibold leading-tight truncate" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
             {p.compound}
           </h3>
@@ -269,12 +287,6 @@ function ProtocolCard({ p, onSend }: { p: Protocol; onSend: () => void }) {
         </button>
       </div>
 
-      <div className="flex items-baseline gap-1.5 font-mono">
-        <span className="text-2xl font-semibold tabular-nums">{p.dose}</span>
-        <span className="text-sm text-muted-foreground">{p.dose_unit}</span>
-        <span className="text-sm text-muted-foreground mx-1">·</span>
-        <span className="text-sm">{p.frequency}</span>
-      </div>
 
       <div className="flex items-center gap-2 flex-wrap">
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
