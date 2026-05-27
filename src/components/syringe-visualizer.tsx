@@ -180,21 +180,21 @@ export function SyringeVisualizer({
             />
           </g>
 
-          {/* Fluid fill (animated) */}
+          {/* Fluid fill (animated) — fills from needle end (right) */}
           <g clipPath="url(#barrelClip)">
             <rect
-              x={barrelX}
+              x={fluidX}
               y={barrelY}
               width={fillW}
               height={barrelH}
               fill="url(#fluid)"
               style={{
-                transition: "width 1100ms cubic-bezier(0.22, 1, 0.36, 1), fill 400ms ease",
+                transition: "x 1100ms cubic-bezier(0.22, 1, 0.36, 1), width 1100ms cubic-bezier(0.22, 1, 0.36, 1), fill 400ms ease",
               }}
             />
-            {/* Fluid meniscus / surface highlight */}
+            {/* Fluid meniscus / surface highlight at the stopper edge */}
             <rect
-              x={barrelX + fillW - 1}
+              x={fluidX}
               y={barrelY}
               width="2"
               height={barrelH}
