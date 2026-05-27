@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.parse-protocol]
 verify_jwt = false
+
+[functions.parse-receipt]
+verify_jwt = false
