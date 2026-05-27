@@ -247,7 +247,7 @@ export function SyringeVisualizer({
                       fill="#9B8EC4"
                       style={{ fontFamily: "'JetBrains Mono', monospace" }}
                     >
-                      {t.toFixed(1)}
+                      {spec.unitMarks ? `${Math.round(t * 100)}` : t.toFixed(1)}
                     </text>
                   )}
                 </g>
