@@ -127,6 +127,7 @@ export type Database = {
           doctor_id: string
           dose_date: string
           id: string
+          period: string
           stack_id: string
           taken_at: string
         }
@@ -135,6 +136,7 @@ export type Database = {
           doctor_id: string
           dose_date: string
           id?: string
+          period?: string
           stack_id: string
           taken_at?: string
         }
@@ -143,6 +145,7 @@ export type Database = {
           doctor_id?: string
           dose_date?: string
           id?: string
+          period?: string
           stack_id?: string
           taken_at?: string
         }
