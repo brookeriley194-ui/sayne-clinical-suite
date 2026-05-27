@@ -43,7 +43,7 @@ type Stack = {
   id: string; name: string; compound: string; dose: number; dose_unit: string;
   frequency: string; route: string; duration_days: number | null;
   ongoing: boolean; notes: string | null; created_at: string; source?: string | null;
-  vial_id?: string | null;
+  vial_id?: string | null; time_of_day: string; fasted: boolean;
 };
 
 type VialOpt = {
