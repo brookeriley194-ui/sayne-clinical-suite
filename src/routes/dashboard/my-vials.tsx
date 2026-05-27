@@ -537,40 +537,132 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
 
 /* ========================== Inline Vial Calculator ========================== */
 
-function VialCalcSheet({ vial }: { vial: Vial }) {
-  const conc = vial.concentration_mg_per_ml ??
-    (vial.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
+const SYRINGE_OPTIONS: { type: SyringeType; label: string; sub: string }[] = [
+  { type: "insulin_0_3", label: "0.3 mL", sub: "30u insulin" },
+  { type: "insulin_0_5", label: "0.5 mL", sub: "50u insulin" },
+  { type: "insulin_1",   label: "1 mL",   sub: "100u insulin" },
+  { type: "standard_1",  label: "1 mL",   sub: "tuberculin" },
+  { type: "standard_3",  label: "3 mL",   sub: "standard" },
+];
 
+function VialCalcSheet({ vial, onUpdated }: { vial: Vial; onUpdated: () => void }) {
+  const navigate = useNavigate();
+
+  const [bacWater, setBacWater] = useState<string>(vial.bac_water_ml ? String(vial.bac_water_ml) : "");
+  const [reconDate, setReconDate] = useState<Date | undefined>(
+    vial.reconstituted_at ? new Date(vial.reconstituted_at) : undefined,
+  );
   const [dose, setDose] = useState("");
   const [unit, setUnit] = useState<"mcg" | "mg" | "IU" | "units">("mcg");
+  const [syringeType, setSyringeType] = useState<SyringeType>("insulin_1");
+  const [saving, setSaving] = useState(false);
+
+  const bacMl = bacWater ? Number(bacWater) : null;
+  const conc = bacMl && bacMl > 0 ? vial.vial_size_mg / bacMl : null;
+  const concMcgMl = conc ? conc * 1000 : 0;
 
   const mg = dose ? doseToMg(Number(dose), unit, conc) : null;
+  const doseMcg = mg != null ? mg * 1000 : 0;
   const volumeMl = mg != null && conc && conc > 0 ? mg / conc : null;
-  // standard 100u (1 mL) insulin syringe
   const units100 = volumeMl != null ? volumeMl * 100 : null;
+  const dosesPerVial = mg && mg > 0 ? Math.floor(vial.vial_size_mg / mg) : null;
+
+  const days = reconDate ? Math.max(0, Math.floor((Date.now() - reconDate.getTime()) / 86400000)) : 0;
+  const potency = reconDate ? potencyFromDays(days) : 100;
+
+  const persistVial = async () => {
+    const patch: Record<string, unknown> = {};
+    if (bacMl != null && bacMl !== vial.bac_water_ml) patch.bac_water_ml = bacMl;
+    if (conc != null && conc !== vial.concentration_mg_per_ml) patch.concentration_mg_per_ml = conc;
+    const newRecon = reconDate ? reconDate.toISOString() : null;
+    if (newRecon !== vial.reconstituted_at) patch.reconstituted_at = newRecon;
+    if (Object.keys(patch).length === 0) return true;
+    const { error } = await supabase.from("vials").update(patch).eq("id", vial.id);
+    if (error) { toast.error(error.message); return false; }
+    return true;
+  };
+
+  const onSave = async () => {
+    setSaving(true);
+    const ok = await persistVial();
+    setSaving(false);
+    if (!ok) return;
+    toast.success("Vial updated");
+    onUpdated();
+  };
+
+  const onSaveAndAddToStack = async () => {
+    if (!dose || !mg) { toast.error("Enter a dose first"); return; }
+    setSaving(true);
+    const ok = await persistVial();
+    if (!ok) { setSaving(false); return; }
+    sessionStorage.setItem("stack:prefill", JSON.stringify({
+      compound: vial.compound,
+      dose: Number(dose),
+      dose_unit: unit,
+      vial_id: vial.id,
+    }));
+    setSaving(false);
+    toast.success("Opening stack builder…");
+    onUpdated();
+    navigate({ to: "/dashboard/protocols" });
+  };
 
   return (
-    <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+    <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
       <SheetHeader>
         <SheetTitle className="font-display">{vial.compound} · Calculator</SheetTitle>
-        <SheetDescription>Quick reconstitution math from this vial's setup.</SheetDescription>
+        <SheetDescription>Reconstitution math, potency, and syringe draw — saved to this vial.</SheetDescription>
       </SheetHeader>
 
-      <div className="py-4 space-y-4">
+      <div className="py-4 space-y-5">
+        {/* Vial setup */}
         <div className="grid grid-cols-3 gap-2 text-center">
           <Metric label="Size" value={`${vial.vial_size_mg}`} unit="mg" />
-          <Metric label="BAC" value={vial.bac_water_ml ? `${vial.bac_water_ml}` : "—"} unit="mL" />
+          <div className="rounded-md bg-muted/40 p-2 text-left">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">BAC</div>
+            <Input type="number" step="0.1" value={bacWater} onChange={(e) => setBacWater(e.target.value)}
+              placeholder="mL" className="h-7 mt-1 text-sm font-mono text-center px-1" />
+          </div>
           <Metric label="Conc." value={conc ? conc.toFixed(2) : "—"} unit="mg/mL" />
         </div>
 
-        {!conc && (
-          <div className="rounded-md border bg-yellow-500/5 border-yellow-500/30 p-3 text-xs">
-            This vial has no BAC water set yet. Add a BAC volume to enable calculations.
-          </div>
-        )}
-
+        {/* Recon date + potency */}
         <div className="space-y-2">
-          <Label>Desired dose</Label>
+          <Label className="text-xs">Date reconstituted</Label>
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" className={cn("flex-1 justify-start font-normal", !reconDate && "text-muted-foreground")}>
+                  <CalendarIcon className="size-4 mr-2" />
+                  {reconDate ? format(reconDate, "PPP") : "Not set"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={reconDate} onSelect={setReconDate}
+                  disabled={(d) => d > new Date()} initialFocus />
+              </PopoverContent>
+            </Popover>
+            {reconDate && (
+              <div className="text-right text-xs font-mono text-muted-foreground">
+                <div>{days}d ago</div>
+                <div>{potency}%</div>
+              </div>
+            )}
+          </div>
+          {reconDate && (
+            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div className="h-full transition-all" style={{
+                width: `${potency}%`,
+                backgroundColor: potency >= 85 ? "#89CFF0" : potency >= 70 ? "#FFD580" : potency >= 50 ? "#FFB3C6" : "#DDD5F0",
+              }} />
+            </div>
+          )}
+        </div>
+
+        {/* Dose input */}
+        <div className="space-y-2">
+          <Label className="text-xs">Desired dose</Label>
           <div className="flex gap-2">
             <Input type="number" inputMode="decimal" step="any" min="0" value={dose}
               onChange={(e) => setDose(e.target.value)} placeholder="e.g. 250" className="flex-1 font-mono" />
@@ -586,25 +678,79 @@ function VialCalcSheet({ vial }: { vial: Vial }) {
           </div>
         </div>
 
+        {/* Syringe selector */}
+        <div>
+          <Label className="text-xs mb-2 block">Which syringe?</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {SYRINGE_OPTIONS.map((opt) => {
+              const selected = syringeType === opt.type;
+              return (
+                <button key={opt.type} type="button" onClick={() => setSyringeType(opt.type)}
+                  className={cn("rounded-md border p-2 text-left transition-colors",
+                    selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/40")}>
+                  <div className="text-xs font-medium">{opt.label}</div>
+                  <div className="text-[10px] text-muted-foreground">{opt.sub}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Visualizer */}
+        {conc && (
+          <div className="rounded-md border bg-card p-3 flex items-center justify-center">
+            <SyringeVisualizer
+              compound={vial.compound}
+              dose_mcg={doseMcg}
+              concentration_mcg_per_ml={concMcgMl}
+              potency_score={potency}
+              syringe_type={syringeType}
+            />
+          </div>
+        )}
+
+        {/* Result panel */}
         {volumeMl != null && (
-          <div className="rounded-md border bg-primary/5 border-primary/30 p-4 space-y-3">
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Draw volume</div>
-              <div className="font-mono text-3xl font-semibold tabular-nums">
-                {volumeMl.toFixed(3)} <span className="text-base text-muted-foreground">mL</span>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-md bg-muted/40 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Draw to</div>
+              <div className="font-mono font-semibold tabular-nums">
+                <span className="text-primary text-lg">{units100 != null ? units100.toFixed(0) : "—"}</span>
+                <span className="text-xs text-muted-foreground ml-1">u</span>
               </div>
             </div>
-            {units100 != null && (
-              <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">On a 100-unit (1 mL) syringe</div>
-                <div className="font-mono text-2xl font-semibold tabular-nums">
-                  {units100.toFixed(1)} <span className="text-sm text-muted-foreground">units</span>
-                </div>
+            <div className="rounded-md bg-muted/40 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Volume</div>
+              <div className="font-mono font-semibold tabular-nums">
+                <span className="text-lg">{volumeMl.toFixed(3)}</span>
+                <span className="text-xs text-muted-foreground ml-1">mL</span>
               </div>
-            )}
+            </div>
+            <div className="rounded-md bg-muted/40 p-3 text-center">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Doses</div>
+              <div className="font-mono font-semibold tabular-nums">
+                <span className="text-lg">{dosesPerVial ?? "—"}</span>
+                <span className="text-xs text-muted-foreground ml-1">/vial</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!conc && (
+          <div className="rounded-md border bg-yellow-500/5 border-yellow-500/30 p-3 text-xs">
+            Add a BAC water amount above to enable calculations.
           </div>
         )}
       </div>
+
+      <SheetFooter className="gap-2 flex-col sm:flex-row">
+        <Button type="button" variant="outline" disabled={saving} onClick={onSave} className="gap-2">
+          <Save className="size-4" /> Save
+        </Button>
+        <Button type="button" disabled={saving || !mg} onClick={onSaveAndAddToStack} className="gap-2">
+          <Layers className="size-4" /> Save & Add to Stack
+        </Button>
+      </SheetFooter>
     </SheetContent>
   );
 }
