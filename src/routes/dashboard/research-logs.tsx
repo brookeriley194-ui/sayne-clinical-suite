@@ -110,6 +110,14 @@ function Page() {
     load();
   };
 
+  const changeVialStatus = async (vialId: string, status: string) => {
+    const { error } = await supabase.from("vials").update({ status }).eq("id", vialId);
+    if (error) return toast.error(error.message);
+    toast.success(`Vial status: ${status}`);
+    load();
+  };
+
+
   const toggleDose = async (stack: Stack, date: Date, period: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
     const existing = doses.find((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
