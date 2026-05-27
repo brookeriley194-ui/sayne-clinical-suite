@@ -320,6 +320,12 @@ function Page() {
           />
         </div>
       </div>
+
+      <div className="mt-6 flex justify-end">
+        <Button size="lg" onClick={addToStack} className="gap-2">
+          Add to Stack →
+        </Button>
+      </div>
     </>
   );
 }
