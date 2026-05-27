@@ -101,7 +101,7 @@ function Page() {
     // Map "My Stacks" (protocols) into Stack shape for the calendar
     const protocolStacks: Stack[] = ((p.data ?? []) as ProtocolRow[]).map((r) => ({
       id: r.id,
-      peptide_name: `${r.name} · ${r.compound}`,
+      peptide_name: r.compound,
       vial_id: null,
       reconstituted_at: null,
       time_of_day: r.time_of_day ?? "AM",
