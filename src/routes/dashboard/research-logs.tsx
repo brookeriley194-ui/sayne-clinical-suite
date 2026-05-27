@@ -187,7 +187,8 @@ function DosePill({
   stack, day, period, doses, onToggle,
 }: { stack: Stack; day: Date; period: "AM" | "PM"; doses: DoseLog[]; onToggle: (s: Stack, d: Date) => void }) {
   const dateStr = format(day, "yyyy-MM-dd");
-  const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === `${dateStr}__${period}` || (dd.stack_id === stack.id && dd.dose_date === dateStr && stack.time_of_day !== "Both"));
+  const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr);
+  void period;
   return (
     <button
       type="button"
