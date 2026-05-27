@@ -17,6 +17,8 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PTokenRouteImport } from './routes/p.$token'
 import { Route as DashboardVialsRouteImport } from './routes/dashboard/vials'
+import { Route as DashboardTodayRouteImport } from './routes/dashboard/today'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardResearchLogsRouteImport } from './routes/dashboard/research-logs'
 import { Route as DashboardProtocolsRouteImport } from './routes/dashboard/protocols'
 import { Route as DashboardPatientsRouteImport } from './routes/dashboard/patients'
@@ -63,6 +65,16 @@ const PTokenRoute = PTokenRouteImport.update({
 const DashboardVialsRoute = DashboardVialsRouteImport.update({
   id: '/vials',
   path: '/vials',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardTodayRoute = DashboardTodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardResearchLogsRoute = DashboardResearchLogsRouteImport.update({
@@ -115,6 +127,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
 }
@@ -132,6 +146,8 @@ export interface FileRoutesByTo {
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
 }
@@ -150,6 +166,8 @@ export interface FileRoutesById {
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
 }
@@ -169,6 +187,8 @@ export interface FileRouteTypes {
     | '/dashboard/patients'
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
+    | '/dashboard/settings'
+    | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -186,6 +206,8 @@ export interface FileRouteTypes {
     | '/dashboard/patients'
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
+    | '/dashboard/settings'
+    | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
   id:
@@ -203,6 +225,8 @@ export interface FileRouteTypes {
     | '/dashboard/patients'
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
+    | '/dashboard/settings'
+    | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
   fileRoutesById: FileRoutesById
@@ -275,6 +299,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVialsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/today': {
+      id: '/dashboard/today'
+      path: '/today'
+      fullPath: '/dashboard/today'
+      preLoaderRoute: typeof DashboardTodayRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/research-logs': {
       id: '/dashboard/research-logs'
       path: '/research-logs'
@@ -335,6 +373,8 @@ interface DashboardRouteChildren {
   DashboardPatientsRoute: typeof DashboardPatientsRoute
   DashboardProtocolsRoute: typeof DashboardProtocolsRoute
   DashboardResearchLogsRoute: typeof DashboardResearchLogsRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardTodayRoute: typeof DashboardTodayRoute
   DashboardVialsRoute: typeof DashboardVialsRoute
 }
 
@@ -346,6 +386,8 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardPatientsRoute: DashboardPatientsRoute,
   DashboardProtocolsRoute: DashboardProtocolsRoute,
   DashboardResearchLogsRoute: DashboardResearchLogsRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardTodayRoute: DashboardTodayRoute,
   DashboardVialsRoute: DashboardVialsRoute,
 }
 

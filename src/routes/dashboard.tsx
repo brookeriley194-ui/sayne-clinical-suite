@@ -10,15 +10,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  LayoutGrid, Users, FlaskConical, BarChart3, Calculator, FileText, Beaker, LogOut, Home,
+  LayoutGrid, Users, FlaskConical, BarChart3, FileText, Beaker, LogOut, Home, Layers, Settings as SettingsIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { FloatingCalculator } from "@/components/floating-calculator";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
 });
 
-const navByRole: Record<AppRole, { to: string; label: string; icon: React.ComponentType<{ className?: string }> }[]> = {
+type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; bottom?: boolean };
+
+const navByRole: Record<AppRole, NavItem[]> = {
   doctor: [
     { to: "/dashboard/protocols", label: "Protocols", icon: LayoutGrid },
     { to: "/dashboard/patients", label: "Patients", icon: Users },
@@ -26,11 +29,10 @@ const navByRole: Record<AppRole, { to: string; label: string; icon: React.Compon
     { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   ],
   researcher: [
-    { to: "/dashboard/home", label: "Home", icon: Home },
+    { to: "/dashboard/today", label: "Today", icon: Home },
     { to: "/dashboard/my-vials", label: "My Vials", icon: Beaker },
-    { to: "/dashboard/calculator", label: "Calculator", icon: Calculator },
-    { to: "/dashboard/research-logs", label: "Research Logs", icon: FileText },
-    { to: "/dashboard/protocols", label: "Protocols", icon: LayoutGrid },
+    { to: "/dashboard/protocols", label: "My Stacks", icon: Layers },
+    { to: "/dashboard/settings", label: "Settings", icon: SettingsIcon, bottom: true },
   ],
 };
 
@@ -76,7 +78,7 @@ function DashboardLayout() {
           <SayneLogo />
         </div>
         <nav className="flex flex-col gap-1">
-          {items.map((it) => {
+          {items.filter((it) => !it.bottom).map((it) => {
             const active = pathname === it.to;
             const Icon = it.icon;
             return (
@@ -95,12 +97,26 @@ function DashboardLayout() {
             );
           })}
         </nav>
-        {role && (
-          <div className="mt-auto px-3 pt-4 pb-2">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Role</div>
-            <div className="text-sm font-medium capitalize">{role}</div>
-          </div>
-        )}
+        <nav className="mt-auto flex flex-col gap-1">
+          {items.filter((it) => it.bottom).map((it) => {
+            const active = pathname === it.to;
+            const Icon = it.icon;
+            return (
+              <Link
+                key={it.to}
+                to={it.to}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: active ? "var(--panel)" : "transparent",
+                  color: active ? "var(--foreground)" : "var(--muted-foreground)",
+                }}
+              >
+                <Icon className="h-4 w-4" />
+                {it.label}
+              </Link>
+            );
+          })}
+        </nav>
       </aside>
 
       {/* Main */}
@@ -141,6 +157,7 @@ function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <FloatingCalculator />
     </div>
   );
 }

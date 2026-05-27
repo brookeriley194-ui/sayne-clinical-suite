@@ -18,6 +18,8 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { format } from "date-fns";
 
 export const Route = createFileRoute("/dashboard/protocols")({ component: Page });
 
@@ -99,22 +101,35 @@ function Page() {
         }
       />
 
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-lg font-semibold">My Stacks</h2>
-        <span className="text-xs text-muted-foreground font-mono">{stacks.length} total</span>
-      </div>
+      <Tabs defaultValue="stacks">
+        <TabsList className="mb-4">
+          <TabsTrigger value="stacks">My Stacks</TabsTrigger>
+          <TabsTrigger value="log">Research Log</TabsTrigger>
+        </TabsList>
 
-      {loading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : stacks.length === 0 ? (
-        <div className="sayne-card p-10 text-center">
-          <p className="text-sm text-muted-foreground">No stacks yet. Build one or import from AI to get started.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {stacks.map((s) => <StackCard key={s.id} s={s} />)}
-        </div>
-      )}
+        <TabsContent value="stacks">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-display text-lg font-semibold">My Stacks</h2>
+            <span className="text-xs text-muted-foreground font-mono">{stacks.length} total</span>
+          </div>
+
+          {loading ? (
+            <div className="text-sm text-muted-foreground">Loading…</div>
+          ) : stacks.length === 0 ? (
+            <div className="sayne-card p-10 text-center">
+              <p className="text-sm text-muted-foreground">No stacks yet. Build one or import from AI to get started.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {stacks.map((s) => <StackCard key={s.id} s={s} />)}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="log">
+          <ResearchLog stacks={stacks} loading={loading} />
+        </TabsContent>
+      </Tabs>
 
       <ImportFromAIModal
         open={importOpen}
@@ -779,6 +794,38 @@ function ParsedRow({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ResearchLog({ stacks, loading }: { stacks: Stack[]; loading: boolean }) {
+  if (loading) return <div className="text-sm text-muted-foreground">Loading…</div>;
+  const withNotes = stacks.filter((s) => s.notes && s.notes.trim().length > 0);
+  if (stacks.length === 0) {
+    return (
+      <div className="sayne-card p-10 text-center">
+        <p className="text-sm text-muted-foreground">No stacks yet — add notes to a stack to start a research log.</p>
+      </div>
+    );
+  }
+  if (withNotes.length === 0) {
+    return (
+      <div className="sayne-card p-10 text-center">
+        <p className="text-sm text-muted-foreground">No journal entries yet. Add notes when building or editing a stack.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {withNotes.map((s) => (
+        <div key={s.id} className="sayne-card p-5">
+          <div className="flex items-baseline justify-between mb-2 gap-2 flex-wrap">
+            <h3 className="font-display text-base font-semibold">{s.compound}</h3>
+            <span className="text-[11px] text-muted-foreground font-mono">{format(new Date(s.created_at), "MMM d, yyyy")}</span>
+          </div>
+          <p className="text-sm whitespace-pre-wrap text-foreground/90">{s.notes}</p>
+        </div>
+      ))}
     </div>
   );
 }
