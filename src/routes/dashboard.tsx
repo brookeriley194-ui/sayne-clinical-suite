@@ -70,7 +70,7 @@ function DashboardLayout() {
   const initial = (user?.email ?? "?").slice(0, 1).toUpperCase();
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="h-screen flex bg-background">
       {/* Sidebar */}
       <aside className="w-64 shrink-0 border-r p-4 hidden md:flex md:flex-col gap-1"
              style={{ backgroundColor: "var(--sidebar)", borderColor: "color-mix(in oklab, var(--border) 60%, transparent)" }}>
