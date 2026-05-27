@@ -121,6 +121,59 @@ export type Database = {
         }
         Relationships: []
       }
+      stacks: {
+        Row: {
+          created_at: string
+          cycle_length_days: number
+          doctor_id: string
+          fasted: boolean
+          id: string
+          notes: string | null
+          peptide_name: string
+          reconstituted_at: string | null
+          start_date: string
+          time_of_day: string
+          updated_at: string
+          vial_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          cycle_length_days?: number
+          doctor_id: string
+          fasted?: boolean
+          id?: string
+          notes?: string | null
+          peptide_name: string
+          reconstituted_at?: string | null
+          start_date?: string
+          time_of_day?: string
+          updated_at?: string
+          vial_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          cycle_length_days?: number
+          doctor_id?: string
+          fasted?: boolean
+          id?: string
+          notes?: string | null
+          peptide_name?: string
+          reconstituted_at?: string | null
+          start_date?: string
+          time_of_day?: string
+          updated_at?: string
+          vial_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stacks_vial_id_fkey"
+            columns: ["vial_id"]
+            isOneToOne: false
+            referencedRelation: "vials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
