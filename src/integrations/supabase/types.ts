@@ -32,6 +32,54 @@ export type Database = {
         }
         Relationships: []
       }
+      protocols: {
+        Row: {
+          compound: string
+          created_at: string
+          doctor_id: string
+          dose: number
+          dose_unit: string
+          duration_days: number | null
+          frequency: string
+          id: string
+          name: string
+          notes: string | null
+          ongoing: boolean
+          route: string
+          updated_at: string
+        }
+        Insert: {
+          compound: string
+          created_at?: string
+          doctor_id: string
+          dose: number
+          dose_unit: string
+          duration_days?: number | null
+          frequency: string
+          id?: string
+          name: string
+          notes?: string | null
+          ongoing?: boolean
+          route: string
+          updated_at?: string
+        }
+        Update: {
+          compound?: string
+          created_at?: string
+          doctor_id?: string
+          dose?: number
+          dose_unit?: string
+          duration_days?: number | null
+          frequency?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          ongoing?: boolean
+          route?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
