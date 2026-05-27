@@ -195,6 +195,7 @@ function Page() {
             <VialCard
               key={v.id}
               vial={v}
+              usage={usage[v.id]}
               onDelete={() => remove(v.id)}
               onMarkEmpty={() => markEmpty(v.id)}
             />
