@@ -206,7 +206,7 @@ function Page() {
   );
 }
 
-function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () => void; onMarkEmpty: () => void }) {
+function VialCard({ vial, usage, onDelete, onMarkEmpty }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void }) {
   const days = vial.reconstituted_at
     ? differenceInDays(new Date(), new Date(vial.reconstituted_at))
     : null;
@@ -220,13 +220,14 @@ function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () =>
     : vial.status === "sealed" ? "bg-muted text-foreground/80"
     : "bg-destructive/10 text-destructive border-destructive/30";
 
+  const isUsed = vial.status === "used";
+  const percentLeft = isUsed ? 0 : (usage?.percentLeft ?? 100);
+
   return (
     <div className="sayne-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="size-9 rounded-md bg-primary/10 text-primary grid place-items-center">
-            <FlaskConical className="size-4" />
-          </div>
+        <div className="flex items-center gap-3">
+          <VialVisual fillPercent={percentLeft} size="sm" empty={isUsed} />
           <div>
             <div className="font-display text-lg font-semibold leading-tight">{vial.compound}</div>
             {vial.lot_number && (
@@ -238,6 +239,34 @@ function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () =>
         </div>
         <Badge variant="outline" className={cn("capitalize", statusColor)}>{vial.status}</Badge>
       </div>
+
+      {!isUsed && (
+        <div className="rounded-md border bg-sky-500/5 border-sky-500/20 p-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Remaining doses</span>
+            <span className="text-[10px] font-mono text-muted-foreground">{Math.round(percentLeft)}% left</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2 flex-wrap">
+            {usage?.remainingDoses != null && usage.totalDoses != null ? (
+              <>
+                <span className="font-mono tabular-nums text-2xl font-semibold">{usage.remainingDoses}</span>
+                <span className="text-xs text-muted-foreground font-mono">/ {usage.totalDoses} doses</span>
+                {usage.doseLabel && (
+                  <span className="ml-auto text-[10px] text-muted-foreground font-mono">@ {usage.doseLabel}</span>
+                )}
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                Link this vial to a stack entry to estimate doses
+              </span>
+            )}
+          </div>
+          <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-sky-500 transition-all" style={{ width: `${percentLeft}%` }} />
+          </div>
+        </div>
+      )}
+
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <Metric label="Size" value={`${vial.vial_size_mg}`} unit="mg" />
