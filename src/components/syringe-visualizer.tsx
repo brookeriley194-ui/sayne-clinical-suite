@@ -57,13 +57,16 @@ export function SyringeVisualizer({
   const score = Math.max(0, Math.min(100, potency_score));
   const color = fluidColor(score);
 
-  // Syringe geometry (viewBox 400 x 120; horizontal)
+  // Syringe geometry (viewBox 400 x 120; horizontal, needle on RIGHT)
+  // Fluid fills from the needle end (right) toward the plunger (left).
   const barrelX = 40;
   const barrelW = 280;
   const barrelY = 38;
   const barrelH = 44;
   const fillW = Math.min(1, animatedMl / maxMl) * barrelW;
-  const plungerX = barrelX + fillW;
+  const fluidX = barrelX + barrelW - fillW;       // fluid left edge
+  const stopperX = fluidX - 8;                     // stopper sits just left of fluid
+  const rodLeftEnd = barrelX - 30;                 // rod extends out the open (left) end
 
   // Estimate days remaining if not provided (simple linear model toward 70%)
   const daysRemaining = useMemo(() => {
