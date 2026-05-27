@@ -185,14 +185,13 @@ function Page() {
 
 function DosePill({
   stack, day, period, doses, onToggle,
-}: { stack: Stack; day: Date; period: "AM" | "PM"; doses: DoseLog[]; onToggle: (s: Stack, d: Date) => void }) {
+}: { stack: Stack; day: Date; period: "AM" | "PM"; doses: DoseLog[]; onToggle: (s: Stack, d: Date, p: string) => void }) {
   const dateStr = format(day, "yyyy-MM-dd");
-  const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr);
-  void period;
+  const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
   return (
     <button
       type="button"
-      onClick={() => onToggle(stack, day)}
+      onClick={() => onToggle(stack, day, period)}
       title={`${stack.peptide_name}${stack.dose ? ` · ${stack.dose}${stack.dose_unit}` : ""} (${period})`}
       className={cn(
         "flex items-center gap-1 rounded px-1 py-0.5 text-[10px] w-full transition-opacity hover:opacity-80",
