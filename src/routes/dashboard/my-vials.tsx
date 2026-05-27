@@ -206,16 +206,28 @@ function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () =>
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
+      <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground gap-2">
         <span className="flex items-center gap-1.5">
           <CalendarIcon className="size-3" />
           {vial.reconstituted_at
             ? `Recon. ${format(new Date(vial.reconstituted_at), "MMM d")}`
             : `Added ${format(new Date(vial.created_at), "MMM d")}`}
         </span>
-        <Button size="sm" variant="ghost" onClick={onDelete} className="h-7 text-destructive hover:text-destructive">
-          <Trash2 className="size-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {vial.status !== "used" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onMarkEmpty}
+              className="h-7 text-xs gap-1.5"
+            >
+              <PackageX className="size-3.5" /> Vial empty
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={onDelete} className="h-7 text-destructive hover:text-destructive">
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
