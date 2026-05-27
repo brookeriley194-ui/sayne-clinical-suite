@@ -306,7 +306,16 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore }: { vial: Via
             : `Added ${format(new Date(vial.created_at), "MMM d")}`}
         </span>
         <div className="flex items-center gap-1">
-          {vial.status !== "used" && (
+          {vial.status === "used" ? (
+            <>
+              <Button size="sm" variant="outline" onClick={() => onRestore("open")} className="h-7 text-xs gap-1.5">
+                <Undo2 className="size-3.5" /> Open
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => onRestore("sealed")} className="h-7 text-xs gap-1.5">
+                Sealed
+              </Button>
+            </>
+          ) : (
             <Button
               size="sm"
               variant="outline"
