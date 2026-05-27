@@ -26,8 +26,8 @@ const navByRole: Record<AppRole, { to: string; label: string; icon: React.Compon
     { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   ],
   researcher: [
-    { to: "/dashboard/calculator", label: "Calculator", icon: Calculator },
     { to: "/dashboard/my-vials", label: "My Vials", icon: Beaker },
+    { to: "/dashboard/calculator", label: "Calculator", icon: Calculator },
     { to: "/dashboard/research-logs", label: "Research Logs", icon: FileText },
   ],
 };
