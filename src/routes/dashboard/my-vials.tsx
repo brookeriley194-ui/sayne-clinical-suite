@@ -623,9 +623,24 @@ function VialCalcSheet({ vial, onUpdated }: { vial: Vial; onUpdated: () => void 
       <div className="py-4 space-y-5">
         {/* Vial setup */}
         <div className="grid grid-cols-3 gap-2 text-center">
-          <Metric label="Size" value={`${vial.vial_size_mg}`} unit="mg" />
+          <div className="rounded-md bg-muted/40 p-2">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Size</span>
+              <div className="inline-flex rounded border bg-background overflow-hidden">
+                {(["mg", "mL"] as const).map((u) => (
+                  <button key={u} type="button" onClick={() => setSizeUnit(u)}
+                    className={cn("px-1 text-[9px] font-mono transition-colors",
+                      sizeUnit === u ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
+                    {u}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Input type="number" step="0.1" value={size} onChange={(e) => setSize(e.target.value)}
+              placeholder="0" className="h-7 mt-1 text-sm font-mono text-center px-1" />
+          </div>
           <div className="rounded-md bg-muted/40 p-2 text-left">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">BAC</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">BAC (mL)</div>
             <Input type="number" step="0.1" value={bacWater} onChange={(e) => setBacWater(e.target.value)}
               placeholder="mL" className="h-7 mt-1 text-sm font-mono text-center px-1" />
           </div>
