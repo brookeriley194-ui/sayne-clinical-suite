@@ -77,6 +77,10 @@ function Page() {
   }
   useEffect(() => { void load(); }, []);
 
+  useEffect(() => {
+    if (sessionStorage.getItem("stack:prefill")) setBuildOpen(true);
+  }, []);
+
   return (
     <>
       <PageHeader
