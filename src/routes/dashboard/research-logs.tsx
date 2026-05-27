@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   DayCell, FREQUENCIES, colorFor, ReorderReminders, VialVisual, computeRemainingDoses,
+  ONGOING_CYCLE_DAYS, isOngoing, parseCustomDays,
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
 
