@@ -92,14 +92,29 @@ function Page() {
     setLoading(true);
     const in30 = format(addDays(new Date(), 30), "yyyy-MM-dd");
     const past30 = format(addDays(new Date(), -30), "yyyy-MM-dd");
-    const [s, v, d, dc] = await Promise.all([
-      supabase.from("stacks").select("*").order("created_at", { ascending: false }),
+    const [v, d, dc, p] = await Promise.all([
       supabase.from("vials").select("id, compound, reconstituted_at, vial_size_mg, concentration_mg_per_ml, bac_water_ml, status"),
       supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
       supabase.from("stack_doses").select("stack_id"),
+      supabase.from("protocols").select("*").order("created_at", { ascending: false }),
     ]);
-    if (s.error) toast.error(s.error.message);
-    setStacks((s.data ?? []) as Stack[]);
+    // Map "My Stacks" (protocols) into Stack shape for the calendar
+    const protocolStacks: Stack[] = ((p.data ?? []) as ProtocolRow[]).map((r) => ({
+      id: r.id,
+      peptide_name: `${r.name} · ${r.compound}`,
+      vial_id: null,
+      reconstituted_at: null,
+      time_of_day: r.time_of_day ?? "AM",
+      fasted: !!r.fasted,
+      cycle_length_days: r.ongoing ? ONGOING_CYCLE_DAYS : (r.duration_days ?? 30),
+      start_date: (r.created_at ?? new Date().toISOString()).slice(0, 10),
+      dose: r.dose ?? null,
+      dose_unit: r.dose_unit ?? "mg",
+      frequency: r.frequency ?? "daily",
+      notes: null,
+      created_at: r.created_at,
+    }));
+    setStacks(protocolStacks);
     setVials((v.data ?? []) as Vial[]);
     setDoses((d.data ?? []) as DoseLog[]);
     const counts: Record<string, number> = {};
@@ -110,7 +125,14 @@ function Page() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const channel = supabase
+      .channel("today-protocols")
+      .on("postgres_changes", { event: "*", schema: "public", table: "protocols" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("stack:prefill");
@@ -199,11 +221,7 @@ function Page() {
 
       <DoseCalendar stacks={stacks} doses={doses} onToggle={toggleDose} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
-        <StatCard label="Active in stack" value={stats.active} />
-        <StatCard label="Total entries" value={stats.total} />
-        <StatCard label="AM dosing" value={stats.am} />
-      </div>
+      <div className="mt-6" />
 
       <ProtocolStacksSection />
 
@@ -225,7 +243,7 @@ function DoseCalendar({
   stacks, doses, onToggle,
 }: { stacks: Stack[]; doses: DoseLog[]; onToggle: (s: Stack, d: Date, p: string) => void }) {
   const today = startOfDay(new Date());
-  const [view, setView] = useState<"day" | "week" | "month">("month");
+  const [view, setView] = useState<"day" | "week" | "month">("day");
   const [weekOffset, setWeekOffset] = useState(0);
   const [dayOffset, setDayOffset] = useState(0);
 
