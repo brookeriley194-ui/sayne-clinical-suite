@@ -164,14 +164,26 @@ function Page() {
         title="My Vials"
         subtitle="Personal inventory and reconstitution history."
         action={
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button className="gap-2"><Plus className="size-4" /> Add Vial</Button>
-            </SheetTrigger>
-            <AddVialSheet onClose={() => setOpen(false)} onSaved={() => { setOpen(false); load(); }} />
-          </Sheet>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" className="gap-2" onClick={() => setReceiptOpen(true)}>
+              <ReceiptText className="size-4" /> Import Receipt
+            </Button>
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button className="gap-2"><Plus className="size-4" /> Add Vial</Button>
+              </SheetTrigger>
+              <AddVialSheet onClose={() => setOpen(false)} onSaved={() => { setOpen(false); load(); }} />
+            </Sheet>
+          </div>
         }
       />
+
+      <ImportReceiptDialog
+        open={receiptOpen}
+        onClose={() => setReceiptOpen(false)}
+        onSaved={() => { setReceiptOpen(false); load(); }}
+      />
+
 
       <ReorderReminders />
 
