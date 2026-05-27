@@ -205,6 +205,7 @@ function Page() {
               usage={usage[v.id]}
               onDelete={() => remove(v.id)}
               onMarkEmpty={() => markEmpty(v.id)}
+              onRestore={(s) => restore(v.id, s)}
             />
           ))}
         </div>
@@ -213,7 +214,7 @@ function Page() {
   );
 }
 
-function VialCard({ vial, usage, onDelete, onMarkEmpty }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void }) {
+function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void; onRestore: (status: "open" | "sealed") => void }) {
   const days = vial.reconstituted_at
     ? differenceInDays(new Date(), new Date(vial.reconstituted_at))
     : null;
