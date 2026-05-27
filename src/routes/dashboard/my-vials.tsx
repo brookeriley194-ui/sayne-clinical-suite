@@ -342,6 +342,14 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChangeStatu
             : `Added ${format(new Date(vial.created_at), "MMM d")}`}
         </span>
         <div className="flex items-center gap-1">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
+                <CalcIcon className="size-3.5" /> Calc
+              </Button>
+            </SheetTrigger>
+            <VialCalcSheet vial={vial} />
+          </Sheet>
           {vial.status === "used" ? (
             <>
               <Button size="sm" variant="outline" onClick={() => onRestore("open")} className="h-7 text-xs gap-1.5">
@@ -365,6 +373,7 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChangeStatu
             <Trash2 className="size-3.5" />
           </Button>
         </div>
+
       </div>
     </div>
   );
