@@ -77,6 +77,10 @@ function Page() {
   }
   useEffect(() => { void load(); }, []);
 
+  useEffect(() => {
+    if (sessionStorage.getItem("stack:prefill")) setBuildOpen(true);
+  }, []);
+
   return (
     <>
       <PageHeader
@@ -318,6 +322,22 @@ function BuildStackModal({
       .neq("status", "used")
       .order("created_at", { ascending: false })
       .then(({ data }) => setVials((data ?? []) as VialOpt[]));
+
+    const raw = sessionStorage.getItem("stack:prefill");
+    if (raw) {
+      sessionStorage.removeItem("stack:prefill");
+      try {
+        const p = JSON.parse(raw) as { compound?: string; dose?: number; dose_unit?: string; vial_id?: string };
+        if (p.compound && (COMPOUNDS as readonly string[]).includes(p.compound)) {
+          setCompound(p.compound as typeof COMPOUNDS[number]);
+        }
+        if (p.dose != null) setDose(String(p.dose));
+        if (p.dose_unit && (UNITS as readonly string[]).includes(p.dose_unit)) {
+          setDoseUnit(p.dose_unit as typeof UNITS[number]);
+        }
+        if (p.vial_id) setVialId(p.vial_id);
+      } catch { /* ignore */ }
+    }
   }, [open]);
 
   const compoundsSorted = useMemo(
