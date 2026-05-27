@@ -46,19 +46,26 @@ type Stack = {
   vial_id?: string | null;
 };
 
-type VialOpt = { id: string; compound: string; vial_size_mg: number; status: string };
+type VialOpt = {
+  id: string; compound: string; vial_size_mg: number; status: string;
+  default_dose: number | null; default_dose_unit: string | null;
+};
+
+const TIMES = ["AM", "PM", "Both"] as const;
 
 const compoundRowSchema = z.object({
   compound: z.string().trim().min(1, "Pick a compound"),
   dose: z.number().positive("Dose must be > 0").max(100000),
   dose_unit: z.enum(UNITS),
   vial_id: z.string().nullable(),
+  frequency: z.string().min(1),
+  time_of_day: z.enum(TIMES),
+  fasted: z.boolean(),
 });
 
 const schema = z.object({
   name: z.string().trim().min(1, "Give your stack a name").max(120),
   compounds: z.array(compoundRowSchema).min(1, "Add at least one compound"),
-  frequency: z.string().min(1),
   route: z.enum(ROUTES),
   ongoing: z.boolean(),
   duration_days: z.number().int().positive().max(3650).nullable(),
