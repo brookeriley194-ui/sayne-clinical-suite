@@ -312,10 +312,15 @@ type CompoundRow = {
   dose: string;
   dose_unit: typeof UNITS[number];
   vial_id: string;
+  frequency: typeof FREQUENCIES[number];
+  customDays: number[];
+  time_of_day: typeof TIMES[number];
+  fasted: boolean;
 };
 
 const emptyRow = (): CompoundRow => ({
   compound: "", customCompound: "", dose: "", dose_unit: "mcg", vial_id: "none",
+  frequency: "Once Daily", customDays: [], time_of_day: "AM", fasted: false,
 });
 
 function BuildStackModal({
