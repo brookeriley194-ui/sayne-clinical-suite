@@ -119,7 +119,7 @@ function HomePage() {
       {/* Day view */}
       <section>
         <div className="flex items-baseline justify-between mb-3">
-          <h2 className="font-display text-xl font-semibold">Today's Stack</h2>
+          <h2 className="font-display text-xl font-bold">Today's Stack</h2>
           <Link to="/dashboard/research-logs" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
             Open full calendar <ArrowRight className="size-3" />
           </Link>
