@@ -63,8 +63,13 @@ function Page() {
     const open = vials.filter((v) => v.status === "open").length;
     const sealed = vials.filter((v) => v.status === "sealed").length;
     const used = vials.filter((v) => v.status === "used").length;
-    return { open, sealed, used };
+    return { open, sealed, used, all: vials.length };
   }, [vials]);
+
+  const visibleVials = useMemo(
+    () => (tab === "all" ? vials : vials.filter((v) => v.status === tab)),
+    [vials, tab],
+  );
 
   const remove = async (id: string) => {
     const { error } = await supabase.from("vials").delete().eq("id", id);
