@@ -350,7 +350,7 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChangeStatu
                 <CalcIcon className="size-3.5" /> Calc
               </Button>
             </SheetTrigger>
-            <VialCalcSheet vial={vial} />
+            <VialCalcSheet vial={vial} onUpdated={onUpdated} />
           </Sheet>
           {vial.status === "used" ? (
             <>
