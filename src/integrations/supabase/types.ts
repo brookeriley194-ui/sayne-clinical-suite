@@ -89,6 +89,7 @@ export type Database = {
           route: string
           source: string
           updated_at: string
+          vial_id: string | null
         }
         Insert: {
           compound: string
@@ -105,6 +106,7 @@ export type Database = {
           route: string
           source?: string
           updated_at?: string
+          vial_id?: string | null
         }
         Update: {
           compound?: string
@@ -121,8 +123,17 @@ export type Database = {
           route?: string
           source?: string
           updated_at?: string
+          vial_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "protocols_vial_id_fkey"
+            columns: ["vial_id"]
+            isOneToOne: false
+            referencedRelation: "vials"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stack_doses: {
         Row: {

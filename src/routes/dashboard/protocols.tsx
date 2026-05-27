@@ -43,7 +43,10 @@ type Stack = {
   id: string; name: string; compound: string; dose: number; dose_unit: string;
   frequency: string; route: string; duration_days: number | null;
   ongoing: boolean; notes: string | null; created_at: string; source?: string | null;
+  vial_id?: string | null;
 };
+
+type VialOpt = { id: string; compound: string; vial_size_mg: number; status: string };
 
 const schema = z.object({
   name: z.string().trim().min(1, "Give your stack a name").max(120),
@@ -299,14 +302,22 @@ function BuildStackModal({
   const [ongoing, setOngoing] = useState(false);
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
+  const [vialId, setVialId] = useState<string>("none");
+  const [vials, setVials] = useState<VialOpt[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setName(""); setCompound("BPC-157"); setDose(""); setDoseUnit("mcg");
       setFrequency("Once Daily"); setRoute("Subcutaneous"); setOngoing(false);
-      setDuration(""); setNotes(""); setSaving(false);
+      setDuration(""); setNotes(""); setVialId("none"); setSaving(false);
+      return;
     }
+    void supabase.from("vials")
+      .select("id, compound, vial_size_mg, status")
+      .neq("status", "used")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setVials((data ?? []) as VialOpt[]));
   }, [open]);
 
   const compoundsSorted = useMemo(
@@ -329,6 +340,7 @@ function BuildStackModal({
     setSaving(true);
     const { error } = await supabase.from("protocols").insert({
       ...parsed.data, notes: parsed.data.notes || null, doctor_id: userId, source: "manual",
+      vial_id: vialId === "none" ? null : vialId,
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -423,10 +435,31 @@ function BuildStackModal({
           </div>
 
           <div className="space-y-2 md:col-span-2">
+            <Label>Link to vial <span className="text-muted-foreground">(optional)</span></Label>
+            <Select value={vialId} onValueChange={setVialId}>
+              <SelectTrigger>
+                <SelectValue placeholder="No vial linked" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No vial linked</SelectItem>
+                {vials.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.compound} · {v.vial_size_mg}mg <span className="text-muted-foreground">({v.status})</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Linking lets My Vials estimate remaining doses for this stack.
+            </p>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="notes">Notes or goals for this cycle <span className="text-muted-foreground">(optional)</span></Label>
             <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={2000}
               placeholder="What you're hoping to learn, stacking notes, titration plan…" />
           </div>
+
 
           <div className="md:col-span-2 flex justify-end">
             <Button type="submit" disabled={saving}

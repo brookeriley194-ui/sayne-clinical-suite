@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX, Undo2 } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX, Undo2, ReceiptText, Upload, Calculator as CalcIcon, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyCard } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -53,13 +56,14 @@ function Page() {
   const [usage, setUsage] = useState<Record<string, VialUsage>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [tab, setTab] = useState<"all" | "open" | "sealed" | "used">("all");
 
   const load = async () => {
     setLoading(true);
     const [v, s, d] = await Promise.all([
       supabase.from("vials").select("*").order("created_at", { ascending: false }),
-      supabase.from("stacks").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
+      supabase.from("protocols").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
       supabase.from("stack_doses").select("stack_id"),
     ]);
     if (v.error) toast.error(v.error.message);
@@ -160,14 +164,26 @@ function Page() {
         title="My Vials"
         subtitle="Personal inventory and reconstitution history."
         action={
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button className="gap-2"><Plus className="size-4" /> Add Vial</Button>
-            </SheetTrigger>
-            <AddVialSheet onClose={() => setOpen(false)} onSaved={() => { setOpen(false); load(); }} />
-          </Sheet>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" className="gap-2" onClick={() => setReceiptOpen(true)}>
+              <ReceiptText className="size-4" /> Import Receipt
+            </Button>
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button className="gap-2"><Plus className="size-4" /> Add Vial</Button>
+              </SheetTrigger>
+              <AddVialSheet onClose={() => setOpen(false)} onSaved={() => { setOpen(false); load(); }} />
+            </Sheet>
+          </div>
         }
       />
+
+      <ImportReceiptDialog
+        open={receiptOpen}
+        onClose={() => setReceiptOpen(false)}
+        onSaved={() => { setReceiptOpen(false); load(); }}
+      />
+
 
       <ReorderReminders />
 
@@ -326,6 +342,14 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChangeStatu
             : `Added ${format(new Date(vial.created_at), "MMM d")}`}
         </span>
         <div className="flex items-center gap-1">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
+                <CalcIcon className="size-3.5" /> Calc
+              </Button>
+            </SheetTrigger>
+            <VialCalcSheet vial={vial} />
+          </Sheet>
           {vial.status === "used" ? (
             <>
               <Button size="sm" variant="outline" onClick={() => onRestore("open")} className="h-7 text-xs gap-1.5">
@@ -349,6 +373,7 @@ function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChangeStatu
             <Trash2 className="size-3.5" />
           </Button>
         </div>
+
       </div>
     </div>
   );
@@ -505,5 +530,258 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         </SheetFooter>
       </form>
     </SheetContent>
+  );
+}
+
+/* ========================== Inline Vial Calculator ========================== */
+
+function VialCalcSheet({ vial }: { vial: Vial }) {
+  const conc = vial.concentration_mg_per_ml ??
+    (vial.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
+
+  const [dose, setDose] = useState("");
+  const [unit, setUnit] = useState<"mcg" | "mg" | "IU" | "units">("mcg");
+
+  const mg = dose ? doseToMg(Number(dose), unit, conc) : null;
+  const volumeMl = mg != null && conc && conc > 0 ? mg / conc : null;
+  // standard 100u (1 mL) insulin syringe
+  const units100 = volumeMl != null ? volumeMl * 100 : null;
+
+  return (
+    <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+      <SheetHeader>
+        <SheetTitle className="font-display">{vial.compound} · Calculator</SheetTitle>
+        <SheetDescription>Quick reconstitution math from this vial's setup.</SheetDescription>
+      </SheetHeader>
+
+      <div className="py-4 space-y-4">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <Metric label="Size" value={`${vial.vial_size_mg}`} unit="mg" />
+          <Metric label="BAC" value={vial.bac_water_ml ? `${vial.bac_water_ml}` : "—"} unit="mL" />
+          <Metric label="Conc." value={conc ? conc.toFixed(2) : "—"} unit="mg/mL" />
+        </div>
+
+        {!conc && (
+          <div className="rounded-md border bg-yellow-500/5 border-yellow-500/30 p-3 text-xs">
+            This vial has no BAC water set yet. Add a BAC volume to enable calculations.
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label>Desired dose</Label>
+          <div className="flex gap-2">
+            <Input type="number" inputMode="decimal" step="any" min="0" value={dose}
+              onChange={(e) => setDose(e.target.value)} placeholder="e.g. 250" className="flex-1 font-mono" />
+            <div className="inline-flex rounded-md border overflow-hidden">
+              {(["mcg", "mg", "IU", "units"] as const).map((u) => (
+                <button key={u} type="button" onClick={() => setUnit(u)}
+                  className={cn("px-2.5 text-xs font-mono transition-colors",
+                    unit === u ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {volumeMl != null && (
+          <div className="rounded-md border bg-primary/5 border-primary/30 p-4 space-y-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Draw volume</div>
+              <div className="font-mono text-3xl font-semibold tabular-nums">
+                {volumeMl.toFixed(3)} <span className="text-base text-muted-foreground">mL</span>
+              </div>
+            </div>
+            {units100 != null && (
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">On a 100-unit (1 mL) syringe</div>
+                <div className="font-mono text-2xl font-semibold tabular-nums">
+                  {units100.toFixed(1)} <span className="text-sm text-muted-foreground">units</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </SheetContent>
+  );
+}
+
+/* ============================ Import Receipt ============================ */
+
+type ParsedVial = {
+  compound: string;
+  vial_size_mg: number | null;
+  quantity: number | null;
+  lot_number: string | null;
+  notes: string | null;
+};
+
+function ImportReceiptDialog({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [rows, setRows] = useState<ParsedVial[]>([]);
+
+  useEffect(() => {
+    if (!open) { setPreview(null); setRows([]); setParsing(false); setSaving(false); }
+  }, [open]);
+
+  const pickFile = () => fileRef.current?.click();
+
+  const onFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image of your receipt");
+      return;
+    }
+    if (file.size > 6_000_000) {
+      toast.error("Image is larger than 6 MB — try a smaller photo");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = String(reader.result);
+      setPreview(dataUrl);
+      setParsing(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("parse-receipt", {
+          body: { image: dataUrl },
+        });
+        if (error) throw error;
+        const vials = (data?.vials ?? []) as ParsedVial[];
+        if (vials.length === 0) {
+          toast.error("Couldn't find any vials on that receipt");
+        } else {
+          toast.success(`Found ${vials.length} item${vials.length === 1 ? "" : "s"}`);
+        }
+        setRows(vials);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Failed to parse receipt";
+        toast.error(msg);
+      } finally {
+        setParsing(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const updateRow = (i: number, patch: Partial<ParsedVial>) =>
+    setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)));
+  const removeRow = (i: number) => setRows((r) => r.filter((_, idx) => idx !== i));
+
+  const importAll = async () => {
+    const usable = rows.filter((r) => r.compound.trim() && r.vial_size_mg && r.vial_size_mg > 0);
+    if (usable.length === 0) {
+      toast.error("Each item needs a compound and vial size");
+      return;
+    }
+    setSaving(true);
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) { setSaving(false); return toast.error("Not signed in"); }
+
+    const inserts = usable.flatMap((r) => {
+      const qty = Math.max(1, r.quantity ?? 1);
+      return Array.from({ length: qty }).map(() => ({
+        doctor_id: u.user!.id,
+        compound: r.compound.trim(),
+        vial_size_mg: Number(r.vial_size_mg),
+        status: "sealed",
+        lot_number: r.lot_number?.trim() || null,
+        notes: r.notes?.trim() || null,
+      }));
+    });
+
+    const { error } = await supabase.from("vials").insert(inserts);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Added ${inserts.length} vial${inserts.length === 1 ? "" : "s"}`);
+    onSaved();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display flex items-center gap-2">
+            <ReceiptText className="size-5" /> Import from Receipt
+          </DialogTitle>
+          <DialogDescription>
+            Upload a photo of your supplier receipt. AI will extract each vial — review and edit before saving.
+          </DialogDescription>
+        </DialogHeader>
+
+        <input ref={fileRef} type="file" accept="image/*" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.currentTarget.value = ""; }} />
+
+        {!preview && (
+          <button type="button" onClick={pickFile}
+            className="border-2 border-dashed border-border rounded-lg p-10 text-center hover:border-primary/50 transition-colors">
+            <Upload className="size-8 mx-auto text-muted-foreground mb-2" />
+            <div className="font-medium">Tap to upload receipt photo</div>
+            <div className="text-xs text-muted-foreground mt-1">JPG or PNG · up to 6 MB</div>
+          </button>
+        )}
+
+        {preview && (
+          <div className="space-y-4">
+            <div className="flex gap-3 items-start">
+              <img src={preview} alt="Receipt" className="w-24 h-24 object-cover rounded-md border" />
+              <div className="flex-1 text-sm">
+                {parsing ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" /> Reading receipt…
+                  </div>
+                ) : (
+                  <div>
+                    <div className="font-medium">{rows.length} item{rows.length === 1 ? "" : "s"} found</div>
+                    <div className="text-xs text-muted-foreground">Edit anything that's wrong, then import.</div>
+                  </div>
+                )}
+              </div>
+              <Button type="button" variant="ghost" size="sm" onClick={pickFile}>Re-upload</Button>
+            </div>
+
+            {!parsing && rows.length > 0 && (
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+                {rows.map((r, i) => (
+                  <div key={i} className="rounded-md border p-3 grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-5 space-y-1">
+                      <Label className="text-[10px] uppercase">Compound</Label>
+                      <Input value={r.compound} onChange={(e) => updateRow(i, { compound: e.target.value })} />
+                    </div>
+                    <div className="col-span-3 space-y-1">
+                      <Label className="text-[10px] uppercase">Size (mg)</Label>
+                      <Input type="number" step="0.1" value={r.vial_size_mg ?? ""}
+                        onChange={(e) => updateRow(i, { vial_size_mg: e.target.value ? Number(e.target.value) : null })}
+                        className="font-mono" />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-[10px] uppercase">Qty</Label>
+                      <Input type="number" min="1" value={r.quantity ?? 1}
+                        onChange={(e) => updateRow(i, { quantity: e.target.value ? Number(e.target.value) : 1 })}
+                        className="font-mono" />
+                    </div>
+                    <div className="col-span-2 flex justify-end">
+                      <Button type="button" size="sm" variant="ghost" onClick={() => removeRow(i)}
+                        className="h-8 text-destructive hover:text-destructive">
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter className="gap-2">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" disabled={saving || parsing || rows.length === 0} onClick={importAll}>
+            {saving ? "Saving…" : `Import ${rows.length || ""} vial${rows.length === 1 ? "" : "s"}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
