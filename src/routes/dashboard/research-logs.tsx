@@ -20,7 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  DayCell, FREQUENCIES, colorFor,
+  DayCell, FREQUENCIES, colorFor, ReorderReminders,
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
 
