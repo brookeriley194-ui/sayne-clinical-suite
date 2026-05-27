@@ -791,9 +791,15 @@ function ProtocolStacksSection() {
 function MyVialsSection({
   vials, usage, stacks, onReload,
 }: { vials: Vial[]; usage: Record<string, VialUsage>; stacks: Stack[]; onReload: () => void }) {
-  const [filter, setFilter] = useState<"all" | "stack">("all");
+  const [filter, setFilter] = useState<"all" | "stack">("stack");
   const stackVialIds = useMemo(() => new Set(stacks.map((s) => s.vial_id).filter(Boolean) as string[]), [stacks]);
-  const filtered = filter === "stack" ? vials.filter((v) => stackVialIds.has(v.id)) : vials;
+  const stackCompounds = useMemo(
+    () => new Set(stacks.map((s) => (s.peptide_name ?? "").trim().toLowerCase()).filter(Boolean)),
+    [stacks],
+  );
+  const filtered = filter === "stack"
+    ? vials.filter((v) => stackVialIds.has(v.id) || stackCompounds.has((v.compound ?? "").trim().toLowerCase()))
+    : vials;
 
   const remove = async (id: string) => {
     const { error } = await supabase.from("vials").delete().eq("id", id);
