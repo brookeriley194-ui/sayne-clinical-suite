@@ -183,7 +183,7 @@ function VialsSection({ vials, loading }: { vials: Vial[]; loading: boolean }) {
   return (
     <section className="sayne-card p-5 flex flex-col">
       <div className="flex items-baseline justify-between mb-4">
-        <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+        <h2 className="font-display text-xl font-bold flex items-center gap-2">
           <Beaker className="size-5 text-primary" /> My Vials
         </h2>
         <Link to="/dashboard/my-vials" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
