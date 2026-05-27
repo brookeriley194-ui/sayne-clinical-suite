@@ -25,6 +25,7 @@ import {
   ONGOING_CYCLE_DAYS, isOngoing, parseCustomDays,
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
+import { VialCard, computeVialUsages, type Vial as VialFull, type VialUsage } from "@/routes/dashboard/my-vials";
 
 export const Route = createFileRoute("/dashboard/today")({ component: Page });
 
@@ -73,13 +74,14 @@ function GreetingHeader({ vials }: { vials: { compound: string; reconstituted_at
 
 
 
-type Vial = { id: string; compound: string; reconstituted_at: string | null; vial_size_mg: number; concentration_mg_per_ml: number | null; bac_water_ml: number | null; status: string };
+type Vial = VialFull;
 const DOSE_UNITS = ["mg", "mcg", "units", "mL"];
 const VIAL_STATUSES = ["sealed", "open", "used"] as const;
 
 function Page() {
   const [stacks, setStacks] = useState<Stack[]>([]);
   const [vials, setVials] = useState<Vial[]>([]);
+  const [vialUsage, setVialUsage] = useState<Record<string, VialUsage>>({});
   const [doses, setDoses] = useState<DoseLog[]>([]);
   const [doseCounts, setDoseCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -92,16 +94,16 @@ function Page() {
     setLoading(true);
     const in30 = format(addDays(new Date(), 30), "yyyy-MM-dd");
     const past30 = format(addDays(new Date(), -30), "yyyy-MM-dd");
-    const [v, d, dc, p] = await Promise.all([
-      supabase.from("vials").select("id, compound, reconstituted_at, vial_size_mg, concentration_mg_per_ml, bac_water_ml, status"),
+    const [v, d, dc, p, vs] = await Promise.all([
+      supabase.from("vials").select("*").order("created_at", { ascending: false }),
       supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
       supabase.from("stack_doses").select("stack_id"),
       supabase.from("protocols").select("*").order("created_at", { ascending: false }),
+      supabase.from("stacks").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
     ]);
-    // Map "My Stacks" (protocols) into Stack shape for the calendar
     const protocolStacks: Stack[] = ((p.data ?? []) as ProtocolRow[]).map((r) => ({
       id: r.id,
-      peptide_name: `${r.name} · ${r.compound}`,
+      peptide_name: r.compound,
       vial_id: null,
       reconstituted_at: null,
       time_of_day: r.time_of_day ?? "AM",
@@ -115,7 +117,13 @@ function Page() {
       created_at: r.created_at,
     }));
     setStacks(protocolStacks);
-    setVials((v.data ?? []) as Vial[]);
+    const vialList = (v.data ?? []) as Vial[];
+    setVials(vialList);
+    setVialUsage(computeVialUsages(
+      vialList,
+      (vs.data ?? []) as { id: string; vial_id: string; dose: number | null; dose_unit: string; created_at: string }[],
+      (dc.data ?? []) as { stack_id: string }[],
+    ));
     setDoses((d.data ?? []) as DoseLog[]);
     const counts: Record<string, number> = {};
     for (const row of (dc.data ?? []) as { stack_id: string }[]) {
@@ -220,6 +228,10 @@ function Page() {
       <ReorderReminders />
 
       <DoseCalendar stacks={stacks} doses={doses} onToggle={toggleDose} />
+
+      <div className="mt-6" />
+
+      <MyVialsSection vials={vials} usage={vialUsage} onReload={load} />
 
       <div className="mt-6" />
 
@@ -770,6 +782,49 @@ function ProtocolStacksSection() {
               </div>
             );
           })}
+        </div>
+      )}
+    </>
+  );
+}
+
+function MyVialsSection({
+  vials, usage, onReload,
+}: { vials: Vial[]; usage: Record<string, VialUsage>; onReload: () => void }) {
+  const remove = async (id: string) => {
+    const { error } = await supabase.from("vials").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Vial removed");
+    onReload();
+  };
+  const setStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("vials").update({ status }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(`Status: ${status}`);
+    onReload();
+  };
+  return (
+    <>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="font-display text-xl font-semibold">My Vials</h2>
+        <span className="text-xs text-muted-foreground">{vials.length} vial{vials.length === 1 ? "" : "s"}</span>
+      </div>
+      {vials.length === 0 ? (
+        <EmptyCard title="No vials yet" body="Add vials in My Vials to see them here." />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {vials.map((v) => (
+            <VialCard
+              key={v.id}
+              vial={v}
+              usage={usage[v.id]}
+              onDelete={() => remove(v.id)}
+              onMarkEmpty={() => setStatus(v.id, "used")}
+              onRestore={(s) => setStatus(v.id, s)}
+              onChangeStatus={(s) => setStatus(v.id, s)}
+              onUpdated={onReload}
+            />
+          ))}
         </div>
       )}
     </>
