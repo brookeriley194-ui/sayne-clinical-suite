@@ -321,7 +321,18 @@ export function SyringeVisualizer({
             {drawMl.toFixed(2)}
             <span className="text-2xl text-muted-foreground ml-2">mL</span>
           </div>
+          {spec.unitMarks && (
+            <div className="mt-1 text-sm text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              {Math.round(drawMl * 100)} units on {spec.label}
+            </div>
+          )}
+          {overfill && (
+            <div className="mt-2 text-xs text-destructive">
+              Exceeds syringe capacity ({maxMl} mL). Choose a larger syringe.
+            </div>
+          )}
         </div>
+
 
         <div className="flex items-center gap-3 flex-wrap justify-center">
           {/* Potency badge */}
