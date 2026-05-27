@@ -472,6 +472,37 @@ function BuildStackModal({
         setVialProtocols(map);
       });
 
+    // Prefill from existing stack when editing
+    if (editing && editing.rows.length) {
+      const first = editing.rows[0];
+      setName(editing.name);
+      setRoute((ROUTES as readonly string[]).includes(first.route) ? (first.route as typeof ROUTES[number]) : "Subcutaneous");
+      setOngoing(first.ongoing);
+      setDuration(first.duration_days != null ? String(first.duration_days) : "");
+      setNotes(first.notes ?? "");
+      setRows(editing.rows.map((s) => {
+        const r = emptyRow();
+        if ((COMPOUNDS as readonly string[]).includes(s.compound)) r.compound = s.compound;
+        else { r.compound = "Other"; r.customCompound = s.compound; }
+        r.dose = String(s.dose);
+        if ((UNITS as readonly string[]).includes(s.dose_unit)) r.dose_unit = s.dose_unit as typeof UNITS[number];
+        r.vial_id = s.vial_id ?? "none";
+        if ((FREQUENCIES as readonly string[]).includes(s.frequency)) {
+          r.frequency = s.frequency as typeof FREQUENCIES[number];
+        } else if (s.frequency.startsWith("Custom")) {
+          r.frequency = "Custom";
+          const match = s.frequency.match(/\(([^)]+)\)/);
+          if (match) {
+            r.customDays = match[1].split(",").map((d) => DAY_LABELS.indexOf(d.trim())).filter((i) => i >= 0);
+          }
+        }
+        if ((TIMES as readonly string[]).includes(s.time_of_day)) r.time_of_day = s.time_of_day as typeof TIMES[number];
+        r.fasted = !!s.fasted;
+        return r;
+      }));
+      return;
+    }
+
     const raw = sessionStorage.getItem("stack:prefill");
     if (raw) {
       sessionStorage.removeItem("stack:prefill");
@@ -490,7 +521,7 @@ function BuildStackModal({
         setRows([r]);
       } catch { /* ignore */ }
     }
-  }, [open]);
+  }, [open, editing]);
 
   function handleVialChange(i: number, vialId: string) {
     if (vialId === "none") { updateRow(i, { vial_id: "none" }); return; }
