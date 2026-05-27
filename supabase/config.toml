@@ -1,1 +1,7 @@
 project_id = "oevucjnvgwywitvtsdga"
+
+[functions.create-magic-link]
+verify_jwt = false
+
+[functions.get-patient-protocol]
+verify_jwt = false
