@@ -1,5 +1,8 @@
 import { format, differenceInDays, startOfDay } from "date-fns";
-import { Sun, Moon, Check } from "lucide-react";
+import { Sun, Moon, Check, AlertTriangle, ShoppingCart } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export type Stack = {
