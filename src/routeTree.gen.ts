@@ -13,6 +13,13 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardVialsRouteImport } from './routes/dashboard/vials'
+import { Route as DashboardResearchLogsRouteImport } from './routes/dashboard/research-logs'
+import { Route as DashboardProtocolsRouteImport } from './routes/dashboard/protocols'
+import { Route as DashboardPatientsRouteImport } from './routes/dashboard/patients'
+import { Route as DashboardMyVialsRouteImport } from './routes/dashboard/my-vials'
+import { Route as DashboardCalculatorRouteImport } from './routes/dashboard/calculator'
+import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -34,37 +41,127 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardVialsRoute = DashboardVialsRouteImport.update({
+  id: '/vials',
+  path: '/vials',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardResearchLogsRoute = DashboardResearchLogsRouteImport.update({
+  id: '/research-logs',
+  path: '/research-logs',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProtocolsRoute = DashboardProtocolsRouteImport.update({
+  id: '/protocols',
+  path: '/protocols',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPatientsRoute = DashboardPatientsRouteImport.update({
+  id: '/patients',
+  path: '/patients',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMyVialsRoute = DashboardMyVialsRouteImport.update({
+  id: '/my-vials',
+  path: '/my-vials',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCalculatorRoute = DashboardCalculatorRouteImport.update({
+  id: '/calculator',
+  path: '/calculator',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
+  '/dashboard/calculator': typeof DashboardCalculatorRoute
+  '/dashboard/my-vials': typeof DashboardMyVialsRoute
+  '/dashboard/patients': typeof DashboardPatientsRoute
+  '/dashboard/protocols': typeof DashboardProtocolsRoute
+  '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/vials': typeof DashboardVialsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
+  '/dashboard/calculator': typeof DashboardCalculatorRoute
+  '/dashboard/my-vials': typeof DashboardMyVialsRoute
+  '/dashboard/patients': typeof DashboardPatientsRoute
+  '/dashboard/protocols': typeof DashboardProtocolsRoute
+  '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/vials': typeof DashboardVialsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/dashboard/analytics': typeof DashboardAnalyticsRoute
+  '/dashboard/calculator': typeof DashboardCalculatorRoute
+  '/dashboard/my-vials': typeof DashboardMyVialsRoute
+  '/dashboard/patients': typeof DashboardPatientsRoute
+  '/dashboard/protocols': typeof DashboardProtocolsRoute
+  '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/vials': typeof DashboardVialsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/login' | '/signup'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/signup'
+    | '/dashboard/analytics'
+    | '/dashboard/calculator'
+    | '/dashboard/my-vials'
+    | '/dashboard/patients'
+    | '/dashboard/protocols'
+    | '/dashboard/research-logs'
+    | '/dashboard/vials'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/login' | '/signup'
-  id: '__root__' | '/' | '/dashboard' | '/login' | '/signup'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/signup'
+    | '/dashboard/analytics'
+    | '/dashboard/calculator'
+    | '/dashboard/my-vials'
+    | '/dashboard/patients'
+    | '/dashboard/protocols'
+    | '/dashboard/research-logs'
+    | '/dashboard/vials'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/signup'
+    | '/dashboard/analytics'
+    | '/dashboard/calculator'
+    | '/dashboard/my-vials'
+    | '/dashboard/patients'
+    | '/dashboard/protocols'
+    | '/dashboard/research-logs'
+    | '/dashboard/vials'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
 }
@@ -99,15 +196,98 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/vials': {
+      id: '/dashboard/vials'
+      path: '/vials'
+      fullPath: '/dashboard/vials'
+      preLoaderRoute: typeof DashboardVialsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/research-logs': {
+      id: '/dashboard/research-logs'
+      path: '/research-logs'
+      fullPath: '/dashboard/research-logs'
+      preLoaderRoute: typeof DashboardResearchLogsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/protocols': {
+      id: '/dashboard/protocols'
+      path: '/protocols'
+      fullPath: '/dashboard/protocols'
+      preLoaderRoute: typeof DashboardProtocolsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/patients': {
+      id: '/dashboard/patients'
+      path: '/patients'
+      fullPath: '/dashboard/patients'
+      preLoaderRoute: typeof DashboardPatientsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/my-vials': {
+      id: '/dashboard/my-vials'
+      path: '/my-vials'
+      fullPath: '/dashboard/my-vials'
+      preLoaderRoute: typeof DashboardMyVialsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/calculator': {
+      id: '/dashboard/calculator'
+      path: '/calculator'
+      fullPath: '/dashboard/calculator'
+      preLoaderRoute: typeof DashboardCalculatorRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/analytics': {
+      id: '/dashboard/analytics'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof DashboardAnalyticsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
+interface DashboardRouteChildren {
+  DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
+  DashboardCalculatorRoute: typeof DashboardCalculatorRoute
+  DashboardMyVialsRoute: typeof DashboardMyVialsRoute
+  DashboardPatientsRoute: typeof DashboardPatientsRoute
+  DashboardProtocolsRoute: typeof DashboardProtocolsRoute
+  DashboardResearchLogsRoute: typeof DashboardResearchLogsRoute
+  DashboardVialsRoute: typeof DashboardVialsRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAnalyticsRoute: DashboardAnalyticsRoute,
+  DashboardCalculatorRoute: DashboardCalculatorRoute,
+  DashboardMyVialsRoute: DashboardMyVialsRoute,
+  DashboardPatientsRoute: DashboardPatientsRoute,
+  DashboardProtocolsRoute: DashboardProtocolsRoute,
+  DashboardResearchLogsRoute: DashboardResearchLogsRoute,
+  DashboardVialsRoute: DashboardVialsRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
