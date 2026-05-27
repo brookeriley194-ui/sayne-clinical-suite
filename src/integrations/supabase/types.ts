@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      patient_links: {
+        Row: {
+          created_at: string
+          doctor_id: string
+          expires_at: string | null
+          id: string
+          patient_email: string | null
+          patient_name: string
+          protocol_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          doctor_id: string
+          expires_at?: string | null
+          id?: string
+          patient_email?: string | null
+          patient_name: string
+          protocol_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          doctor_id?: string
+          expires_at?: string | null
+          id?: string
+          patient_email?: string | null
+          patient_name?: string
+          protocol_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_links_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

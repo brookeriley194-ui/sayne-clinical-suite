@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Pencil, Send } from "lucide-react";
+import { Pencil, Send, Copy, Check, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/dashboard-ui";
@@ -13,6 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/dashboard/protocols")({ component: Page });
 
@@ -20,19 +23,16 @@ const COMPOUNDS = ["BPC-157", "TB-500", "Ipamorelin", "CJC-1295", "Selank", "Sem
 const FREQUENCIES = ["Once Daily", "Twice Daily", "Every Other Day", "Weekly", "Custom"] as const;
 const ROUTES = ["Subcutaneous", "Intranasal", "Oral", "Topical"] as const;
 const UNITS = ["mcg", "mg", "IU"] as const;
+const EXPIRY_OPTIONS = [
+  { value: "7d", label: "7 Days" },
+  { value: "30d", label: "30 Days" },
+  { value: "never", label: "Never" },
+] as const;
 
 type Protocol = {
-  id: string;
-  name: string;
-  compound: string;
-  dose: number;
-  dose_unit: string;
-  frequency: string;
-  route: string;
-  duration_days: number | null;
-  ongoing: boolean;
-  notes: string | null;
-  created_at: string;
+  id: string; name: string; compound: string; dose: number; dose_unit: string;
+  frequency: string; route: string; duration_days: number | null;
+  ongoing: boolean; notes: string | null; created_at: string;
 };
 
 const schema = z.object({
@@ -52,6 +52,7 @@ function Page() {
   const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sendTarget, setSendTarget] = useState<Protocol | null>(null);
 
   const [name, setName] = useState("");
   const [compound, setCompound] = useState<typeof COMPOUNDS[number]>("BPC-157");
@@ -66,14 +67,11 @@ function Page() {
   async function load() {
     setLoading(true);
     const { data, error } = await supabase
-      .from("protocols")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .from("protocols").select("*").order("created_at", { ascending: false });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     setProtocols((data ?? []) as Protocol[]);
   }
-
   useEffect(() => { void load(); }, []);
 
   function resetForm() {
@@ -96,9 +94,7 @@ function Page() {
 
     setSaving(true);
     const { error } = await supabase.from("protocols").insert({
-      ...parsed.data,
-      notes: parsed.data.notes || null,
-      doctor_id: user.id,
+      ...parsed.data, notes: parsed.data.notes || null, doctor_id: user.id,
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -143,9 +139,7 @@ function Page() {
                     style={{
                       backgroundColor: doseUnit === u ? "var(--primary)" : "transparent",
                       color: doseUnit === u ? "var(--primary-foreground, #fff)" : "var(--muted-foreground)",
-                    }}>
-                    {u}
-                  </button>
+                    }}>{u}</button>
                 ))}
               </div>
             </div>
@@ -216,14 +210,21 @@ function Page() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {protocols.map((p) => <ProtocolCard key={p.id} p={p} />)}
+          {protocols.map((p) => (
+            <ProtocolCard key={p.id} p={p} onSend={() => setSendTarget(p)} />
+          ))}
         </div>
       )}
+
+      <SendToPatientSheet
+        protocol={sendTarget}
+        onClose={() => setSendTarget(null)}
+      />
     </>
   );
 }
 
-function ProtocolCard({ p }: { p: Protocol }) {
+function ProtocolCard({ p, onSend }: { p: Protocol; onSend: () => void }) {
   return (
     <div className="sayne-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-2">
@@ -259,12 +260,143 @@ function ProtocolCard({ p }: { p: Protocol }) {
 
       {p.notes && <p className="text-xs text-muted-foreground line-clamp-2">{p.notes}</p>}
 
-      <button type="button"
+      <button type="button" onClick={onSend}
         className="mt-auto inline-flex items-center justify-center gap-2 rounded-md h-9 text-sm font-medium transition-colors hover:opacity-90"
         style={{ backgroundColor: "var(--primary)", color: "var(--foreground)" }}>
         <Send className="h-4 w-4" />
         Send to Patient
       </button>
     </div>
+  );
+}
+
+function SendToPatientSheet({ protocol, onClose }: { protocol: Protocol | null; onClose: () => void }) {
+  const [pName, setPName] = useState("");
+  const [pEmail, setPEmail] = useState("");
+  const [expiry, setExpiry] = useState<"7d" | "30d" | "never">("30d");
+  const [generating, setGenerating] = useState(false);
+  const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (protocol) {
+      setPName(""); setPEmail(""); setExpiry("30d");
+      setLink(null); setCopied(false);
+    }
+  }, [protocol?.id]);
+
+  async function generate() {
+    if (!protocol) return;
+    if (!pName.trim()) { toast.error("Patient name is required"); return; }
+    setGenerating(true);
+    const { data, error } = await supabase.functions.invoke("create-magic-link", {
+      body: {
+        protocol_id: protocol.id,
+        patient_name: pName.trim(),
+        patient_email: pEmail.trim() || null,
+        expiry,
+      },
+    });
+    setGenerating(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "Failed to generate link");
+      return;
+    }
+    setLink((data as any).url as string);
+  }
+
+  async function copy() {
+    if (!link) return;
+    await navigator.clipboard.writeText(link);
+    setCopied(true);
+    toast.success("Link copied");
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Sheet open={!!protocol} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-y-auto" style={{ backgroundColor: "var(--background)" }}>
+        <div className="p-6">
+          <SheetHeader className="text-left mb-1">
+            <SheetTitle className="font-display text-xl">Send to Patient</SheetTitle>
+            <SheetDescription>
+              Create a secure magic link for{" "}
+              <span className="font-medium" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                {protocol?.compound}
+              </span>
+              .
+            </SheetDescription>
+          </SheetHeader>
+        </div>
+
+        <div className="px-6 pb-8 space-y-5">
+          {!link ? (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="pn">Patient Name</Label>
+                <Input id="pn" value={pName} onChange={(e) => setPName(e.target.value)}
+                  placeholder="Jane Doe" maxLength={200} required />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pe">Patient Email <span className="text-muted-foreground">(optional)</span></Label>
+                <Input id="pe" type="email" value={pEmail} onChange={(e) => setPEmail(e.target.value)}
+                  placeholder="patient@example.com" maxLength={320} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Link Expiry</Label>
+                <Select value={expiry} onValueChange={(v) => setExpiry(v as typeof expiry)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {EXPIRY_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button onClick={generate} disabled={generating} className="w-full"
+                style={{ backgroundColor: "var(--primary)", color: "var(--foreground)" }}>
+                {generating ? "Generating…" : "Generate Link"}
+              </Button>
+            </>
+          ) : (
+            <div className="space-y-5">
+              <div className="flex flex-col items-center text-center py-2">
+                <div
+                  className="h-14 w-14 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-500"
+                  style={{ backgroundColor: "color-mix(in oklab, var(--success, #98E4B2) 60%, transparent)" }}
+                >
+                  <Check className="h-7 w-7" style={{ color: "var(--foreground)" }} />
+                </div>
+                <p className="mt-3 text-sm font-medium">Magic link ready</p>
+                <p className="text-xs text-muted-foreground">Share it with {pName}.</p>
+              </div>
+
+              <div className="sayne-card p-3 flex items-center gap-2">
+                <code className="flex-1 text-xs font-mono break-all" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  {link}
+                </code>
+                <button type="button" onClick={copy} aria-label="Copy link"
+                  className="p-2 rounded-md hover:bg-[var(--panel)] transition-colors shrink-0">
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </button>
+              </div>
+
+              <Button variant="outline" className="w-full" onClick={() => toast("Email sending coming soon")}>
+                <Mail className="h-4 w-4" />
+                Send via Email
+              </Button>
+
+              <button type="button" onClick={() => setLink(null)}
+                className="block mx-auto text-xs text-muted-foreground hover:text-foreground">
+                Generate another link
+              </button>
+            </div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
