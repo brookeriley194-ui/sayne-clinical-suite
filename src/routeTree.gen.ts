@@ -17,6 +17,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PTokenRouteImport } from './routes/p.$token'
 import { Route as DashboardVialsRouteImport } from './routes/dashboard/vials'
+import { Route as DashboardTodayRouteImport } from './routes/dashboard/today'
 import { Route as DashboardResearchLogsRouteImport } from './routes/dashboard/research-logs'
 import { Route as DashboardProtocolsRouteImport } from './routes/dashboard/protocols'
 import { Route as DashboardPatientsRouteImport } from './routes/dashboard/patients'
@@ -63,6 +64,11 @@ const PTokenRoute = PTokenRouteImport.update({
 const DashboardVialsRoute = DashboardVialsRouteImport.update({
   id: '/vials',
   path: '/vials',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardTodayRoute = DashboardTodayRouteImport.update({
+  id: '/today',
+  path: '/today',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardResearchLogsRoute = DashboardResearchLogsRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
 }
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
 }
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
+  '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
 }
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/dashboard/patients'
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
+    | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/dashboard/patients'
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
+    | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
   id:
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/dashboard/patients'
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
+    | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
   fileRoutesById: FileRoutesById
@@ -275,6 +287,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVialsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/today': {
+      id: '/dashboard/today'
+      path: '/today'
+      fullPath: '/dashboard/today'
+      preLoaderRoute: typeof DashboardTodayRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/research-logs': {
       id: '/dashboard/research-logs'
       path: '/research-logs'
@@ -335,6 +354,7 @@ interface DashboardRouteChildren {
   DashboardPatientsRoute: typeof DashboardPatientsRoute
   DashboardProtocolsRoute: typeof DashboardProtocolsRoute
   DashboardResearchLogsRoute: typeof DashboardResearchLogsRoute
+  DashboardTodayRoute: typeof DashboardTodayRoute
   DashboardVialsRoute: typeof DashboardVialsRoute
 }
 
@@ -346,6 +366,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardPatientsRoute: DashboardPatientsRoute,
   DashboardProtocolsRoute: DashboardProtocolsRoute,
   DashboardResearchLogsRoute: DashboardResearchLogsRoute,
+  DashboardTodayRoute: DashboardTodayRoute,
   DashboardVialsRoute: DashboardVialsRoute,
 }
 
@@ -365,3 +386,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

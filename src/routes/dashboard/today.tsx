@@ -5,7 +5,8 @@ import {
   Plus, Trash2, Sun, Moon, Utensils, Calendar as CalendarIcon, Pencil,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader, StatCard, EmptyCard } from "@/components/dashboard-ui";
+import { useAuth } from "@/hooks/use-auth";
+import { StatCard, EmptyCard } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
