@@ -19,20 +19,84 @@ function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange(async (event) => {
-      if (event === "PASSWORD_RECOVERY") {
+    let cancelled = false;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
         setReady(true);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const hash = window.location.hash;
-      if (hash.includes("type=recovery") || hash.includes("access_token")) {
-        setReady(true);
-      } else if (!session) {
-        toast.error("Invalid or expired reset link");
+    async function init() {
+      const hash = window.location.hash.startsWith("#")
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      const hashParams = new URLSearchParams(hash);
+      const queryParams = new URLSearchParams(window.location.search);
+
+      // Surface errors returned by Supabase in the URL (e.g. expired/consumed link)
+      const errorDescription =
+        hashParams.get("error_description") || queryParams.get("error_description");
+      const errorCode =
+        hashParams.get("error_code") || queryParams.get("error_code") ||
+        hashParams.get("error") || queryParams.get("error");
+      if (errorDescription || errorCode) {
+        toast.error(
+          errorDescription?.replace(/\+/g, " ") ||
+            "This reset link is invalid or has expired. Please request a new one."
+        );
+        return;
       }
-    });
+
+      // Newer Supabase flow: ?token_hash=...&type=recovery
+      const tokenHash = queryParams.get("token_hash");
+      const type = queryParams.get("type");
+      if (tokenHash && type === "recovery") {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (!cancelled) {
+          if (error) {
+            toast.error("This reset link is invalid or has expired. Please request a new one.");
+          } else {
+            setReady(true);
+          }
+        }
+        return;
+      }
+
+      // Implicit flow: tokens delivered in URL hash
+      if (hashParams.get("access_token") || hashParams.get("type") === "recovery") {
+        setReady(true);
+        return;
+      }
+
+      // Fall back to existing session (Supabase may have already processed it)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (session) {
+        setReady(true);
+      } else {
+        // Wait a tick for onAuthStateChange before declaring failure
+        setTimeout(async () => {
+          if (cancelled) return;
+          const { data: { session: s2 } } = await supabase.auth.getSession();
+          if (!s2) {
+            toast.error("This reset link is invalid or has expired. Please request a new one.");
+          } else {
+            setReady(true);
+          }
+        }, 800);
+      }
+    }
+
+    init();
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
