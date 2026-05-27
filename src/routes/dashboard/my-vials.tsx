@@ -287,7 +287,7 @@ function Page() {
   );
 }
 
-function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChangeStatus, onUpdated }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void; onRestore: (status: "open" | "sealed") => void; onChangeStatus: (status: string) => void; onUpdated: () => void }) {
+export function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChangeStatus, onUpdated }: { vial: Vial; usage?: VialUsage; onDelete: () => void; onMarkEmpty: () => void; onRestore: (status: "open" | "sealed") => void; onChangeStatus: (status: string) => void; onUpdated: () => void }) {
   const days = vial.reconstituted_at
     ? differenceInDays(new Date(), new Date(vial.reconstituted_at))
     : null;
