@@ -78,7 +78,7 @@ function DashboardLayout() {
           <SayneLogo />
         </div>
         <nav className="flex flex-col gap-1">
-          {items.map((it) => {
+          {items.filter((it) => !it.bottom).map((it) => {
             const active = pathname === it.to;
             const Icon = it.icon;
             return (
@@ -97,12 +97,26 @@ function DashboardLayout() {
             );
           })}
         </nav>
-        {role && (
-          <div className="mt-auto px-3 pt-4 pb-2">
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Role</div>
-            <div className="text-sm font-medium capitalize">{role}</div>
-          </div>
-        )}
+        <nav className="mt-auto flex flex-col gap-1">
+          {items.filter((it) => it.bottom).map((it) => {
+            const active = pathname === it.to;
+            const Icon = it.icon;
+            return (
+              <Link
+                key={it.to}
+                to={it.to}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: active ? "var(--panel)" : "transparent",
+                  color: active ? "var(--foreground)" : "var(--muted-foreground)",
+                }}
+              >
+                <Icon className="h-4 w-4" />
+                {it.label}
+              </Link>
+            );
+          })}
+        </nav>
       </aside>
 
       {/* Main */}
