@@ -180,8 +180,10 @@ function Page() {
               dosesTaken={doseCounts[s.id] ?? 0}
               onDelete={() => remove(s.id)}
               onEdit={() => openEdit(s)}
+              onChangeVialStatus={changeVialStatus}
             />
           ))}
+
         </div>
       )}
 
