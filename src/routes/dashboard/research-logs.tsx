@@ -310,11 +310,16 @@ function StackCard({
   onChangeVialStatus: (vialId: string, status: string) => void;
 }) {
   const start = new Date(stack.start_date);
+  const ongoing = isOngoing(stack);
   const daysElapsed = Math.max(0, differenceInDays(new Date(), start));
-  const daysRemaining = Math.max(0, stack.cycle_length_days - daysElapsed);
-  const pct = Math.min(100, Math.round((daysElapsed / stack.cycle_length_days) * 100));
-  const done = daysElapsed >= stack.cycle_length_days;
-  const freqLabel = FREQUENCIES.find((f) => f.value === stack.frequency)?.label ?? stack.frequency;
+  const daysRemaining = ongoing ? 0 : Math.max(0, stack.cycle_length_days - daysElapsed);
+  const pct = ongoing ? 0 : Math.min(100, Math.round((daysElapsed / stack.cycle_length_days) * 100));
+  const done = !ongoing && daysElapsed >= stack.cycle_length_days;
+  const customDays = parseCustomDays(stack.frequency);
+  const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const freqLabel = customDays
+    ? customDays.length ? customDays.sort((a, b) => a - b).map((d) => DAY_ABBR[d]).join("/") : "Custom"
+    : FREQUENCIES.find((f) => f.value === stack.frequency)?.label ?? stack.frequency;
   const conc = vial?.concentration_mg_per_ml ??
     (vial?.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
   const { remaining, total, percentLeft } = computeRemainingDoses(stack, vial?.vial_size_mg ?? null, dosesTaken, conc);
