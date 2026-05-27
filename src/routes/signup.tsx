@@ -102,7 +102,7 @@ function SignupPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="submit" disabled={loading} className="w-full bg-indigo-200 font-mono">
               {loading ? "Creating account…" : "Create account"}
             </Button>
           </form>
