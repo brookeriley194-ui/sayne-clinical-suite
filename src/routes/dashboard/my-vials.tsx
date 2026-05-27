@@ -146,6 +146,14 @@ function Page() {
     load();
   };
 
+  const changeStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("vials").update({ status }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(`Status updated to ${status}`);
+    load();
+  };
+
+
   return (
     <>
       <PageHeader
