@@ -11,8 +11,26 @@ import { SyringeVisualizer, SYRINGE_SPECS, type SyringeType } from "@/components
 
 export const Route = createFileRoute("/dashboard/calculator")({ component: Page });
 
-const COMPOUNDS = ["BPC-157", "TB-500", "Ipamorelin", "CJC-1295", "Selank", "Semax", "PT-141"];
-type DoseUnit = "mcg" | "units" | "mL";
+const COMPOUNDS = [
+  "NAD+", "BPC-157", "TB-500", "Thymosin Alpha-1", "Thymosin Beta-4", "Ipamorelin", "CJC-1295",
+  "CJC-1295 DAC", "CJC-1295 No DAC", "Sermorelin", "Tesamorelin", "GHRP-2", "GHRP-6", "Hexarelin",
+  "MK-677 (Ibutamoren)", "Selank", "Semax", "N-Acetyl Selank", "N-Acetyl Semax", "PT-141 (Bremelanotide)",
+  "Melanotan I", "Melanotan II", "Semaglutide", "Tirzepatide", "Retatrutide", "Liraglutide", "Cagrilintide",
+  "AOD-9604", "HGH (Somatropin)", "IGF-1 LR3", "IGF-1 DES", "MGF", "PEG-MGF", "Follistatin 344",
+  "Follistatin 315", "Epitalon (Epithalon)", "Pinealon", "Cerebrolysin", "DSIP", "GHK-Cu", "AHK-Cu",
+  "Snap-8", "Argireline", "Matrixyl", "Kisspeptin-10", "Gonadorelin", "HCG", "Triptorelin",
+  "Adipotide (FTPP)", "5-Amino-1MQ", "SS-31 (Elamipretide)", "MOTS-c", "Humanin", "Pinealon",
+  "Oxytocin", "Vasopressin", "Glutathione", "Methylene Blue", "L-Carnitine", "Glow (GHK-Cu+...)",
+  "KPV", "LL-37", "Thymalin", "Thymogen", "Lipo-C (MIC)", "Glycine", "Taurine", "NAC",
+  "Tirzepatide+Retatrutide", "Survodutide", "Mazdutide", "Orforglipron", "Bremelanotide",
+  "BPC-157 Arginate", "TB-4 Frag", "Larazotide", "DLA", "P21", "Dihexa", "Cortagen", "Vesugen",
+  "Bronchogen", "Prostagen", "Cardiogen", "Pancragen", "Ovagen", "Testagen", "Livagen",
+  "Thymalin", "Glandokort", "Pinealon", "Pancragen", "Cardiogen", "Endoluten", "Sigumir",
+  "Vladonix", "Chelohart", "Cerluten", "Bonothyrk", "Crystagen", "Honluten", "Stamakort",
+  "Suprefort", "Ventfort", "Visoluten", "Zhenoluten", "Ovariamin",
+];
+type MassUnit = "mg" | "mL";
+type DoseUnit = "mcg" | "mg" | "units" | "mL";
 type DiluentUnit = "mL" | "units" | "mcg";
 
 const SYRINGE_OPTIONS: { type: SyringeType; label: string; sub: string }[] = [
