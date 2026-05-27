@@ -340,6 +340,7 @@ function BuildStackModal({
     setSaving(true);
     const { error } = await supabase.from("protocols").insert({
       ...parsed.data, notes: parsed.data.notes || null, doctor_id: userId, source: "manual",
+      vial_id: vialId === "none" ? null : vialId,
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
