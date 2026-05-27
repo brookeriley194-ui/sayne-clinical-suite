@@ -476,8 +476,11 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
           <Label>Notes</Label>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Optional notes" />
         </div>
-        <SheetFooter className="gap-2">
+        <SheetFooter className="gap-2 flex-col sm:flex-row">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="secondary" disabled={saving} onClick={() => save(true)}>
+            Save & Go to Calculator
+          </Button>
           <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save Vial"}</Button>
         </SheetFooter>
       </form>
