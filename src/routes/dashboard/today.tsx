@@ -190,13 +190,10 @@ function Page() {
 
   return (
     <>
-      <PageHeader
-        title="Research Logs"
-        subtitle="Track your current stack, dosing, and cycle progression."
-        action={
-          <Button className="gap-2" onClick={openAdd}><Plus className="size-4" /> Add to Stack</Button>
-        }
-      />
+      <GreetingHeader vials={vials} />
+      <div className="mb-4 flex justify-end">
+        <Button className="gap-2" onClick={openAdd}><Plus className="size-4" /> Add to Stack</Button>
+      </div>
 
       <ReorderReminders />
 
