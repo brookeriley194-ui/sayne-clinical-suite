@@ -231,6 +231,10 @@ function Page() {
 
       <div className="mt-6" />
 
+      <MyVialsSection vials={vials} usage={vialUsage} onReload={load} />
+
+      <div className="mt-6" />
+
       <ProtocolStacksSection />
 
 
