@@ -81,6 +81,7 @@ const VIAL_STATUSES = ["sealed", "open", "used"] as const;
 function Page() {
   const [stacks, setStacks] = useState<Stack[]>([]);
   const [vials, setVials] = useState<Vial[]>([]);
+  const [vialUsage, setVialUsage] = useState<Record<string, VialUsage>>({});
   const [doses, setDoses] = useState<DoseLog[]>([]);
   const [doseCounts, setDoseCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
