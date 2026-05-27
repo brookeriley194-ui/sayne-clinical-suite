@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, differenceInDays, addDays, isSameDay, startOfDay } from "date-fns";
 import {
-  Plus, Trash2, Sun, Moon, Utensils, Calendar as CalendarIcon, FlaskConical, Pencil, Check,
+  Plus, Trash2, Sun, Moon, Utensils, Calendar as CalendarIcon, FlaskConical, Pencil,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, StatCard, EmptyCard } from "@/components/dashboard-ui";
@@ -12,64 +12,22 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetTrigger,
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter,
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  DayCell, FREQUENCIES, colorFor,
+  type Stack, type DoseLog,
+} from "@/components/dose-shared";
 
 export const Route = createFileRoute("/dashboard/research-logs")({ component: Page });
 
 type Vial = { id: string; compound: string; reconstituted_at: string | null };
-type Stack = {
-  id: string;
-  peptide_name: string;
-  vial_id: string | null;
-  reconstituted_at: string | null;
-  time_of_day: string;
-  fasted: boolean;
-  cycle_length_days: number;
-  start_date: string;
-  dose: number | null;
-  dose_unit: string;
-  frequency: string;
-  notes: string | null;
-  created_at: string;
-};
-type DoseLog = { id: string; stack_id: string; dose_date: string; period: string };
-
-const FREQUENCIES = [
-  { value: "daily", label: "Daily", interval: 1 },
-  { value: "every_other_day", label: "Every other day", interval: 2 },
-  { value: "twice_weekly", label: "Twice weekly (Mon/Thu)", interval: -1 },
-  { value: "weekly", label: "Weekly", interval: 7 },
-  { value: "bi_weekly", label: "Bi-weekly", interval: 14 },
-  { value: "monthly", label: "Monthly", interval: 30 },
-];
 const DOSE_UNITS = ["mg", "mcg", "units", "mL"];
-
-// Deterministic color per stack id
-function colorFor(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return `hsl(${h % 360} 70% 55%)`;
-}
-
-function isScheduled(stack: Stack, date: Date): boolean {
-  const start = startOfDay(new Date(stack.start_date));
-  const d = startOfDay(date);
-  const diff = differenceInDays(d, start);
-  if (diff < 0 || diff >= stack.cycle_length_days) return false;
-  const freq = FREQUENCIES.find((f) => f.value === stack.frequency);
-  if (!freq) return true;
-  if (freq.value === "twice_weekly") {
-    const day = d.getDay();
-    return day === 1 || day === 4;
-  }
-  return diff % freq.interval === 0;
-}
 
 function Page() {
   const [stacks, setStacks] = useState<Stack[]>([]);
@@ -81,7 +39,6 @@ function Page() {
 
   const load = async () => {
     setLoading(true);
-    const today = format(new Date(), "yyyy-MM-dd");
     const in30 = format(addDays(new Date(), 30), "yyyy-MM-dd");
     const past30 = format(addDays(new Date(), -30), "yyyy-MM-dd");
     const [s, v, d] = await Promise.all([
@@ -94,7 +51,6 @@ function Page() {
     setVials((v.data ?? []) as Vial[]);
     setDoses((d.data ?? []) as DoseLog[]);
     setLoading(false);
-    void today;
   };
 
   useEffect(() => { load(); }, []);
@@ -183,103 +139,25 @@ function Page() {
   );
 }
 
-function DosePill({
-  stack, day, period, doses, onToggle,
-}: { stack: Stack; day: Date; period: "AM" | "PM"; doses: DoseLog[]; onToggle: (s: Stack, d: Date, p: string) => void }) {
-  const dateStr = format(day, "yyyy-MM-dd");
-  const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
-  return (
-    <button
-      type="button"
-      onClick={() => onToggle(stack, day, period)}
-      title={`${stack.peptide_name}${stack.dose ? ` · ${stack.dose}${stack.dose_unit}` : ""} (${period})`}
-      className={cn(
-        "flex items-center gap-1 rounded px-1 py-0.5 text-[10px] w-full transition-opacity hover:opacity-80",
-        taken ? "opacity-60" : "",
-      )}
-      style={{ background: `${colorFor(stack.id)}25`, borderLeft: `2px solid ${colorFor(stack.id)}` }}
-    >
-      <span
-        className={cn(
-          "size-3 rounded-sm border grid place-items-center shrink-0",
-          taken ? "border-transparent" : "border-current opacity-60",
-        )}
-        style={taken ? { background: colorFor(stack.id) } : undefined}
-      >
-        {taken && <Check className="size-2.5 text-white" strokeWidth={3} />}
-      </span>
-      <span className={cn("truncate flex-1 text-left", taken && "line-through")}>
-        {stack.peptide_name}
-        {stack.dose != null && (
-          <span className="ml-1 font-mono tabular-nums opacity-80">{stack.dose}{stack.dose_unit}</span>
-        )}
-      </span>
-    </button>
-  );
-}
-
-function DayCell({
-  day, stacks, doses, onToggle, isToday, large,
-}: {
-  day: Date; stacks: Stack[]; doses: DoseLog[];
-  onToggle: (s: Stack, d: Date, p: string) => void; isToday: boolean; large?: boolean;
-}) {
-  const scheduled = stacks.filter((s) => isScheduled(s, day));
-  const am = scheduled.filter((s) => s.time_of_day === "AM" || s.time_of_day === "Both");
-  const pm = scheduled.filter((s) => s.time_of_day === "PM" || s.time_of_day === "Both");
-  return (
-    <div
-      className={cn(
-        "rounded-md border flex flex-col overflow-hidden",
-        large ? "min-h-[220px]" : "min-h-[140px]",
-        isToday ? "border-primary bg-primary/5" : "border-border bg-background/50",
-      )}
-    >
-      <div className="flex items-center justify-between px-2 py-1 border-b border-border/60">
-        <span className={cn("text-xs font-mono tabular-nums", isToday && "font-bold text-primary")}>
-          {format(day, large ? "EEE d" : "d")}
-        </span>
-        {isToday && <span className="text-[9px] uppercase text-primary font-semibold">Today</span>}
-      </div>
-      <div className="grid grid-rows-2 flex-1 divide-y divide-border/60">
-        <div className="p-1.5 flex flex-col gap-1 min-h-0">
-          <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground">
-            <Sun className="size-2.5" /> AM
-          </div>
-          {am.map((s) => (
-            <DosePill key={`am-${s.id}`} stack={s} day={day} period="AM" doses={doses} onToggle={onToggle} />
-          ))}
-        </div>
-        <div className="p-1.5 flex flex-col gap-1 min-h-0 bg-muted/20">
-          <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground">
-            <Moon className="size-2.5" /> PM
-          </div>
-          {pm.map((s) => (
-            <DosePill key={`pm-${s.id}`} stack={s} day={day} period="PM" doses={doses} onToggle={onToggle} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function DoseCalendar({
   stacks, doses, onToggle,
 }: { stacks: Stack[]; doses: DoseLog[]; onToggle: (s: Stack, d: Date, p: string) => void }) {
   const today = startOfDay(new Date());
-  const [view, setView] = useState<"week" | "month">("month");
+  const [view, setView] = useState<"day" | "week" | "month">("month");
   const [weekOffset, setWeekOffset] = useState(0);
+  const [dayOffset, setDayOffset] = useState(0);
 
   const monthDays = Array.from({ length: 30 }, (_, i) => addDays(today, i));
   const weekStart = addDays(today, -today.getDay() + weekOffset * 7);
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const dayDate = addDays(today, dayOffset);
 
   return (
     <div className="sayne-card p-5">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
           <h2 className="font-display text-xl font-semibold">
-            {view === "month" ? "30-Day" : "Week"} Dose Calendar
+            {view === "month" ? "30-Day" : view === "week" ? "Week" : "Day"} Dose Calendar
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">AM on top, PM on bottom. Check off each dose as you take it.</p>
         </div>
@@ -293,17 +171,27 @@ function DoseCalendar({
               <Button size="sm" variant="ghost" onClick={() => setWeekOffset((w) => w + 1)} className="h-7 px-2">›</Button>
             </div>
           )}
+          {view === "day" && (
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" onClick={() => setDayOffset((d) => d - 1)} className="h-7 px-2">‹</Button>
+              <span className="text-xs text-muted-foreground font-mono w-36 text-center">
+                {format(dayDate, "EEE, MMM d")}
+              </span>
+              <Button size="sm" variant="ghost" onClick={() => setDayOffset((d) => d + 1)} className="h-7 px-2">›</Button>
+            </div>
+          )}
           <div className="inline-flex rounded-md border p-0.5 bg-muted/30">
-            <button
-              type="button"
-              onClick={() => setView("week")}
-              className={cn("text-xs px-3 py-1 rounded transition-colors", view === "week" ? "bg-background shadow-sm" : "text-muted-foreground")}
-            >Week</button>
-            <button
-              type="button"
-              onClick={() => setView("month")}
-              className={cn("text-xs px-3 py-1 rounded transition-colors", view === "month" ? "bg-background shadow-sm" : "text-muted-foreground")}
-            >Month</button>
+            {(["day", "week", "month"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className={cn(
+                  "text-xs px-3 py-1 rounded transition-colors capitalize",
+                  view === v ? "bg-background shadow-sm" : "text-muted-foreground",
+                )}
+              >{v}</button>
+            ))}
           </div>
         </div>
       </div>
@@ -334,11 +222,15 @@ function DoseCalendar({
             <DayCell key={day.toISOString()} day={day} stacks={stacks} doses={doses} onToggle={onToggle} isToday={isSameDay(day, today)} />
           ))}
         </div>
-      ) : (
+      ) : view === "week" ? (
         <div className="grid grid-cols-7 gap-2">
           {weekDays.map((day) => (
-            <DayCell key={day.toISOString()} day={day} stacks={stacks} doses={doses} onToggle={onToggle} isToday={isSameDay(day, today)} large />
+            <DayCell key={day.toISOString()} day={day} stacks={stacks} doses={doses} onToggle={onToggle} isToday={isSameDay(day, today)} size="lg" />
           ))}
+        </div>
+      ) : (
+        <div className="max-w-2xl mx-auto">
+          <DayCell day={dayDate} stacks={stacks} doses={doses} onToggle={onToggle} isToday={isSameDay(dayDate, today)} size="xl" />
         </div>
       )}
     </div>
