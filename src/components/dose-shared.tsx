@@ -157,7 +157,7 @@ export type ReorderItem = {
   percent: number;
 };
 
-function doseToMg(dose: number, unit: string): number | null {
+export function doseToMg(dose: number, unit: string): number | null {
   if (unit === "mg") return dose;
   if (unit === "mcg") return dose / 1000;
   return null; // units / mL: can't convert without concentration
@@ -244,4 +244,98 @@ export function ReorderReminders({ compact = false }: { compact?: boolean }) {
       </div>
     </div>
   );
+}
+
+// ---- Vial visual mockup ----
+
+export function VialVisual({
+  fillPercent,
+  color = "hsl(var(--primary))",
+  size = "md",
+  empty = false,
+}: {
+  fillPercent: number; // 0–100, percent of liquid REMAINING
+  color?: string;
+  size?: "sm" | "md" | "lg";
+  empty?: boolean;
+}) {
+  const dims = { sm: { w: 36, h: 72 }, md: { w: 52, h: 100 }, lg: { w: 72, h: 140 } }[size];
+  const pct = empty ? 0 : Math.max(0, Math.min(100, fillPercent));
+  // body of vial: x 8 → 44 (w 36), y 22 → 90 (h 68) within 52x100 viewBox
+  const bodyTop = 22;
+  const bodyBottom = 90;
+  const bodyHeight = bodyBottom - bodyTop;
+  const liquidHeight = (bodyHeight * pct) / 100;
+  const liquidY = bodyBottom - liquidHeight;
+
+  return (
+    <svg
+      width={dims.w}
+      height={dims.h}
+      viewBox="0 0 52 100"
+      className="shrink-0"
+      aria-label={`Vial ${Math.round(pct)}% full`}
+    >
+      <defs>
+        <clipPath id={`vial-body-${pct}-${color}`}>
+          <rect x="9" y={bodyTop + 1} width="34" height={bodyHeight - 1} rx="2" />
+        </clipPath>
+        <linearGradient id={`liquid-grad-${color}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.55" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.9" />
+        </linearGradient>
+      </defs>
+      {/* cap */}
+      <rect x="14" y="2" width="24" height="8" rx="1.5" className="fill-muted-foreground/70" />
+      <rect x="12" y="9" width="28" height="6" rx="1" className="fill-muted-foreground/50" />
+      {/* neck */}
+      <rect x="18" y="15" width="16" height="8" className="fill-muted-foreground/30" />
+      {/* glass body outline */}
+      <rect
+        x="8"
+        y={bodyTop}
+        width="36"
+        height={bodyHeight}
+        rx="3"
+        className="fill-background stroke-border"
+        strokeWidth="1.2"
+      />
+      {/* liquid */}
+      {pct > 0 && (
+        <rect
+          x="9"
+          y={liquidY}
+          width="34"
+          height={bodyBottom - liquidY}
+          fill={`url(#liquid-grad-${color})`}
+          clipPath={`url(#vial-body-${pct}-${color})`}
+        />
+      )}
+      {/* highlight */}
+      <rect x="11" y={bodyTop + 3} width="3" height={bodyHeight - 8} rx="1.5" className="fill-white/30" />
+      {empty && (
+        <text x="26" y="60" textAnchor="middle" className="fill-muted-foreground" fontSize="10" fontWeight="600">
+          EMPTY
+        </text>
+      )}
+    </svg>
+  );
+}
+
+// Compute remaining doses for a stack linked to a vial.
+// Returns null when uncomputable (no vial linked, missing data, or dose unit not mg/mcg).
+export function computeRemainingDoses(
+  stack: { dose: number | null; dose_unit: string; vial_id: string | null },
+  vialSizeMg: number | null,
+  dosesTaken: number,
+): { remaining: number | null; total: number | null; percentLeft: number } {
+  if (!stack.vial_id || !vialSizeMg || !stack.dose) {
+    return { remaining: null, total: null, percentLeft: 100 };
+  }
+  const mgPer = doseToMg(stack.dose, stack.dose_unit);
+  if (mgPer == null || mgPer <= 0) return { remaining: null, total: null, percentLeft: 100 };
+  const total = Math.floor(vialSizeMg / mgPer);
+  const remaining = Math.max(0, total - dosesTaken);
+  const percentLeft = Math.max(0, Math.min(100, ((total - dosesTaken) / total) * 100));
+  return { remaining, total, percentLeft };
 }

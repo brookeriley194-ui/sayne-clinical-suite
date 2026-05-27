@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Plus, Trash2, FlaskConical, Calendar as CalendarIcon, Droplet } from "lucide-react";
+import { Plus, Trash2, FlaskConical, Calendar as CalendarIcon, Droplet, PackageX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyCard } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,13 @@ function Page() {
     load();
   };
 
+  const markEmpty = async (id: string) => {
+    const { error } = await supabase.from("vials").update({ status: "used" }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Vial marked empty");
+    load();
+  };
+
   return (
     <>
       <PageHeader
@@ -130,14 +137,21 @@ function Page() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {visibleVials.map((v) => <VialCard key={v.id} vial={v} onDelete={() => remove(v.id)} />)}
+          {visibleVials.map((v) => (
+            <VialCard
+              key={v.id}
+              vial={v}
+              onDelete={() => remove(v.id)}
+              onMarkEmpty={() => markEmpty(v.id)}
+            />
+          ))}
         </div>
       )}
     </>
   );
 }
 
-function VialCard({ vial, onDelete }: { vial: Vial; onDelete: () => void }) {
+function VialCard({ vial, onDelete, onMarkEmpty }: { vial: Vial; onDelete: () => void; onMarkEmpty: () => void }) {
   const days = vial.reconstituted_at
     ? differenceInDays(new Date(), new Date(vial.reconstituted_at))
     : null;
@@ -192,16 +206,28 @@ function VialCard({ vial, onDelete }: { vial: Vial; onDelete: () => void }) {
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
+      <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground gap-2">
         <span className="flex items-center gap-1.5">
           <CalendarIcon className="size-3" />
           {vial.reconstituted_at
             ? `Recon. ${format(new Date(vial.reconstituted_at), "MMM d")}`
             : `Added ${format(new Date(vial.created_at), "MMM d")}`}
         </span>
-        <Button size="sm" variant="ghost" onClick={onDelete} className="h-7 text-destructive hover:text-destructive">
-          <Trash2 className="size-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {vial.status !== "used" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onMarkEmpty}
+              className="h-7 text-xs gap-1.5"
+            >
+              <PackageX className="size-3.5" /> Vial empty
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={onDelete} className="h-7 text-destructive hover:text-destructive">
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
