@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ReorderReminders, VialVisual, doseToMg } from "@/components/dose-shared";
 import { SyringeVisualizer, SYRINGE_SPECS, type SyringeType } from "@/components/syringe-visualizer";
+import { PeptideCombobox } from "@/components/peptide-combobox";
 
 export const Route = createFileRoute("/dashboard/my-vials")({ component: Page });
 
@@ -395,6 +396,7 @@ function Metric({ label, value, unit }: { label: string; value: string; unit: st
 function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const navigate = useNavigate();
   const [compound, setCompound] = useState("");
+  const [customCompound, setCustomCompound] = useState("");
   const [vialSize, setVialSize] = useState("");
   const [vialUnit, setVialUnit] = useState<"mg" | "mL">("mg");
   const [bacWater, setBacWater] = useState("");
@@ -410,7 +412,8 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       : null;
 
   const save = async (goToCalculator: boolean) => {
-    if (!compound.trim() || !vialSize) {
+    const finalCompound = (compound === "Other" ? customCompound : compound).trim();
+    if (!finalCompound || !vialSize) {
       toast.error("Compound and vial size are required");
       return;
     }
@@ -420,7 +423,7 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
 
     const { error } = await supabase.from("vials").insert({
       doctor_id: u.user.id,
-      compound: compound.trim(),
+      compound: finalCompound,
       vial_size_mg: Number(vialSize),
       bac_water_ml: bacWater ? Number(bacWater) : null,
       concentration_mg_per_ml: conc ? Number(conc) : null,
@@ -435,7 +438,7 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
 
     if (goToCalculator) {
       sessionStorage.setItem("calc:prefill", JSON.stringify({
-        compound: compound.trim(),
+        compound: finalCompound,
         vialAmount: Number(vialSize),
         vialUnit,
         bacWater: bacWater ? Number(bacWater) : 2,
@@ -458,7 +461,16 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       <form onSubmit={submit} className="space-y-4 py-4">
         <div className="space-y-2">
           <Label>Compound *</Label>
-          <Input value={compound} onChange={(e) => setCompound(e.target.value)} placeholder="e.g. Semaglutide" />
+          <PeptideCombobox value={compound} onChange={setCompound} placeholder="Select peptide…" />
+          {compound === "Other" && (
+            <Input
+              autoFocus
+              value={customCompound}
+              onChange={(e) => setCustomCompound(e.target.value)}
+              placeholder="Enter peptide name"
+              className="mt-2"
+            />
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
