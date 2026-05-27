@@ -183,89 +183,162 @@ function Page() {
   );
 }
 
+function DosePill({
+  stack, day, period, doses, onToggle,
+}: { stack: Stack; day: Date; period: "AM" | "PM"; doses: DoseLog[]; onToggle: (s: Stack, d: Date) => void }) {
+  const dateStr = format(day, "yyyy-MM-dd");
+  const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === `${dateStr}__${period}` || (dd.stack_id === stack.id && dd.dose_date === dateStr && stack.time_of_day !== "Both"));
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(stack, day)}
+      title={`${stack.peptide_name}${stack.dose ? ` · ${stack.dose}${stack.dose_unit}` : ""} (${period})`}
+      className={cn(
+        "flex items-center gap-1 rounded px-1 py-0.5 text-[10px] w-full transition-opacity hover:opacity-80",
+        taken ? "opacity-60" : "",
+      )}
+      style={{ background: `${colorFor(stack.id)}25`, borderLeft: `2px solid ${colorFor(stack.id)}` }}
+    >
+      <span
+        className={cn(
+          "size-3 rounded-sm border grid place-items-center shrink-0",
+          taken ? "border-transparent" : "border-current opacity-60",
+        )}
+        style={taken ? { background: colorFor(stack.id) } : undefined}
+      >
+        {taken && <Check className="size-2.5 text-white" strokeWidth={3} />}
+      </span>
+      <span className={cn("truncate flex-1 text-left", taken && "line-through")}>
+        {stack.peptide_name}
+        {stack.dose != null && (
+          <span className="ml-1 font-mono tabular-nums opacity-80">{stack.dose}{stack.dose_unit}</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+function DayCell({
+  day, stacks, doses, onToggle, isToday, large,
+}: {
+  day: Date; stacks: Stack[]; doses: DoseLog[];
+  onToggle: (s: Stack, d: Date) => void; isToday: boolean; large?: boolean;
+}) {
+  const scheduled = stacks.filter((s) => isScheduled(s, day));
+  const am = scheduled.filter((s) => s.time_of_day === "AM" || s.time_of_day === "Both");
+  const pm = scheduled.filter((s) => s.time_of_day === "PM" || s.time_of_day === "Both");
+  return (
+    <div
+      className={cn(
+        "rounded-md border flex flex-col overflow-hidden",
+        large ? "min-h-[220px]" : "min-h-[140px]",
+        isToday ? "border-primary bg-primary/5" : "border-border bg-background/50",
+      )}
+    >
+      <div className="flex items-center justify-between px-2 py-1 border-b border-border/60">
+        <span className={cn("text-xs font-mono tabular-nums", isToday && "font-bold text-primary")}>
+          {format(day, large ? "EEE d" : "d")}
+        </span>
+        {isToday && <span className="text-[9px] uppercase text-primary font-semibold">Today</span>}
+      </div>
+      <div className="grid grid-rows-2 flex-1 divide-y divide-border/60">
+        <div className="p-1.5 flex flex-col gap-1 min-h-0">
+          <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground">
+            <Sun className="size-2.5" /> AM
+          </div>
+          {am.map((s) => (
+            <DosePill key={`am-${s.id}`} stack={s} day={day} period="AM" doses={doses} onToggle={onToggle} />
+          ))}
+        </div>
+        <div className="p-1.5 flex flex-col gap-1 min-h-0 bg-muted/20">
+          <div className="flex items-center gap-1 text-[9px] uppercase tracking-wider text-muted-foreground">
+            <Moon className="size-2.5" /> PM
+          </div>
+          {pm.map((s) => (
+            <DosePill key={`pm-${s.id}`} stack={s} day={day} period="PM" doses={doses} onToggle={onToggle} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DoseCalendar({
   stacks, doses, onToggle,
 }: { stacks: Stack[]; doses: DoseLog[]; onToggle: (s: Stack, d: Date) => void }) {
   const today = startOfDay(new Date());
-  const days = Array.from({ length: 30 }, (_, i) => addDays(today, i));
+  const [view, setView] = useState<"week" | "month">("month");
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const monthDays = Array.from({ length: 30 }, (_, i) => addDays(today, i));
+  const weekStart = addDays(today, -today.getDay() + weekOffset * 7);
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   return (
     <div className="sayne-card p-5">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
-          <h2 className="font-display text-xl font-semibold">30-Day Dose Calendar</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Color-coded by peptide. Check off each dose as you take it.</p>
+          <h2 className="font-display text-xl font-semibold">
+            {view === "month" ? "30-Day" : "Week"} Dose Calendar
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">AM on top, PM on bottom. Check off each dose as you take it.</p>
         </div>
-        {stacks.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {stacks.map((s) => (
-              <div key={s.id} className="flex items-center gap-1.5 text-xs">
-                <span className="size-2.5 rounded-full" style={{ background: colorFor(s.id) }} />
-                <span className="text-muted-foreground">{s.peptide_name}</span>
-              </div>
-            ))}
+        <div className="flex items-center gap-2">
+          {view === "week" && (
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" onClick={() => setWeekOffset((w) => w - 1)} className="h-7 px-2">‹</Button>
+              <span className="text-xs text-muted-foreground font-mono w-32 text-center">
+                {format(weekStart, "MMM d")} – {format(addDays(weekStart, 6), "MMM d")}
+              </span>
+              <Button size="sm" variant="ghost" onClick={() => setWeekOffset((w) => w + 1)} className="h-7 px-2">›</Button>
+            </div>
+          )}
+          <div className="inline-flex rounded-md border p-0.5 bg-muted/30">
+            <button
+              type="button"
+              onClick={() => setView("week")}
+              className={cn("text-xs px-3 py-1 rounded transition-colors", view === "week" ? "bg-background shadow-sm" : "text-muted-foreground")}
+            >Week</button>
+            <button
+              type="button"
+              onClick={() => setView("month")}
+              className={cn("text-xs px-3 py-1 rounded transition-colors", view === "month" ? "bg-background shadow-sm" : "text-muted-foreground")}
+            >Month</button>
           </div>
-        )}
+        </div>
       </div>
+
+      {stacks.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {stacks.map((s) => (
+            <div key={s.id} className="flex items-center gap-1.5 text-xs">
+              <span className="size-2.5 rounded-full" style={{ background: colorFor(s.id) }} />
+              <span className="text-muted-foreground">
+                {s.peptide_name}
+                {s.dose != null && <span className="ml-1 font-mono">{s.dose}{s.dose_unit}</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {stacks.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">Add a peptide to your stack to see the calendar.</p>
-      ) : (
+      ) : view === "month" ? (
         <div className="grid grid-cols-7 gap-1.5">
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
             <div key={i} className="text-[10px] uppercase tracking-wider text-muted-foreground text-center pb-1">{d}</div>
           ))}
           {Array.from({ length: today.getDay() }).map((_, i) => <div key={`pad-${i}`} />)}
-          {days.map((day) => {
-            const scheduled = stacks.filter((s) => isScheduled(s, day));
-            const isToday = isSameDay(day, today);
-            return (
-              <div
-                key={day.toISOString()}
-                className={cn(
-                  "min-h-[80px] rounded-md border p-1.5 flex flex-col gap-1",
-                  isToday ? "border-primary bg-primary/5" : "border-border bg-background/50",
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={cn("text-xs font-mono tabular-nums", isToday && "font-bold text-primary")}>
-                    {format(day, "d")}
-                  </span>
-                  {isToday && <span className="text-[9px] uppercase text-primary font-semibold">Today</span>}
-                </div>
-                <div className="flex flex-col gap-1">
-                  {scheduled.map((s) => {
-                    const dateStr = format(day, "yyyy-MM-dd");
-                    const taken = doses.some((dd) => dd.stack_id === s.id && dd.dose_date === dateStr);
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => onToggle(s, day)}
-                        title={`${s.peptide_name}${s.dose ? ` · ${s.dose}${s.dose_unit}` : ""}`}
-                        className={cn(
-                          "flex items-center gap-1 rounded px-1 py-0.5 text-[10px] transition-opacity hover:opacity-80",
-                          taken ? "opacity-60" : "",
-                        )}
-                        style={{ background: `${colorFor(s.id)}25`, borderLeft: `2px solid ${colorFor(s.id)}` }}
-                      >
-                        <span
-                          className={cn(
-                            "size-3 rounded-sm border grid place-items-center shrink-0",
-                            taken ? "border-transparent" : "border-current opacity-60",
-                          )}
-                          style={taken ? { background: colorFor(s.id) } : undefined}
-                        >
-                          {taken && <Check className="size-2.5 text-white" strokeWidth={3} />}
-                        </span>
-                        <span className={cn("truncate", taken && "line-through")}>{s.peptide_name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+          {monthDays.map((day) => (
+            <DayCell key={day.toISOString()} day={day} stacks={stacks} doses={doses} onToggle={onToggle} isToday={isSameDay(day, today)} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map((day) => (
+            <DayCell key={day.toISOString()} day={day} stacks={stacks} doses={doses} onToggle={onToggle} isToday={isSameDay(day, today)} large />
+          ))}
         </div>
       )}
     </div>
