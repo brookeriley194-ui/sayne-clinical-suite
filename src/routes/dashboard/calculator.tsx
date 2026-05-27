@@ -28,7 +28,7 @@ const COMPOUNDS = [
   "Thymalin", "Glandokort", "Pinealon", "Pancragen", "Cardiogen", "Endoluten", "Sigumir",
   "Vladonix", "Chelohart", "Cerluten", "Bonothyrk", "Crystagen", "Honluten", "Stamakort",
   "Suprefort", "Ventfort", "Visoluten", "Zhenoluten", "Ovariamin",
-];
+].filter((c, i, a) => a.indexOf(c) === i).sort((a, b) => a.localeCompare(b));
 type MassUnit = "mg" | "mL";
 type DoseUnit = "mcg" | "mg" | "units" | "mL";
 type DiluentUnit = "mL" | "units" | "mcg";
