@@ -169,15 +169,7 @@ export type Database = {
           stack_id?: string
           taken_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "stack_doses_stack_id_fkey"
-            columns: ["stack_id"]
-            isOneToOne: false
-            referencedRelation: "stacks"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       stacks: {
         Row: {
