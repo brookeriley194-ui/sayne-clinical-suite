@@ -93,10 +93,28 @@ function Page() {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Open" value={stats.open} />
-        <StatCard label="Sealed" value={stats.sealed} />
-        <StatCard label="Used" value={stats.used} />
+      <ReorderReminders />
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        {([
+          { key: "all", label: "All", count: stats.all },
+          { key: "open", label: "Open", count: stats.open },
+          { key: "sealed", label: "Sealed", count: stats.sealed },
+          { key: "used", label: "Used", count: stats.used },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={cn(
+              "sayne-card p-4 text-left transition-all hover:border-primary/40",
+              tab === t.key && "border-primary ring-2 ring-primary/20",
+            )}
+          >
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">{t.label}</div>
+            <div className="mt-1 font-display text-2xl font-semibold font-mono tabular-nums">{t.count}</div>
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -106,9 +124,13 @@ function Page() {
           title="No vials yet"
           body="Click 'Add Vial' to register your first vial and start tracking concentration, potency, and remaining doses."
         />
+      ) : visibleVials.length === 0 ? (
+        <div className="sayne-card p-10 text-center text-sm text-muted-foreground">
+          No {tab} vials. Switch tabs to see others.
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {vials.map((v) => <VialCard key={v.id} vial={v} onDelete={() => remove(v.id)} />)}
+          {visibleVials.map((v) => <VialCard key={v.id} vial={v} onDelete={() => remove(v.id)} />)}
         </div>
       )}
     </>
