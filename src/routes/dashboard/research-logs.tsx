@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   DayCell, FREQUENCIES, colorFor, ReorderReminders, VialVisual, computeRemainingDoses,
+  ONGOING_CYCLE_DAYS, isOngoing, parseCustomDays,
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
 
@@ -309,11 +310,16 @@ function StackCard({
   onChangeVialStatus: (vialId: string, status: string) => void;
 }) {
   const start = new Date(stack.start_date);
+  const ongoing = isOngoing(stack);
   const daysElapsed = Math.max(0, differenceInDays(new Date(), start));
-  const daysRemaining = Math.max(0, stack.cycle_length_days - daysElapsed);
-  const pct = Math.min(100, Math.round((daysElapsed / stack.cycle_length_days) * 100));
-  const done = daysElapsed >= stack.cycle_length_days;
-  const freqLabel = FREQUENCIES.find((f) => f.value === stack.frequency)?.label ?? stack.frequency;
+  const daysRemaining = ongoing ? 0 : Math.max(0, stack.cycle_length_days - daysElapsed);
+  const pct = ongoing ? 0 : Math.min(100, Math.round((daysElapsed / stack.cycle_length_days) * 100));
+  const done = !ongoing && daysElapsed >= stack.cycle_length_days;
+  const customDays = parseCustomDays(stack.frequency);
+  const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const freqLabel = customDays
+    ? customDays.length ? customDays.sort((a, b) => a - b).map((d) => DAY_ABBR[d]).join("/") : "Custom"
+    : FREQUENCIES.find((f) => f.value === stack.frequency)?.label ?? stack.frequency;
   const conc = vial?.concentration_mg_per_ml ??
     (vial?.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
   const { remaining, total, percentLeft } = computeRemainingDoses(stack, vial?.vial_size_mg ?? null, dosesTaken, conc);
@@ -394,11 +400,16 @@ function StackCard({
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="text-muted-foreground">Cycle progress</span>
           <span className="font-mono tabular-nums">
-            {done ? "Complete" : `${daysRemaining}d remaining`} · {daysElapsed}/{stack.cycle_length_days}
+            {ongoing
+              ? `Ongoing · day ${daysElapsed + 1}`
+              : `${done ? "Complete" : `${daysRemaining}d remaining`} · ${daysElapsed}/${stack.cycle_length_days}`}
           </span>
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div className={cn("h-full transition-all", done ? "bg-muted-foreground" : "bg-primary")} style={{ width: `${pct}%` }} />
+          <div
+            className={cn("h-full transition-all", ongoing ? "bg-primary/60" : done ? "bg-muted-foreground" : "bg-primary")}
+            style={{ width: ongoing ? "100%" : `${pct}%` }}
+          />
         </div>
       </div>
     </div>
@@ -413,11 +424,15 @@ function StackSheet({
   const [reconDate, setReconDate] = useState<Date | undefined>(editing?.reconstituted_at ? new Date(editing.reconstituted_at) : undefined);
   const [timeOfDay, setTimeOfDay] = useState(editing?.time_of_day ?? "AM");
   const [fasted, setFasted] = useState(editing?.fasted ?? false);
-  const [cycleLength, setCycleLength] = useState(String(editing?.cycle_length_days ?? 30));
+  const editingOngoing = editing ? editing.cycle_length_days >= ONGOING_CYCLE_DAYS : false;
+  const [ongoing, setOngoing] = useState(editingOngoing);
+  const [cycleLength, setCycleLength] = useState(editingOngoing ? "30" : String(editing?.cycle_length_days ?? 30));
   const [startDate, setStartDate] = useState<Date>(editing ? new Date(editing.start_date) : new Date());
   const [dose, setDose] = useState(editing?.dose != null ? String(editing.dose) : "");
   const [doseUnit, setDoseUnit] = useState(editing?.dose_unit ?? "mg");
-  const [frequency, setFrequency] = useState(editing?.frequency ?? "daily");
+  const editingCustom = editing ? parseCustomDays(editing.frequency) : null;
+  const [frequency, setFrequency] = useState(editingCustom ? "custom" : (editing?.frequency ?? "daily"));
+  const [customDays, setCustomDays] = useState<number[]>(editingCustom ?? []);
   const [saving, setSaving] = useState(false);
 
   const onVialChange = (id: string) => {
@@ -433,8 +448,18 @@ function StackSheet({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!peptide.trim()) return toast.error("Peptide name is required");
-    const cycle = Number(cycleLength);
-    if (!cycle || cycle < 1) return toast.error("Cycle length must be at least 1 day");
+    let cycle: number;
+    if (ongoing) {
+      cycle = ONGOING_CYCLE_DAYS;
+    } else {
+      cycle = Number(cycleLength);
+      if (!cycle || cycle < 1) return toast.error("Cycle length must be at least 1 day");
+    }
+    let freqValue = frequency;
+    if (frequency === "custom") {
+      if (customDays.length === 0) return toast.error("Pick at least one day for custom frequency");
+      freqValue = "custom:" + [...customDays].sort((a, b) => a - b).join(",");
+    }
 
     setSaving(true);
     const { data: u } = await supabase.auth.getUser();
@@ -451,7 +476,7 @@ function StackSheet({
       start_date: format(startDate, "yyyy-MM-dd"),
       dose: dose ? Number(dose) : null,
       dose_unit: doseUnit,
-      frequency,
+      frequency: freqValue,
     };
 
     const { error } = editing
@@ -515,6 +540,35 @@ function StackSheet({
               {FREQUENCIES.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          {frequency === "custom" && (
+            <div className="rounded-md border p-3 space-y-2">
+              <div className="text-xs text-muted-foreground">Pick the days of the week</div>
+              <div className="flex flex-wrap gap-1.5">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label, idx) => {
+                  const active = customDays.includes(idx);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() =>
+                        setCustomDays((prev) =>
+                          prev.includes(idx) ? prev.filter((d) => d !== idx) : [...prev, idx],
+                        )
+                      }
+                      className={cn(
+                        "h-9 min-w-[42px] px-2 rounded-md border text-xs font-medium transition-colors",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background hover:bg-muted border-border text-foreground",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -545,8 +599,26 @@ function StackSheet({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Cycle length (days)</Label>
-            <Input type="number" min="1" value={cycleLength} onChange={(e) => setCycleLength(e.target.value)} />
+            <div className="flex items-center justify-between gap-2">
+              <Label>Cycle length (days)</Label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={ongoing}
+                  onChange={(e) => setOngoing(e.target.checked)}
+                  className="size-3.5 accent-primary cursor-pointer"
+                />
+                Ongoing
+              </label>
+            </div>
+            <Input
+              type="number"
+              min="1"
+              value={ongoing ? "" : cycleLength}
+              onChange={(e) => setCycleLength(e.target.value)}
+              disabled={ongoing}
+              placeholder={ongoing ? "No fixed end" : "30"}
+            />
           </div>
         </div>
 
