@@ -221,11 +221,7 @@ function Page() {
 
       <DoseCalendar stacks={stacks} doses={doses} onToggle={toggleDose} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
-        <StatCard label="Active in stack" value={stats.active} />
-        <StatCard label="Total entries" value={stats.total} />
-        <StatCard label="AM dosing" value={stats.am} />
-      </div>
+      <div className="mt-6" />
 
       <ProtocolStacksSection />
 
