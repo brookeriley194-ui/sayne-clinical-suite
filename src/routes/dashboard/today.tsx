@@ -205,31 +205,8 @@ function Page() {
         <StatCard label="AM dosing" value={stats.am} />
       </div>
 
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-xl font-semibold">Current Stack</h2>
-        <span className="text-xs text-muted-foreground">{stacks.length} {stacks.length === 1 ? "compound" : "compounds"}</span>
-      </div>
+      <ProtocolStacksSection />
 
-      {loading ? (
-        <div className="sayne-card p-10 text-center text-sm text-muted-foreground">Loading…</div>
-      ) : stacks.length === 0 ? (
-        <EmptyCard title="Your stack is empty" body="Click 'Add to Stack' to log a peptide you're currently running." />
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {stacks.map((s) => (
-            <StackCard
-              key={s.id}
-              stack={s}
-              vial={vials.find((v) => v.id === s.vial_id) ?? null}
-              dosesTaken={doseCounts[s.id] ?? 0}
-              onDelete={() => remove(s.id)}
-              onEdit={() => openEdit(s)}
-              onChangeVialStatus={changeVialStatus}
-            />
-          ))}
-
-        </div>
-      )}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <StackSheet
