@@ -230,14 +230,41 @@ function VialsSection({ vials, loading }: { vials: Vial[]; loading: boolean }) {
 }
 
 function QuickCalculator() {
-  const [vialMg, setVialMg] = useState(5);
-  const [bacMl, setBacMl] = useState(2);
-  const [doseMcg, setDoseMcg] = useState(250);
+  const [vialAmount, setVialAmount] = useState(5);
+  const [vialUnit, setVialUnit] = useState<"mg" | "mL">("mg");
+  const [bacAmount, setBacAmount] = useState(2);
+  const [bacUnit, setBacUnit] = useState<"mL" | "units">("mL");
+  const [doseAmount, setDoseAmount] = useState(250);
+  const [doseUnit, setDoseUnit] = useState<"mcg" | "mg" | "units" | "mL">("mcg");
 
+  const vialMg = vialAmount; // treat mL value numerically; advisory below
+  const bacMl = bacUnit === "mL" ? bacAmount : bacAmount * 0.01;
   const concentration = (vialMg * 1000) / Math.max(bacMl, 0.01); // mcg/mL
+
+  const doseMcg =
+    doseUnit === "mcg" ? doseAmount
+    : doseUnit === "mg" ? doseAmount * 1000
+    : doseUnit === "mL" ? doseAmount * concentration
+    : doseAmount * 0.01 * concentration; // units
+
   const perDoseMl = doseMcg / concentration;
-  const units = perDoseMl * 100; // U-100 insulin syringe
+  const units = perDoseMl * 100;
   const dosesPerVial = Math.floor((vialMg * 1000) / Math.max(doseMcg, 1));
+
+  const UnitToggle = <T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: readonly T[] }) => (
+    <div className="inline-flex rounded-md border bg-background p-0.5 ml-1">
+      {options.map((u) => (
+        <button
+          key={u}
+          type="button"
+          onClick={() => onChange(u)}
+          className={`px-1.5 py-0.5 text-[10px] rounded ${value === u ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          {u}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <section className="sayne-card p-5 flex flex-col">
@@ -252,25 +279,25 @@ function QuickCalculator() {
 
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="space-y-1.5">
-          <Label className="text-xs">Vial</Label>
-          <div className="relative">
-            <Input type="number" step="any" value={vialMg} onChange={(e) => setVialMg(Number(e.target.value))} className="pr-8 font-mono" />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">mg</span>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Vial</Label>
+            <UnitToggle value={vialUnit} onChange={setVialUnit} options={["mg", "mL"] as const} />
           </div>
+          <Input type="number" step="any" value={vialAmount} onChange={(e) => setVialAmount(Number(e.target.value))} className="font-mono" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">BAC water</Label>
-          <div className="relative">
-            <Input type="number" step="any" value={bacMl} onChange={(e) => setBacMl(Number(e.target.value))} className="pr-8 font-mono" />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">mL</span>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">BAC</Label>
+            <UnitToggle value={bacUnit} onChange={setBacUnit} options={["mL", "units"] as const} />
           </div>
+          <Input type="number" step="any" value={bacAmount} onChange={(e) => setBacAmount(Number(e.target.value))} className="font-mono" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Dose</Label>
-          <div className="relative">
-            <Input type="number" step="any" value={doseMcg} onChange={(e) => setDoseMcg(Number(e.target.value))} className="pr-10 font-mono" />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">mcg</span>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Dose</Label>
+            <UnitToggle value={doseUnit} onChange={setDoseUnit} options={["mcg", "mg", "units", "mL"] as const} />
           </div>
+          <Input type="number" step="any" value={doseAmount} onChange={(e) => setDoseAmount(Number(e.target.value))} className="font-mono" />
         </div>
       </div>
 
