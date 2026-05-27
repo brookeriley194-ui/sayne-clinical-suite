@@ -150,7 +150,7 @@ function HomePage() {
       <section>
         <div className="flex items-baseline justify-between mb-3">
           <div>
-            <h2 className="font-display text-xl font-semibold flex items-center gap-2">
+            <h2 className="font-display text-xl font-bold flex items-center gap-2">
               <Newspaper className="size-5 text-primary" /> Peptide Research & News
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">Hand-picked clinical research and trusted peptide blogs.</p>
