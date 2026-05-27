@@ -94,13 +94,13 @@ function Page() {
     setLoading(true);
     const in30 = format(addDays(new Date(), 30), "yyyy-MM-dd");
     const past30 = format(addDays(new Date(), -30), "yyyy-MM-dd");
-    const [v, d, dc, p] = await Promise.all([
-      supabase.from("vials").select("id, compound, reconstituted_at, vial_size_mg, concentration_mg_per_ml, bac_water_ml, status"),
+    const [v, d, dc, p, vs] = await Promise.all([
+      supabase.from("vials").select("*").order("created_at", { ascending: false }),
       supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
       supabase.from("stack_doses").select("stack_id"),
       supabase.from("protocols").select("*").order("created_at", { ascending: false }),
+      supabase.from("stacks").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
     ]);
-    // Map "My Stacks" (protocols) into Stack shape for the calendar
     const protocolStacks: Stack[] = ((p.data ?? []) as ProtocolRow[]).map((r) => ({
       id: r.id,
       peptide_name: r.compound,
@@ -117,7 +117,13 @@ function Page() {
       created_at: r.created_at,
     }));
     setStacks(protocolStacks);
-    setVials((v.data ?? []) as Vial[]);
+    const vialList = (v.data ?? []) as Vial[];
+    setVials(vialList);
+    setVialUsage(computeVialUsages(
+      vialList,
+      (vs.data ?? []) as { id: string; vial_id: string; dose: number | null; dose_unit: string; created_at: string }[],
+      (dc.data ?? []) as { stack_id: string }[],
+    ));
     setDoses((d.data ?? []) as DoseLog[]);
     const counts: Record<string, number> = {};
     for (const row of (dc.data ?? []) as { stack_id: string }[]) {
