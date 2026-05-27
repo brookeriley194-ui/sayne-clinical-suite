@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, differenceInDays, addDays, isSameDay, startOfDay } from "date-fns";
 import {
-  Plus, Trash2, Sun, Moon, Utensils, Calendar as CalendarIcon, FlaskConical, Pencil,
+  Plus, Trash2, Sun, Moon, Utensils, Calendar as CalendarIcon, Pencil,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, StatCard, EmptyCard } from "@/components/dashboard-ui";
