@@ -20,7 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  DayCell, FREQUENCIES, colorFor,
+  DayCell, FREQUENCIES, colorFor, ReorderReminders,
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
 
@@ -100,6 +100,8 @@ function Page() {
           <Button className="gap-2" onClick={openAdd}><Plus className="size-4" /> Add to Stack</Button>
         }
       />
+
+      <ReorderReminders />
 
       <DoseCalendar stacks={stacks} doses={doses} onToggle={toggleDose} />
 
