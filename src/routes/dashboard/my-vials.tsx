@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Plus, Trash2, FlaskConical, Calendar as CalendarIcon, Droplet, PackageX } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyCard } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
