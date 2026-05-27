@@ -37,7 +37,7 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Stack | null>(null);
-  const [prefill, setPrefill] = useState<Partial<Stack> | null>(null);
+  
 
 
   const load = async () => {
