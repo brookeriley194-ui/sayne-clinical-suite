@@ -137,7 +137,14 @@ function Page() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {visibleVials.map((v) => <VialCard key={v.id} vial={v} onDelete={() => remove(v.id)} />)}
+          {visibleVials.map((v) => (
+            <VialCard
+              key={v.id}
+              vial={v}
+              onDelete={() => remove(v.id)}
+              onMarkEmpty={() => markEmpty(v.id)}
+            />
+          ))}
         </div>
       )}
     </>
