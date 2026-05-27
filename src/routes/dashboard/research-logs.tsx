@@ -448,8 +448,18 @@ function StackSheet({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!peptide.trim()) return toast.error("Peptide name is required");
-    const cycle = Number(cycleLength);
-    if (!cycle || cycle < 1) return toast.error("Cycle length must be at least 1 day");
+    let cycle: number;
+    if (ongoing) {
+      cycle = ONGOING_CYCLE_DAYS;
+    } else {
+      cycle = Number(cycleLength);
+      if (!cycle || cycle < 1) return toast.error("Cycle length must be at least 1 day");
+    }
+    let freqValue = frequency;
+    if (frequency === "custom") {
+      if (customDays.length === 0) return toast.error("Pick at least one day for custom frequency");
+      freqValue = "custom:" + [...customDays].sort((a, b) => a - b).join(",");
+    }
 
     setSaving(true);
     const { data: u } = await supabase.auth.getUser();
@@ -466,7 +476,7 @@ function StackSheet({
       start_date: format(startDate, "yyyy-MM-dd"),
       dose: dose ? Number(dose) : null,
       dose_unit: doseUnit,
-      frequency,
+      frequency: freqValue,
     };
 
     const { error } = editing
