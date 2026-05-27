@@ -40,20 +40,74 @@ function potencyFromDays(days: number) {
   return Math.max(0, Math.round(100 - (days * 100) / 60));
 }
 
+type VialUsage = {
+  mgUsed: number;
+  percentLeft: number; // 0–100 remaining
+  remainingDoses: number | null;
+  totalDoses: number | null;
+  doseLabel: string | null; // e.g. "0.25 mg"
+};
+
 function Page() {
   const [vials, setVials] = useState<Vial[]>([]);
+  const [usage, setUsage] = useState<Record<string, VialUsage>>({});
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"all" | "open" | "sealed" | "used">("all");
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("vials")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    setVials((data ?? []) as Vial[]);
+    const [v, s, d] = await Promise.all([
+      supabase.from("vials").select("*").order("created_at", { ascending: false }),
+      supabase.from("stacks").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
+      supabase.from("stack_doses").select("stack_id"),
+    ]);
+    if (v.error) toast.error(v.error.message);
+    const vialList = (v.data ?? []) as Vial[];
+    setVials(vialList);
+
+    const stacks = (s.data ?? []) as { id: string; vial_id: string; dose: number | null; dose_unit: string; created_at: string }[];
+    const doses = (d.data ?? []) as { stack_id: string }[];
+    const countByStack = new Map<string, number>();
+    for (const dd of doses) countByStack.set(dd.stack_id, (countByStack.get(dd.stack_id) ?? 0) + 1);
+
+    const u: Record<string, VialUsage> = {};
+    for (const vial of vialList) {
+      const conc = vial.concentration_mg_per_ml ??
+        (vial.bac_water_ml && vial.bac_water_ml > 0 ? vial.vial_size_mg / vial.bac_water_ml : null);
+      const linked = stacks
+        .filter((st) => st.vial_id === vial.id)
+        .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+
+      let mgUsed = 0;
+      for (const st of linked) {
+        if (!st.dose) continue;
+        const mg = doseToMg(st.dose, st.dose_unit, conc);
+        if (mg == null) continue;
+        mgUsed += mg * (countByStack.get(st.id) ?? 0);
+      }
+      const mgRemaining = Math.max(0, vial.vial_size_mg - mgUsed);
+      const percentLeft = vial.vial_size_mg > 0
+        ? Math.max(0, Math.min(100, (mgRemaining / vial.vial_size_mg) * 100))
+        : 0;
+
+      // Estimate doses left using first linked stack with a parseable dose
+      let remainingDoses: number | null = null;
+      let totalDoses: number | null = null;
+      let doseLabel: string | null = null;
+      const primary = linked.find((st) => st.dose && doseToMg(st.dose, st.dose_unit, conc) != null);
+      if (primary && primary.dose) {
+        const mgPer = doseToMg(primary.dose, primary.dose_unit, conc)!;
+        if (mgPer > 0) {
+          totalDoses = Math.floor(vial.vial_size_mg / mgPer);
+          remainingDoses = Math.floor(mgRemaining / mgPer);
+          doseLabel = `${primary.dose} ${primary.dose_unit}`;
+        }
+      }
+
+      u[vial.id] = { mgUsed, percentLeft, remainingDoses, totalDoses, doseLabel };
+    }
+    setUsage(u);
     setLoading(false);
   };
 
