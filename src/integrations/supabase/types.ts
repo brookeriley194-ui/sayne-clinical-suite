@@ -81,6 +81,7 @@ export type Database = {
           dose: number
           dose_unit: string
           duration_days: number | null
+          fasted: boolean
           frequency: string
           id: string
           name: string
@@ -88,6 +89,7 @@ export type Database = {
           ongoing: boolean
           route: string
           source: string
+          time_of_day: string
           updated_at: string
           vial_id: string | null
         }
@@ -98,6 +100,7 @@ export type Database = {
           dose: number
           dose_unit: string
           duration_days?: number | null
+          fasted?: boolean
           frequency: string
           id?: string
           name: string
@@ -105,6 +108,7 @@ export type Database = {
           ongoing?: boolean
           route: string
           source?: string
+          time_of_day?: string
           updated_at?: string
           vial_id?: string | null
         }
@@ -115,6 +119,7 @@ export type Database = {
           dose?: number
           dose_unit?: string
           duration_days?: number | null
+          fasted?: boolean
           frequency?: string
           id?: string
           name?: string
@@ -122,6 +127,7 @@ export type Database = {
           ongoing?: boolean
           route?: string
           source?: string
+          time_of_day?: string
           updated_at?: string
           vial_id?: string | null
         }
@@ -262,6 +268,8 @@ export type Database = {
           compound: string
           concentration_mg_per_ml: number | null
           created_at: string
+          default_dose: number | null
+          default_dose_unit: string | null
           doctor_id: string
           id: string
           lot_number: string | null
@@ -276,6 +284,8 @@ export type Database = {
           compound: string
           concentration_mg_per_ml?: number | null
           created_at?: string
+          default_dose?: number | null
+          default_dose_unit?: string | null
           doctor_id: string
           id?: string
           lot_number?: string | null
@@ -290,6 +300,8 @@ export type Database = {
           compound?: string
           concentration_mg_per_ml?: number | null
           created_at?: string
+          default_dose?: number | null
+          default_dose_unit?: string | null
           doctor_id?: string
           id?: string
           lot_number?: string | null
