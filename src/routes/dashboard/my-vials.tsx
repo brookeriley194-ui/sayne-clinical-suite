@@ -214,8 +214,10 @@ function Page() {
               onDelete={() => remove(v.id)}
               onMarkEmpty={() => markEmpty(v.id)}
               onRestore={(s) => restore(v.id, s)}
+              onChangeStatus={(s) => changeStatus(v.id, s)}
             />
           ))}
+
         </div>
       )}
     </>
