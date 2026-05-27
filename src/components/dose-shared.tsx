@@ -173,21 +173,34 @@ export function doseToMg(
 
 export async function fetchReorderItems(): Promise<ReorderItem[]> {
   const [v, s, d] = await Promise.all([
-    supabase.from("vials").select("id, compound, vial_size_mg, status").neq("status", "used"),
-    supabase.from("stacks").select("id, vial_id, dose, dose_unit").not("vial_id", "is", null),
+    supabase
+      .from("vials")
+      .select("id, compound, vial_size_mg, status, concentration_mg_per_ml, bac_water_ml")
+      .neq("status", "used"),
+    supabase
+      .from("stacks")
+      .select("id, vial_id, dose, dose_unit")
+      .not("vial_id", "is", null),
     supabase.from("stack_doses").select("stack_id"),
   ]);
-  const vials = v.data ?? [];
+  const vials = (v.data ?? []) as {
+    id: string; compound: string; vial_size_mg: number; status: string;
+    concentration_mg_per_ml: number | null; bac_water_ml: number | null;
+  }[];
   const stacks = (s.data ?? []) as { id: string; vial_id: string; dose: number | null; dose_unit: string }[];
   const doses = (d.data ?? []) as { stack_id: string }[];
 
   const doseCountByStack = new Map<string, number>();
   for (const dd of doses) doseCountByStack.set(dd.stack_id, (doseCountByStack.get(dd.stack_id) ?? 0) + 1);
 
+  const vialById = new Map(vials.map((vv) => [vv.id, vv]));
   const usedByVial = new Map<string, number>();
   for (const st of stacks) {
     if (!st.dose) continue;
-    const mg = doseToMg(st.dose, st.dose_unit);
+    const vi = vialById.get(st.vial_id);
+    const conc = vi?.concentration_mg_per_ml ??
+      (vi?.bac_water_ml && vi.bac_water_ml > 0 ? vi.vial_size_mg / vi.bac_water_ml : null);
+    const mg = doseToMg(st.dose, st.dose_unit, conc);
     if (mg == null) continue;
     const count = doseCountByStack.get(st.id) ?? 0;
     usedByVial.set(st.vial_id, (usedByVial.get(st.vial_id) ?? 0) + mg * count);
