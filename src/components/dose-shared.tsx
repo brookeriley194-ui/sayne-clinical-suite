@@ -146,3 +146,102 @@ export function DayCell({
     </div>
   );
 }
+
+// ---- Reorder reminders ----
+
+export type ReorderItem = {
+  vialId: string;
+  compound: string;
+  vialSizeMg: number;
+  mgUsed: number;
+  percent: number;
+};
+
+function doseToMg(dose: number, unit: string): number | null {
+  if (unit === "mg") return dose;
+  if (unit === "mcg") return dose / 1000;
+  return null; // units / mL: can't convert without concentration
+}
+
+export async function fetchReorderItems(): Promise<ReorderItem[]> {
+  const [v, s, d] = await Promise.all([
+    supabase.from("vials").select("id, compound, vial_size_mg, status").neq("status", "used"),
+    supabase.from("stacks").select("id, vial_id, dose, dose_unit").not("vial_id", "is", null),
+    supabase.from("stack_doses").select("stack_id"),
+  ]);
+  const vials = v.data ?? [];
+  const stacks = (s.data ?? []) as { id: string; vial_id: string; dose: number | null; dose_unit: string }[];
+  const doses = (d.data ?? []) as { stack_id: string }[];
+
+  const doseCountByStack = new Map<string, number>();
+  for (const dd of doses) doseCountByStack.set(dd.stack_id, (doseCountByStack.get(dd.stack_id) ?? 0) + 1);
+
+  const usedByVial = new Map<string, number>();
+  for (const st of stacks) {
+    if (!st.dose) continue;
+    const mg = doseToMg(st.dose, st.dose_unit);
+    if (mg == null) continue;
+    const count = doseCountByStack.get(st.id) ?? 0;
+    usedByVial.set(st.vial_id, (usedByVial.get(st.vial_id) ?? 0) + mg * count);
+  }
+
+  const items: ReorderItem[] = [];
+  for (const vial of vials) {
+    const mgUsed = usedByVial.get(vial.id) ?? 0;
+    const percent = vial.vial_size_mg > 0 ? (mgUsed / vial.vial_size_mg) * 100 : 0;
+    if (percent >= 50) {
+      items.push({
+        vialId: vial.id,
+        compound: vial.compound,
+        vialSizeMg: vial.vial_size_mg,
+        mgUsed,
+        percent: Math.min(100, percent),
+      });
+    }
+  }
+  return items.sort((a, b) => b.percent - a.percent);
+}
+
+export function ReorderReminders({ compact = false }: { compact?: boolean }) {
+  const [items, setItems] = useState<ReorderItem[] | null>(null);
+  useEffect(() => { fetchReorderItems().then(setItems).catch(() => setItems([])); }, []);
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 mb-6">
+      <div className="flex items-start gap-3">
+        <div className="size-9 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 grid place-items-center shrink-0">
+          <AlertTriangle className="size-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <h3 className="font-semibold text-sm">
+              {items.length === 1 ? "1 vial running low" : `${items.length} vials running low`}
+            </h3>
+            <Link to="/dashboard/my-vials" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+              <ShoppingCart className="size-3" /> Time to reorder
+            </Link>
+          </div>
+          <div className={cn("mt-2 grid gap-2", compact ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3")}>
+            {items.map((it) => (
+              <div key={it.vialId} className="rounded-md bg-background/60 border border-amber-500/20 px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-sm truncate">{it.compound}</span>
+                  <span className="text-xs font-mono tabular-nums text-amber-600 dark:text-amber-400">
+                    {Math.round(it.percent)}% used
+                  </span>
+                </div>
+                <div className="mt-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-500" style={{ width: `${it.percent}%` }} />
+                </div>
+                <div className="text-[10px] text-muted-foreground font-mono mt-1">
+                  {it.mgUsed.toFixed(2)} / {it.vialSizeMg} mg
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
