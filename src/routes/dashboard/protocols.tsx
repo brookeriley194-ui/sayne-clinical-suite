@@ -435,10 +435,31 @@ function BuildStackModal({
           </div>
 
           <div className="space-y-2 md:col-span-2">
+            <Label>Link to vial <span className="text-muted-foreground">(optional)</span></Label>
+            <Select value={vialId} onValueChange={setVialId}>
+              <SelectTrigger>
+                <SelectValue placeholder="No vial linked" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No vial linked</SelectItem>
+                {vials.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.compound} · {v.vial_size_mg}mg <span className="text-muted-foreground">({v.status})</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Linking lets My Vials estimate remaining doses for this stack.
+            </p>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="notes">Notes or goals for this cycle <span className="text-muted-foreground">(optional)</span></Label>
             <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={2000}
               placeholder="What you're hoping to learn, stacking notes, titration plan…" />
           </div>
+
 
           <div className="md:col-span-2 flex justify-end">
             <Button type="submit" disabled={saving}
