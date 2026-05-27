@@ -222,7 +222,7 @@ function DayCell({
   day, stacks, doses, onToggle, isToday, large,
 }: {
   day: Date; stacks: Stack[]; doses: DoseLog[];
-  onToggle: (s: Stack, d: Date) => void; isToday: boolean; large?: boolean;
+  onToggle: (s: Stack, d: Date, p: string) => void; isToday: boolean; large?: boolean;
 }) {
   const scheduled = stacks.filter((s) => isScheduled(s, day));
   const am = scheduled.filter((s) => s.time_of_day === "AM" || s.time_of_day === "Both");
