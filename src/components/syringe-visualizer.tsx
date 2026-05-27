@@ -258,16 +258,11 @@ export function SyringeVisualizer({
             })}
           </g>
 
-          {/* Plunger (animated to follow fluid edge) */}
-          <g
-            style={{
-              transform: `translateX(${plungerX - barrelX - fillW}px)`,
-              transition: "transform 1100ms cubic-bezier(0.22, 1, 0.36, 1)",
-            }}
-          >
-            {/* Rubber stopper */}
+          {/* Plunger — exits the LEFT (open) end, stopper follows fluid edge */}
+          <g>
+            {/* Rubber stopper (just left of fluid) */}
             <rect
-              x={plungerX - 8}
+              x={stopperX}
               y={barrelY + 1}
               width="8"
               height={barrelH - 2}
@@ -275,19 +270,19 @@ export function SyringeVisualizer({
               rx="1.5"
               style={{ transition: "x 1100ms cubic-bezier(0.22, 1, 0.36, 1)" }}
             />
-            {/* Plunger rod */}
+            {/* Plunger rod — from rod left end to stopper */}
             <rect
-              x={plungerX}
+              x={rodLeftEnd}
               y={barrelY + barrelH / 2 - 3}
-              width={barrelX + barrelW + 30 - plungerX}
+              width={Math.max(0, stopperX - rodLeftEnd)}
               height="6"
               fill="url(#plungerMetal)"
               rx="1"
-              style={{ transition: "x 1100ms cubic-bezier(0.22, 1, 0.36, 1), width 1100ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+              style={{ transition: "width 1100ms cubic-bezier(0.22, 1, 0.36, 1)" }}
             />
-            {/* Cross-shaped rod fin */}
+            {/* Cross-shaped rod fin (midpoint) */}
             <rect
-              x={plungerX + (barrelX + barrelW + 30 - plungerX) / 2 - 1}
+              x={(rodLeftEnd + stopperX) / 2 - 1}
               y={barrelY + 4}
               width="2"
               height={barrelH - 8}
@@ -295,9 +290,9 @@ export function SyringeVisualizer({
               opacity="0.4"
               style={{ transition: "x 1100ms cubic-bezier(0.22, 1, 0.36, 1)" }}
             />
-            {/* Thumb press */}
+            {/* Thumb press at far left */}
             <rect
-              x={barrelX + barrelW + 22}
+              x={rodLeftEnd - 14}
               y={barrelY - 6}
               width="14"
               height={barrelH + 12}
@@ -306,7 +301,7 @@ export function SyringeVisualizer({
             />
           </g>
 
-          {/* Flange (finger grip) */}
+          {/* Flange (finger grip) at the open (left) end of the barrel */}
           <rect x={barrelX - 4} y={barrelY - 10} width="8" height={barrelH + 20} rx="2" fill="url(#plungerMetal)" />
         </svg>
       </div>
