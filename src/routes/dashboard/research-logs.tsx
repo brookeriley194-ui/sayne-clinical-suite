@@ -26,7 +26,7 @@ import {
 
 export const Route = createFileRoute("/dashboard/research-logs")({ component: Page });
 
-type Vial = { id: string; compound: string; reconstituted_at: string | null; vial_size_mg: number };
+type Vial = { id: string; compound: string; reconstituted_at: string | null; vial_size_mg: number; concentration_mg_per_ml: number | null; bac_water_ml: number | null };
 const DOSE_UNITS = ["mg", "mcg", "units", "mL"];
 
 function Page() {
