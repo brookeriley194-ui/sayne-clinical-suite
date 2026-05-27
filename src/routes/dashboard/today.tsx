@@ -74,7 +74,7 @@ function GreetingHeader({ vials }: { vials: { compound: string; reconstituted_at
 
 
 
-type Vial = { id: string; compound: string; reconstituted_at: string | null; vial_size_mg: number; concentration_mg_per_ml: number | null; bac_water_ml: number | null; status: string };
+type Vial = VialFull;
 const DOSE_UNITS = ["mg", "mcg", "units", "mL"];
 const VIAL_STATUSES = ["sealed", "open", "used"] as const;
 
