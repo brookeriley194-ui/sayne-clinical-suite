@@ -806,7 +806,7 @@ function MyVialsSection({
   return (
     <>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-xl font-semibold">My Vials</h2>
+        <h2 className="font-display text-xl font-bold">My Vials</h2>
         <span className="text-xs text-muted-foreground">{vials.length} vial{vials.length === 1 ? "" : "s"}</span>
       </div>
       {vials.length === 0 ? (
