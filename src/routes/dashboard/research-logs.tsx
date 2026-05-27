@@ -84,6 +84,7 @@ function Page() {
       const { error } = await supabase.from("stack_doses").delete().eq("id", existing.id);
       if (error) return toast.error(error.message);
       setDoses((prev) => prev.filter((d) => d.id !== existing.id));
+      setDoseCounts((prev) => ({ ...prev, [stack.id]: Math.max(0, (prev[stack.id] ?? 0) - 1) }));
     } else {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return toast.error("Not signed in");
@@ -92,6 +93,7 @@ function Page() {
       }).select().single();
       if (error) return toast.error(error.message);
       setDoses((prev) => [...prev, data as DoseLog]);
+      setDoseCounts((prev) => ({ ...prev, [stack.id]: (prev[stack.id] ?? 0) + 1 }));
     }
   };
 
