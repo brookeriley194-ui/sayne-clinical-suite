@@ -557,15 +557,17 @@ function BuildStackModal({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs">Peptide</Label>
-                  <PeptideCombobox value={r.compound} onChange={(v) => updateRow(i, { compound: v })} />
-                  {r.compound === "Other" && (
-                    <Input value={r.customCompound}
-                      onChange={(e) => updateRow(i, { customCompound: e.target.value })}
-                      placeholder="Enter peptide name" />
-                  )}
-                </div>
+                {r.vial_id === "none" && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Peptide</Label>
+                    <PeptideCombobox value={r.compound} onChange={(v) => updateRow(i, { compound: v })} />
+                    {r.compound === "Other" && (
+                      <Input value={r.customCompound}
+                        onChange={(e) => updateRow(i, { customCompound: e.target.value })}
+                        placeholder="Enter peptide name" />
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label className="text-xs">Dose</Label>
@@ -586,39 +588,69 @@ function BuildStackModal({
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs">How often?</Label>
+                    <Select value={r.frequency} onValueChange={(v) => updateRow(i, { frequency: v as typeof FREQUENCIES[number] })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {FREQUENCIES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {r.frequency === "Custom" && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {DAY_LABELS.map((d, idx) => {
+                          const on = r.customDays.includes(idx);
+                          return (
+                            <button key={d} type="button" onClick={() => toggleRowDay(i, idx)}
+                              className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+                              style={{
+                                backgroundColor: on ? BABY_BLUE : "transparent",
+                                color: on ? NAVY : "var(--foreground)",
+                                borderColor: on ? BABY_BLUE : "var(--border)",
+                              }}>
+                              {d}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Time of day</Label>
+                    <div className="inline-flex w-full rounded-md border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                      {TIMES.map((t) => (
+                        <button key={t} type="button" onClick={() => updateRow(i, { time_of_day: t })}
+                          className="flex-1 px-2.5 py-2 text-xs font-medium transition-colors"
+                          style={{
+                            backgroundColor: r.time_of_day === t ? BABY_BLUE : "transparent",
+                            color: r.time_of_day === t ? NAVY : "var(--muted-foreground)",
+                          }}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <Checkbox checked={r.fasted} onCheckedChange={(v) => updateRow(i, { fasted: !!v })} />
+                  <span>Take fasted</span>
+                </label>
+
               </div>
             ))}
           </div>
 
           {/* ---- Shared schedule ---- */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <Label>How often?</Label>
-              <Select value={frequency} onValueChange={(v) => setFrequency(v as typeof FREQUENCIES[number])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {FREQUENCIES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {frequency === "Custom" && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {DAY_LABELS.map((d, idx) => {
-                    const on = customDays.includes(idx);
-                    return (
-                      <button key={d} type="button" onClick={() => toggleDay(idx)}
-                        className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
-                        style={{
-                          backgroundColor: on ? BABY_BLUE : "transparent",
-                          color: on ? NAVY : "var(--foreground)",
-                          borderColor: on ? BABY_BLUE : "var(--border)",
-                        }}>
-                        {d}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label>How are you taking it?</Label>
+            <Select value={route} onValueChange={(v) => setRoute(v as typeof ROUTES[number])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ROUTES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
 
             <div className="space-y-2">
               <Label>How are you taking it?</Label>
