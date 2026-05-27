@@ -114,9 +114,23 @@ function Page() {
 
   return (
     <>
-      <PageHeader title="Protocols" subtitle="Design and assign peptide protocols for your patients." />
+      <PageHeader
+        title="Protocols"
+        subtitle="Design and assign peptide protocols for your patients."
+        action={
+          <Button
+            onClick={() => setImportOpen(true)}
+            className="gap-2 text-[#1a1a2e] hover:opacity-90"
+            style={{ backgroundColor: LAVENDER }}
+          >
+            <ClipboardPaste className="h-4 w-4" />
+            Import from AI
+          </Button>
+        }
+      />
 
       <div className="sayne-card p-6 md:p-8 mb-8">
+        {/* placeholder swapped below */}
         <h2 className="font-display text-lg font-semibold mb-1">Create Protocol</h2>
         <p className="text-sm text-muted-foreground mb-6">Define the compound, dosing, and route before sending to a patient.</p>
 
