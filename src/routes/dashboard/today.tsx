@@ -268,7 +268,7 @@ function DoseCalendar({
     <div className="sayne-card p-5">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div>
-          <h2 className="font-display text-xl font-semibold">
+          <h2 className="font-display text-xl font-bold">
             {view === "month" ? "30-Day" : view === "week" ? "Week" : "Day"} Dose Calendar
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">AM on top, PM on bottom. Check off each dose as you take it.</p>
