@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 
+export type SyringeType = "insulin_0_3" | "insulin_0_5" | "insulin_1" | "standard_1" | "standard_3";
+
+export const SYRINGE_SPECS: Record<SyringeType, { label: string; maxMl: number; unitMarks: boolean; majorTickMl: number }> = {
+  insulin_0_3: { label: "0.3 mL insulin (30u)", maxMl: 0.3, unitMarks: true, majorTickMl: 0.05 },
+  insulin_0_5: { label: "0.5 mL insulin (50u)", maxMl: 0.5, unitMarks: true, majorTickMl: 0.05 },
+  insulin_1:   { label: "1 mL insulin (100u)",  maxMl: 1.0, unitMarks: true, majorTickMl: 0.1 },
+  standard_1:  { label: "1 mL tuberculin",      maxMl: 1.0, unitMarks: false, majorTickMl: 0.1 },
+  standard_3:  { label: "3 mL standard",        maxMl: 3.0, unitMarks: false, majorTickMl: 0.5 },
+};
+
 type Props = {
   compound: string;
   dose_mcg: number;
@@ -7,6 +17,7 @@ type Props = {
   potency_score: number; // 0-100
   /** Optional: days until potency dips below 70%. If omitted, estimated from potency_score. */
   days_until_degraded?: number;
+  syringe_type?: SyringeType;
 };
 
 function fluidColor(score: number) {
