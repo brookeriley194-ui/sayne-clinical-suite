@@ -38,7 +38,7 @@ type Stack = {
   notes: string | null;
   created_at: string;
 };
-type DoseLog = { id: string; stack_id: string; dose_date: string };
+type DoseLog = { id: string; stack_id: string; dose_date: string; period: string };
 
 const FREQUENCIES = [
   { value: "daily", label: "Daily", interval: 1 },
@@ -87,7 +87,7 @@ function Page() {
     const [s, v, d] = await Promise.all([
       supabase.from("stacks").select("*").order("created_at", { ascending: false }),
       supabase.from("vials").select("id, compound, reconstituted_at"),
-      supabase.from("stack_doses").select("id, stack_id, dose_date").gte("dose_date", past30).lte("dose_date", in30),
+      supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
     ]);
     if (s.error) toast.error(s.error.message);
     setStacks((s.data ?? []) as Stack[]);
@@ -114,9 +114,9 @@ function Page() {
     load();
   };
 
-  const toggleDose = async (stack: Stack, date: Date) => {
+  const toggleDose = async (stack: Stack, date: Date, period: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
-    const existing = doses.find((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr);
+    const existing = doses.find((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
     if (existing) {
       const { error } = await supabase.from("stack_doses").delete().eq("id", existing.id);
       if (error) return toast.error(error.message);
@@ -125,7 +125,7 @@ function Page() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return toast.error("Not signed in");
       const { data, error } = await supabase.from("stack_doses").insert({
-        doctor_id: u.user.id, stack_id: stack.id, dose_date: dateStr,
+        doctor_id: u.user.id, stack_id: stack.id, dose_date: dateStr, period,
       }).select().single();
       if (error) return toast.error(error.message);
       setDoses((prev) => [...prev, data as DoseLog]);
@@ -185,14 +185,13 @@ function Page() {
 
 function DosePill({
   stack, day, period, doses, onToggle,
-}: { stack: Stack; day: Date; period: "AM" | "PM"; doses: DoseLog[]; onToggle: (s: Stack, d: Date) => void }) {
+}: { stack: Stack; day: Date; period: "AM" | "PM"; doses: DoseLog[]; onToggle: (s: Stack, d: Date, p: string) => void }) {
   const dateStr = format(day, "yyyy-MM-dd");
-  const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr);
-  void period;
+  const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
   return (
     <button
       type="button"
-      onClick={() => onToggle(stack, day)}
+      onClick={() => onToggle(stack, day, period)}
       title={`${stack.peptide_name}${stack.dose ? ` · ${stack.dose}${stack.dose_unit}` : ""} (${period})`}
       className={cn(
         "flex items-center gap-1 rounded px-1 py-0.5 text-[10px] w-full transition-opacity hover:opacity-80",
@@ -223,7 +222,7 @@ function DayCell({
   day, stacks, doses, onToggle, isToday, large,
 }: {
   day: Date; stacks: Stack[]; doses: DoseLog[];
-  onToggle: (s: Stack, d: Date) => void; isToday: boolean; large?: boolean;
+  onToggle: (s: Stack, d: Date, p: string) => void; isToday: boolean; large?: boolean;
 }) {
   const scheduled = stacks.filter((s) => isScheduled(s, day));
   const am = scheduled.filter((s) => s.time_of_day === "AM" || s.time_of_day === "Both");
@@ -266,7 +265,7 @@ function DayCell({
 
 function DoseCalendar({
   stacks, doses, onToggle,
-}: { stacks: Stack[]; doses: DoseLog[]; onToggle: (s: Stack, d: Date) => void }) {
+}: { stacks: Stack[]; doses: DoseLog[]; onToggle: (s: Stack, d: Date, p: string) => void }) {
   const today = startOfDay(new Date());
   const [view, setView] = useState<"week" | "month">("month");
   const [weekOffset, setWeekOffset] = useState(0);
