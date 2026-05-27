@@ -78,6 +78,7 @@ function Page() {
   const [loading, setLoading] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
+  const [editingStack, setEditingStack] = useState<{ name: string; rows: Stack[] } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -93,6 +94,30 @@ function Page() {
     if (sessionStorage.getItem("stack:prefill")) setBuildOpen(true);
   }, []);
 
+  const groupedStacks = (() => {
+    const map = new Map<string, Stack[]>();
+    for (const s of stacks) {
+      const arr = map.get(s.name) ?? [];
+      arr.push(s);
+      map.set(s.name, arr);
+    }
+    return Array.from(map.entries()).map(([name, rows]) => ({ name, rows }));
+  })();
+
+  async function handleDeleteStack(name: string, rows: Stack[]) {
+    if (!confirm(`Delete the entire "${name}" stack? This removes ${rows.length} compound${rows.length === 1 ? "" : "s"}.`)) return;
+    const ids = rows.map((r) => r.id);
+    const { error } = await supabase.from("protocols").delete().in("id", ids);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Stack deleted");
+    void load();
+  }
+
+  function handleEditStack(name: string, rows: Stack[]) {
+    setEditingStack({ name, rows });
+    setBuildOpen(true);
+  }
+
   return (
     <>
       <PageHeader
@@ -101,7 +126,7 @@ function Page() {
         action={
           <div className="flex gap-2 flex-wrap">
             <Button
-              onClick={() => setBuildOpen(true)}
+              onClick={() => { setEditingStack(null); setBuildOpen(true); }}
               className="gap-2 hover:opacity-90"
               style={{ backgroundColor: BABY_BLUE, color: NAVY }}
             >
@@ -129,18 +154,26 @@ function Page() {
         <TabsContent value="stacks">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-display text-lg font-semibold">My Stacks</h2>
-            <span className="text-xs text-muted-foreground font-mono">{stacks.length} total</span>
+            <span className="text-xs text-muted-foreground font-mono">{groupedStacks.length} stack{groupedStacks.length === 1 ? "" : "s"}</span>
           </div>
 
           {loading ? (
             <div className="text-sm text-muted-foreground">Loading…</div>
-          ) : stacks.length === 0 ? (
+          ) : groupedStacks.length === 0 ? (
             <div className="sayne-card p-10 text-center">
               <p className="text-sm text-muted-foreground">No stacks yet. Build one or import from AI to get started.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {stacks.map((s) => <StackCard key={s.id} s={s} />)}
+            <div className="space-y-6">
+              {groupedStacks.map((g) => (
+                <StackGroup
+                  key={g.name}
+                  name={g.name}
+                  rows={g.rows}
+                  onEdit={() => handleEditStack(g.name, g.rows)}
+                  onDelete={() => handleDeleteStack(g.name, g.rows)}
+                />
+              ))}
             </div>
           )}
         </TabsContent>
@@ -158,11 +191,82 @@ function Page() {
 
       <BuildStackModal
         open={buildOpen}
-        onClose={() => setBuildOpen(false)}
-        onSaved={() => { setBuildOpen(false); void load(); }}
+        onClose={() => { setBuildOpen(false); setEditingStack(null); }}
+        onSaved={() => { setBuildOpen(false); setEditingStack(null); void load(); }}
         userId={user?.id ?? null}
+        editing={editingStack}
       />
     </>
+  );
+}
+
+function StackGroup({
+  name, rows, onEdit, onDelete,
+}: { name: string; rows: Stack[]; onEdit: () => void; onDelete: () => void }) {
+  const first = rows[0];
+  const status = deriveStatus(first);
+  const remaining = daysRemaining(first);
+  return (
+    <div className="sayne-card p-5">
+      <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+              style={{ backgroundColor: `color-mix(in oklab, ${status.color} 35%, transparent)`, color: NAVY }}
+            >
+              {status.label}
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+              {rows.length} compound{rows.length === 1 ? "" : "s"} · {first.route} · {first.ongoing ? "Ongoing" : remaining != null ? `${remaining}d left` : `${first.duration_days}d`}
+            </span>
+          </div>
+          <h3
+            className="text-2xl font-semibold leading-tight truncate"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          >
+            {name}
+          </h3>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={onEdit} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button size="sm" variant="outline" onClick={onDelete}
+            className="gap-1.5 text-destructive hover:text-destructive">
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {rows.map((r) => (
+          <div key={r.id} className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)" }}>
+            <div className="font-semibold text-sm">{r.compound}</div>
+            <div className="flex items-baseline gap-1.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              <span className="text-xl font-semibold tabular-nums">{r.dose}</span>
+              <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
+                style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
+                {r.frequency}
+              </span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
+                style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
+                {r.time_of_day}
+              </span>
+              {r.fasted && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
+                  style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
+                  Fasted
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
