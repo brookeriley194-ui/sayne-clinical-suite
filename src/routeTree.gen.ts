@@ -21,6 +21,7 @@ import { Route as DashboardResearchLogsRouteImport } from './routes/dashboard/re
 import { Route as DashboardProtocolsRouteImport } from './routes/dashboard/protocols'
 import { Route as DashboardPatientsRouteImport } from './routes/dashboard/patients'
 import { Route as DashboardMyVialsRouteImport } from './routes/dashboard/my-vials'
+import { Route as DashboardHomeRouteImport } from './routes/dashboard/home'
 import { Route as DashboardCalculatorRouteImport } from './routes/dashboard/calculator'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 
@@ -84,6 +85,11 @@ const DashboardMyVialsRoute = DashboardMyVialsRouteImport.update({
   path: '/my-vials',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardHomeRoute = DashboardHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardCalculatorRoute = DashboardCalculatorRouteImport.update({
   id: '/calculator',
   path: '/calculator',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/calculator': typeof DashboardCalculatorRoute
+  '/dashboard/home': typeof DashboardHomeRoute
   '/dashboard/my-vials': typeof DashboardMyVialsRoute
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/calculator': typeof DashboardCalculatorRoute
+  '/dashboard/home': typeof DashboardHomeRoute
   '/dashboard/my-vials': typeof DashboardMyVialsRoute
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/calculator': typeof DashboardCalculatorRoute
+  '/dashboard/home': typeof DashboardHomeRoute
   '/dashboard/my-vials': typeof DashboardMyVialsRoute
   '/dashboard/patients': typeof DashboardPatientsRoute
   '/dashboard/protocols': typeof DashboardProtocolsRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/analytics'
     | '/dashboard/calculator'
+    | '/dashboard/home'
     | '/dashboard/my-vials'
     | '/dashboard/patients'
     | '/dashboard/protocols'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/analytics'
     | '/dashboard/calculator'
+    | '/dashboard/home'
     | '/dashboard/my-vials'
     | '/dashboard/patients'
     | '/dashboard/protocols'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/analytics'
     | '/dashboard/calculator'
+    | '/dashboard/home'
     | '/dashboard/my-vials'
     | '/dashboard/patients'
     | '/dashboard/protocols'
@@ -291,6 +303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMyVialsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/home': {
+      id: '/dashboard/home'
+      path: '/home'
+      fullPath: '/dashboard/home'
+      preLoaderRoute: typeof DashboardHomeRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/calculator': {
       id: '/dashboard/calculator'
       path: '/calculator'
@@ -311,6 +330,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
   DashboardCalculatorRoute: typeof DashboardCalculatorRoute
+  DashboardHomeRoute: typeof DashboardHomeRoute
   DashboardMyVialsRoute: typeof DashboardMyVialsRoute
   DashboardPatientsRoute: typeof DashboardPatientsRoute
   DashboardProtocolsRoute: typeof DashboardProtocolsRoute
@@ -321,6 +341,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAnalyticsRoute: DashboardAnalyticsRoute,
   DashboardCalculatorRoute: DashboardCalculatorRoute,
+  DashboardHomeRoute: DashboardHomeRoute,
   DashboardMyVialsRoute: DashboardMyVialsRoute,
   DashboardPatientsRoute: DashboardPatientsRoute,
   DashboardProtocolsRoute: DashboardProtocolsRoute,
