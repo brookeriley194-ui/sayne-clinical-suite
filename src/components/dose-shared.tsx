@@ -157,7 +157,7 @@ export type ReorderItem = {
   percent: number;
 };
 
-function doseToMg(dose: number, unit: string): number | null {
+export function doseToMg(dose: number, unit: string): number | null {
   if (unit === "mg") return dose;
   if (unit === "mcg") return dose / 1000;
   return null; // units / mL: can't convert without concentration
