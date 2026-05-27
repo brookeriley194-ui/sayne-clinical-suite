@@ -46,19 +46,26 @@ type Stack = {
   vial_id?: string | null;
 };
 
-type VialOpt = { id: string; compound: string; vial_size_mg: number; status: string };
+type VialOpt = {
+  id: string; compound: string; vial_size_mg: number; status: string;
+  default_dose: number | null; default_dose_unit: string | null;
+};
+
+const TIMES = ["AM", "PM", "Both"] as const;
 
 const compoundRowSchema = z.object({
   compound: z.string().trim().min(1, "Pick a compound"),
   dose: z.number().positive("Dose must be > 0").max(100000),
   dose_unit: z.enum(UNITS),
   vial_id: z.string().nullable(),
+  frequency: z.string().min(1),
+  time_of_day: z.enum(TIMES),
+  fasted: z.boolean(),
 });
 
 const schema = z.object({
   name: z.string().trim().min(1, "Give your stack a name").max(120),
   compounds: z.array(compoundRowSchema).min(1, "Add at least one compound"),
-  frequency: z.string().min(1),
   route: z.enum(ROUTES),
   ongoing: z.boolean(),
   duration_days: z.number().int().positive().max(3650).nullable(),
@@ -305,10 +312,15 @@ type CompoundRow = {
   dose: string;
   dose_unit: typeof UNITS[number];
   vial_id: string;
+  frequency: typeof FREQUENCIES[number];
+  customDays: number[];
+  time_of_day: typeof TIMES[number];
+  fasted: boolean;
 };
 
 const emptyRow = (): CompoundRow => ({
   compound: "", customCompound: "", dose: "", dose_unit: "mcg", vial_id: "none",
+  frequency: "Once Daily", customDays: [], time_of_day: "AM", fasted: false,
 });
 
 function BuildStackModal({
@@ -316,42 +328,40 @@ function BuildStackModal({
 }: { open: boolean; onClose: () => void; onSaved: () => void; userId: string | null }) {
   const [name, setName] = useState("");
   const [rows, setRows] = useState<CompoundRow[]>([emptyRow()]);
-  const [frequency, setFrequency] = useState<typeof FREQUENCIES[number]>("Once Daily");
-  const [customDays, setCustomDays] = useState<number[]>([]);
   const [route, setRoute] = useState<typeof ROUTES[number]>("Subcutaneous");
   const [ongoing, setOngoing] = useState(false);
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
   const [vials, setVials] = useState<VialOpt[]>([]);
-  const [vialProtocols, setVialProtocols] = useState<Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean }>>({});
+  const [vialProtocols, setVialProtocols] = useState<Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean; time_of_day: string; fasted: boolean }>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setName(""); setRows([emptyRow()]);
-      setFrequency("Once Daily"); setCustomDays([]);
       setRoute("Subcutaneous"); setOngoing(false);
       setDuration(""); setNotes(""); setSaving(false);
       return;
     }
     void supabase.from("vials")
-      .select("id, compound, vial_size_mg, status")
+      .select("id, compound, vial_size_mg, status, default_dose, default_dose_unit")
       .neq("status", "used")
       .order("created_at", { ascending: false })
       .then(({ data }) => setVials((data ?? []) as VialOpt[]));
 
     // Pull most recent protocol per vial so we can autofill dose/freq/cycle
     void supabase.from("protocols")
-      .select("vial_id, dose, dose_unit, frequency, duration_days, ongoing, created_at")
+      .select("vial_id, dose, dose_unit, frequency, duration_days, ongoing, time_of_day, fasted, created_at")
       .not("vial_id", "is", null)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        const map: Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean }> = {};
+        const map: Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean; time_of_day: string; fasted: boolean }> = {};
         for (const p of (data ?? []) as any[]) {
           if (p.vial_id && !map[p.vial_id]) {
             map[p.vial_id] = {
               dose: p.dose, dose_unit: p.dose_unit, frequency: p.frequency,
               duration_days: p.duration_days, ongoing: p.ongoing,
+              time_of_day: p.time_of_day ?? "AM", fasted: !!p.fasted,
             };
           }
         }
@@ -390,18 +400,27 @@ function BuildStackModal({
         patch.compound = "Other";
         patch.customCompound = vial.compound;
       }
+      // Prefer the dose stored directly on the vial (from My Vials calculator)
+      if (vial.default_dose != null) patch.dose = String(vial.default_dose);
+      if (vial.default_dose_unit && (UNITS as readonly string[]).includes(vial.default_dose_unit)) {
+        patch.dose_unit = vial.default_dose_unit as typeof UNITS[number];
+      }
     }
     const prior = vialProtocols[vialId];
     if (prior) {
-      if (prior.dose != null) patch.dose = String(prior.dose);
-      if (prior.dose_unit && (UNITS as readonly string[]).includes(prior.dose_unit)) {
+      if (patch.dose == null && prior.dose != null) patch.dose = String(prior.dose);
+      if (patch.dose_unit == null && prior.dose_unit && (UNITS as readonly string[]).includes(prior.dose_unit)) {
         patch.dose_unit = prior.dose_unit as typeof UNITS[number];
       }
-      // Only set shared schedule if this is the first row being linked
+      if (prior.frequency && (FREQUENCIES as readonly string[]).includes(prior.frequency)) {
+        patch.frequency = prior.frequency as typeof FREQUENCIES[number];
+      }
+      if (prior.time_of_day && (TIMES as readonly string[]).includes(prior.time_of_day)) {
+        patch.time_of_day = prior.time_of_day as typeof TIMES[number];
+      }
+      patch.fasted = !!prior.fasted;
+      // Cycle is shared across the stack — only apply when the first vial is linked
       if (i === 0) {
-        if (prior.frequency && (FREQUENCIES as readonly string[]).includes(prior.frequency)) {
-          setFrequency(prior.frequency as typeof FREQUENCIES[number]);
-        }
         if (prior.ongoing) { setOngoing(true); setDuration(""); }
         else if (prior.duration_days != null) { setOngoing(false); setDuration(String(prior.duration_days)); }
       }
@@ -416,29 +435,41 @@ function BuildStackModal({
   function removeRow(i: number) {
     setRows((prev) => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
   }
-  function toggleDay(d: number) {
-    setCustomDays((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort());
+  function toggleRowDay(i: number, d: number) {
+    setRows((prev) => prev.map((r, idx) => {
+      if (idx !== i) return r;
+      const has = r.customDays.includes(d);
+      return { ...r, customDays: has ? r.customDays.filter((x) => x !== d) : [...r.customDays, d].sort() };
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!userId) { toast.error("Not signed in"); return; }
 
-    const compoundsPayload = rows.map((r) => ({
-      compound: (r.compound === "Other" ? r.customCompound : r.compound).trim(),
-      dose: Number(r.dose),
-      dose_unit: r.dose_unit,
-      vial_id: r.vial_id === "none" ? null : r.vial_id,
-    }));
+    const compoundsPayload = rows.map((r) => {
+      let freqValue: string = r.frequency;
+      if (r.frequency === "Custom") {
+        freqValue = r.customDays.length
+          ? `Custom (${r.customDays.map((d) => DAY_LABELS[d]).join(", ")})`
+          : "Custom";
+      }
+      return {
+        compound: (r.compound === "Other" ? r.customCompound : r.compound).trim(),
+        dose: Number(r.dose),
+        dose_unit: r.dose_unit,
+        vial_id: r.vial_id === "none" ? null : r.vial_id,
+        frequency: freqValue,
+        time_of_day: r.time_of_day,
+        fasted: r.fasted,
+      };
+    });
 
-    let freqValue: string = frequency;
-    if (frequency === "Custom") {
-      if (customDays.length === 0) { toast.error("Pick at least one day for Custom"); return; }
-      freqValue = `Custom (${customDays.map((d) => DAY_LABELS[d]).join(", ")})`;
-    }
+    const badCustom = rows.findIndex((r) => r.frequency === "Custom" && r.customDays.length === 0);
+    if (badCustom !== -1) { toast.error(`Compound #${badCustom + 1}: pick at least one day for Custom`); return; }
 
     const parsed = schema.safeParse({
-      name, compounds: compoundsPayload, frequency: freqValue, route, ongoing,
+      name, compounds: compoundsPayload, route, ongoing,
       duration_days: ongoing ? null : (duration ? Number(duration) : null), notes,
     });
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
@@ -449,7 +480,9 @@ function BuildStackModal({
       compound: c.compound,
       dose: c.dose,
       dose_unit: c.dose_unit,
-      frequency: parsed.data.frequency,
+      frequency: c.frequency,
+      time_of_day: c.time_of_day,
+      fasted: c.fasted,
       route: parsed.data.route,
       ongoing: parsed.data.ongoing,
       duration_days: parsed.data.duration_days,
@@ -524,15 +557,17 @@ function BuildStackModal({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs">Peptide</Label>
-                  <PeptideCombobox value={r.compound} onChange={(v) => updateRow(i, { compound: v })} />
-                  {r.compound === "Other" && (
-                    <Input value={r.customCompound}
-                      onChange={(e) => updateRow(i, { customCompound: e.target.value })}
-                      placeholder="Enter peptide name" />
-                  )}
-                </div>
+                {r.vial_id === "none" && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Peptide</Label>
+                    <PeptideCombobox value={r.compound} onChange={(v) => updateRow(i, { compound: v })} />
+                    {r.compound === "Other" && (
+                      <Input value={r.customCompound}
+                        onChange={(e) => updateRow(i, { customCompound: e.target.value })}
+                        placeholder="Enter peptide name" />
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label className="text-xs">Dose</Label>
@@ -553,49 +588,68 @@ function BuildStackModal({
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs">How often?</Label>
+                    <Select value={r.frequency} onValueChange={(v) => updateRow(i, { frequency: v as typeof FREQUENCIES[number] })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {FREQUENCIES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {r.frequency === "Custom" && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {DAY_LABELS.map((d, idx) => {
+                          const on = r.customDays.includes(idx);
+                          return (
+                            <button key={d} type="button" onClick={() => toggleRowDay(i, idx)}
+                              className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+                              style={{
+                                backgroundColor: on ? BABY_BLUE : "transparent",
+                                color: on ? NAVY : "var(--foreground)",
+                                borderColor: on ? BABY_BLUE : "var(--border)",
+                              }}>
+                              {d}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Time of day</Label>
+                    <div className="inline-flex w-full rounded-md border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                      {TIMES.map((t) => (
+                        <button key={t} type="button" onClick={() => updateRow(i, { time_of_day: t })}
+                          className="flex-1 px-2.5 py-2 text-xs font-medium transition-colors"
+                          style={{
+                            backgroundColor: r.time_of_day === t ? BABY_BLUE : "transparent",
+                            color: r.time_of_day === t ? NAVY : "var(--muted-foreground)",
+                          }}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <Checkbox checked={r.fasted} onCheckedChange={(v) => updateRow(i, { fasted: !!v })} />
+                  <span>Take fasted</span>
+                </label>
+
               </div>
             ))}
           </div>
 
           {/* ---- Shared schedule ---- */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <Label>How often?</Label>
-              <Select value={frequency} onValueChange={(v) => setFrequency(v as typeof FREQUENCIES[number])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {FREQUENCIES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {frequency === "Custom" && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {DAY_LABELS.map((d, idx) => {
-                    const on = customDays.includes(idx);
-                    return (
-                      <button key={d} type="button" onClick={() => toggleDay(idx)}
-                        className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
-                        style={{
-                          backgroundColor: on ? BABY_BLUE : "transparent",
-                          color: on ? NAVY : "var(--foreground)",
-                          borderColor: on ? BABY_BLUE : "var(--border)",
-                        }}>
-                        {d}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>How are you taking it?</Label>
-              <Select value={route} onValueChange={(v) => setRoute(v as typeof ROUTES[number])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROUTES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>How are you taking it?</Label>
+            <Select value={route} onValueChange={(v) => setRoute(v as typeof ROUTES[number])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ROUTES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

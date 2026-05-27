@@ -587,12 +587,13 @@ function VialCalcSheet({ vial, onUpdated }: { vial: Vial; onUpdated: () => void 
   const potency = reconDate ? potencyFromDays(days) : 100;
 
   const persistVial = async () => {
-    const patch: { vial_size_mg?: number; bac_water_ml?: number | null; concentration_mg_per_ml?: number | null; reconstituted_at?: string | null } = {};
+    const patch: { vial_size_mg?: number; bac_water_ml?: number | null; concentration_mg_per_ml?: number | null; reconstituted_at?: string | null; default_dose?: number | null; default_dose_unit?: string | null } = {};
     if (sizeMg > 0 && sizeMg !== vial.vial_size_mg) patch.vial_size_mg = sizeMg;
     if (bacMl != null && bacMl !== vial.bac_water_ml) patch.bac_water_ml = bacMl;
     if (conc != null && conc !== vial.concentration_mg_per_ml) patch.concentration_mg_per_ml = conc;
     const newRecon = reconDate ? reconDate.toISOString() : null;
     if (newRecon !== vial.reconstituted_at) patch.reconstituted_at = newRecon;
+    if (dose) { patch.default_dose = Number(dose); patch.default_dose_unit = unit; }
     if (Object.keys(patch).length === 0) return true;
     const { error } = await supabase.from("vials").update(patch).eq("id", vial.id);
     if (error) { toast.error(error.message); return false; }
