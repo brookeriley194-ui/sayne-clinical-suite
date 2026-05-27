@@ -323,6 +323,7 @@ function BuildStackModal({
   const [duration, setDuration] = useState("");
   const [notes, setNotes] = useState("");
   const [vials, setVials] = useState<VialOpt[]>([]);
+  const [vialProtocols, setVialProtocols] = useState<Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean }>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -338,6 +339,24 @@ function BuildStackModal({
       .neq("status", "used")
       .order("created_at", { ascending: false })
       .then(({ data }) => setVials((data ?? []) as VialOpt[]));
+
+    // Pull most recent protocol per vial so we can autofill dose/freq/cycle
+    void supabase.from("protocols")
+      .select("vial_id, dose, dose_unit, frequency, duration_days, ongoing, created_at")
+      .not("vial_id", "is", null)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        const map: Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean }> = {};
+        for (const p of (data ?? []) as any[]) {
+          if (p.vial_id && !map[p.vial_id]) {
+            map[p.vial_id] = {
+              dose: p.dose, dose_unit: p.dose_unit, frequency: p.frequency,
+              duration_days: p.duration_days, ongoing: p.ongoing,
+            };
+          }
+        }
+        setVialProtocols(map);
+      });
 
     const raw = sessionStorage.getItem("stack:prefill");
     if (raw) {
@@ -358,6 +377,38 @@ function BuildStackModal({
       } catch { /* ignore */ }
     }
   }, [open]);
+
+  function handleVialChange(i: number, vialId: string) {
+    if (vialId === "none") { updateRow(i, { vial_id: "none" }); return; }
+    const vial = vials.find((v) => v.id === vialId);
+    const patch: Partial<CompoundRow> = { vial_id: vialId };
+    if (vial) {
+      if ((COMPOUNDS as readonly string[]).includes(vial.compound)) {
+        patch.compound = vial.compound;
+        patch.customCompound = "";
+      } else {
+        patch.compound = "Other";
+        patch.customCompound = vial.compound;
+      }
+    }
+    const prior = vialProtocols[vialId];
+    if (prior) {
+      if (prior.dose != null) patch.dose = String(prior.dose);
+      if (prior.dose_unit && (UNITS as readonly string[]).includes(prior.dose_unit)) {
+        patch.dose_unit = prior.dose_unit as typeof UNITS[number];
+      }
+      // Only set shared schedule if this is the first row being linked
+      if (i === 0) {
+        if (prior.frequency && (FREQUENCIES as readonly string[]).includes(prior.frequency)) {
+          setFrequency(prior.frequency as typeof FREQUENCIES[number]);
+        }
+        if (prior.ongoing) { setOngoing(true); setDuration(""); }
+        else if (prior.duration_days != null) { setOngoing(false); setDuration(String(prior.duration_days)); }
+      }
+    }
+    updateRow(i, patch);
+  }
+
 
   function updateRow(i: number, patch: Partial<CompoundRow>) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -459,6 +510,21 @@ function BuildStackModal({
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-xs">Link vial <span className="text-muted-foreground">(optional — autofills compound &amp; dose)</span></Label>
+                  <Select value={r.vial_id} onValueChange={(v) => handleVialChange(i, v)}>
+                    <SelectTrigger><SelectValue placeholder="No vial linked" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No vial linked</SelectItem>
+                      {vials.map((v) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.compound} · {v.vial_size_mg}mg ({v.status})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-xs">Peptide</Label>
                   <PeptideCombobox value={r.compound} onChange={(v) => updateRow(i, { compound: v })} />
                   {r.compound === "Other" && (
@@ -468,41 +534,25 @@ function BuildStackModal({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs">Dose</Label>
-                    <div className="flex gap-2">
-                      <Input type="number" inputMode="decimal" step="any" min="0"
-                        value={r.dose} onChange={(e) => updateRow(i, { dose: e.target.value })}
-                        required className="flex-1 font-mono" />
-                      <div className="inline-flex rounded-md border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                        {UNITS.map((u) => (
-                          <button key={u} type="button" onClick={() => updateRow(i, { dose_unit: u })}
-                            className="px-2.5 text-xs font-mono transition-colors"
-                            style={{
-                              backgroundColor: r.dose_unit === u ? "var(--primary)" : "transparent",
-                              color: r.dose_unit === u ? "var(--primary-foreground, #fff)" : "var(--muted-foreground)",
-                            }}>{u}</button>
-                        ))}
-                      </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Dose</Label>
+                  <div className="flex gap-2">
+                    <Input type="number" inputMode="decimal" step="any" min="0"
+                      value={r.dose} onChange={(e) => updateRow(i, { dose: e.target.value })}
+                      required className="flex-1 font-mono" />
+                    <div className="inline-flex rounded-md border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                      {UNITS.map((u) => (
+                        <button key={u} type="button" onClick={() => updateRow(i, { dose_unit: u })}
+                          className="px-2.5 text-xs font-mono transition-colors"
+                          style={{
+                            backgroundColor: r.dose_unit === u ? "var(--primary)" : "transparent",
+                            color: r.dose_unit === u ? "var(--primary-foreground, #fff)" : "var(--muted-foreground)",
+                          }}>{u}</button>
+                      ))}
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-xs">Link vial <span className="text-muted-foreground">(optional)</span></Label>
-                    <Select value={r.vial_id} onValueChange={(v) => updateRow(i, { vial_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="No vial linked" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No vial linked</SelectItem>
-                        {vials.map((v) => (
-                          <SelectItem key={v.id} value={v.id}>
-                            {v.compound} · {v.vial_size_mg}mg ({v.status})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
+
               </div>
             ))}
           </div>
