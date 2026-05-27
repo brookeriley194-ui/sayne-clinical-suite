@@ -10,15 +10,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  LayoutGrid, Users, FlaskConical, BarChart3, Calculator, FileText, Beaker, LogOut, Home,
+  LayoutGrid, Users, FlaskConical, BarChart3, FileText, Beaker, LogOut, Home, Layers, Settings as SettingsIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { FloatingCalculator } from "@/components/floating-calculator";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
 });
 
-const navByRole: Record<AppRole, { to: string; label: string; icon: React.ComponentType<{ className?: string }> }[]> = {
+type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; bottom?: boolean };
+
+const navByRole: Record<AppRole, NavItem[]> = {
   doctor: [
     { to: "/dashboard/protocols", label: "Protocols", icon: LayoutGrid },
     { to: "/dashboard/patients", label: "Patients", icon: Users },
@@ -26,11 +29,10 @@ const navByRole: Record<AppRole, { to: string; label: string; icon: React.Compon
     { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   ],
   researcher: [
-    { to: "/dashboard/home", label: "Home", icon: Home },
+    { to: "/dashboard/today", label: "Today", icon: Home },
     { to: "/dashboard/my-vials", label: "My Vials", icon: Beaker },
-    { to: "/dashboard/calculator", label: "Calculator", icon: Calculator },
-    { to: "/dashboard/research-logs", label: "Research Logs", icon: FileText },
-    { to: "/dashboard/protocols", label: "Protocols", icon: LayoutGrid },
+    { to: "/dashboard/protocols", label: "My Stacks", icon: Layers },
+    { to: "/dashboard/settings", label: "Settings", icon: SettingsIcon, bottom: true },
   ],
 };
 
