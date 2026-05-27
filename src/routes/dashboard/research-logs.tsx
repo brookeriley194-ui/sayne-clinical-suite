@@ -599,8 +599,26 @@ function StackSheet({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Cycle length (days)</Label>
-            <Input type="number" min="1" value={cycleLength} onChange={(e) => setCycleLength(e.target.value)} />
+            <div className="flex items-center justify-between gap-2">
+              <Label>Cycle length (days)</Label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={ongoing}
+                  onChange={(e) => setOngoing(e.target.checked)}
+                  className="size-3.5 accent-primary cursor-pointer"
+                />
+                Ongoing
+              </label>
+            </div>
+            <Input
+              type="number"
+              min="1"
+              value={ongoing ? "" : cycleLength}
+              onChange={(e) => setCycleLength(e.target.value)}
+              disabled={ongoing}
+              placeholder={ongoing ? "No fixed end" : "30"}
+            />
           </div>
         </div>
 
