@@ -412,7 +412,8 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       : null;
 
   const save = async (goToCalculator: boolean) => {
-    if (!compound.trim() || !vialSize) {
+    const finalCompound = (compound === "Other" ? customCompound : compound).trim();
+    if (!finalCompound || !vialSize) {
       toast.error("Compound and vial size are required");
       return;
     }
