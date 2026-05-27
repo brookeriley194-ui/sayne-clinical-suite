@@ -33,6 +33,7 @@ function Page() {
   const [stacks, setStacks] = useState<Stack[]>([]);
   const [vials, setVials] = useState<Vial[]>([]);
   const [doses, setDoses] = useState<DoseLog[]>([]);
+  const [doseCounts, setDoseCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Stack | null>(null);
@@ -41,15 +42,21 @@ function Page() {
     setLoading(true);
     const in30 = format(addDays(new Date(), 30), "yyyy-MM-dd");
     const past30 = format(addDays(new Date(), -30), "yyyy-MM-dd");
-    const [s, v, d] = await Promise.all([
+    const [s, v, d, dc] = await Promise.all([
       supabase.from("stacks").select("*").order("created_at", { ascending: false }),
-      supabase.from("vials").select("id, compound, reconstituted_at"),
+      supabase.from("vials").select("id, compound, reconstituted_at, vial_size_mg"),
       supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
+      supabase.from("stack_doses").select("stack_id"),
     ]);
     if (s.error) toast.error(s.error.message);
     setStacks((s.data ?? []) as Stack[]);
     setVials((v.data ?? []) as Vial[]);
     setDoses((d.data ?? []) as DoseLog[]);
+    const counts: Record<string, number> = {};
+    for (const row of (dc.data ?? []) as { stack_id: string }[]) {
+      counts[row.stack_id] = (counts[row.stack_id] ?? 0) + 1;
+    }
+    setDoseCounts(counts);
     setLoading(false);
   };
 
