@@ -157,6 +157,7 @@ function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <FloatingCalculator />
     </div>
   );
 }
