@@ -25,6 +25,7 @@ import {
   ONGOING_CYCLE_DAYS, isOngoing, parseCustomDays,
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
+import { VialCard, computeVialUsages, type Vial as VialFull, type VialUsage } from "@/routes/dashboard/my-vials";
 
 export const Route = createFileRoute("/dashboard/today")({ component: Page });
 
