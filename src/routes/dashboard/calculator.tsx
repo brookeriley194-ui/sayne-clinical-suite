@@ -62,13 +62,18 @@ function SyringeIcon({ scale, selected }: { scale: number; selected: boolean }) 
 
 function Page() {
   const [compound, setCompound] = useState("BPC-157");
-  const [vialMg, setVialMg] = useState(5);
+  const [vialAmount, setVialAmount] = useState(5);
+  const [vialUnit, setVialUnit] = useState<MassUnit>("mg");
   const [bacWater, setBacWater] = useState(2);
   const [bacUnit, setBacUnit] = useState<DiluentUnit>("mL");
   const [doseUnit, setDoseUnit] = useState<DoseUnit>("mcg");
   const [doseValue, setDoseValue] = useState(250);
   const [syringeType, setSyringeType] = useState<SyringeType>("insulin_1");
   const [reconDate, setReconDate] = useState<Date | undefined>(new Date());
+
+  // If vial is sold as a pre-mixed liquid (mL), assume entered value is the
+  // total mL and treat mass as the same number of mg (user can override via BAC).
+  const vialMg = vialUnit === "mg" ? vialAmount : vialAmount;
 
   // Convert diluent to mL. units = 0.01 mL each (U-100). mcg isn't a volume —
   // treat as mL with a small advisory note.
