@@ -232,6 +232,7 @@ function Page() {
               onMarkEmpty={() => markEmpty(v.id)}
               onRestore={(s) => restore(v.id, s)}
               onChangeStatus={(s) => changeStatus(v.id, s)}
+              onUpdated={load}
             />
           ))}
 
