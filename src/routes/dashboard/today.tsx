@@ -787,3 +787,46 @@ function ProtocolStacksSection() {
     </>
   );
 }
+
+function MyVialsSection({
+  vials, usage, onReload,
+}: { vials: Vial[]; usage: Record<string, VialUsage>; onReload: () => void }) {
+  const remove = async (id: string) => {
+    const { error } = await supabase.from("vials").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Vial removed");
+    onReload();
+  };
+  const setStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("vials").update({ status }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(`Status: ${status}`);
+    onReload();
+  };
+  return (
+    <>
+      <div className="mb-3 flex items-baseline justify-between">
+        <h2 className="font-display text-xl font-semibold">My Vials</h2>
+        <span className="text-xs text-muted-foreground">{vials.length} vial{vials.length === 1 ? "" : "s"}</span>
+      </div>
+      {vials.length === 0 ? (
+        <EmptyCard title="No vials yet" body="Add vials in My Vials to see them here." />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {vials.map((v) => (
+            <VialCard
+              key={v.id}
+              vial={v}
+              usage={usage[v.id]}
+              onDelete={() => remove(v.id)}
+              onMarkEmpty={() => setStatus(v.id, "used")}
+              onRestore={(s) => setStatus(v.id, s)}
+              onChangeStatus={(s) => setStatus(v.id, s)}
+              onUpdated={onReload}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
