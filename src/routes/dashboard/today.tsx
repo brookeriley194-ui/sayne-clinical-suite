@@ -28,6 +28,51 @@ import {
 
 export const Route = createFileRoute("/dashboard/today")({ component: Page });
 
+function potencyPct(reconstituted_at: string | null): number | null {
+  if (!reconstituted_at) return null;
+  const days = Math.max(0, Math.floor((Date.now() - new Date(reconstituted_at).getTime()) / 86400000));
+  return Math.max(0, Math.min(100, Math.round(100 - (days * 100) / 60)));
+}
+function GreetingHeader({ vials }: { vials: { compound: string; reconstituted_at: string | null; status: string }[] }) {
+  const { user } = useAuth();
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
+  const first =
+    meta.full_name?.split(" ")[0] ||
+    meta.name?.split(" ")[0] ||
+    user?.email?.split("@")[0] ||
+    "there";
+  const low = vials
+    .filter((v) => v.status === "open" && v.reconstituted_at)
+    .map((v) => ({ v, p: potencyPct(v.reconstituted_at) }))
+    .filter((x) => x.p != null && (x.p as number) < 75)
+    .sort((a, b) => (a.p as number) - (b.p as number))[0];
+  return (
+    <div className="mb-6 space-y-3">
+      <div>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
+          {greet}, <span className="text-primary">{first}</span>
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">Here's your day — log doses, check your stack, stay on track.</p>
+      </div>
+      {low && (
+        <div
+          className="rounded-lg border px-4 py-3 text-sm flex items-center gap-2"
+          style={{ backgroundColor: "color-mix(in oklab, #FFD580 22%, transparent)", borderColor: "color-mix(in oklab, #FFD580 60%, transparent)" }}
+        >
+          <span aria-hidden>⚠️</span>
+          <span>
+            Heads up — <strong>{low.v.compound}</strong> is at <span className="font-mono">{low.p}%</span> potency.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
 type Vial = { id: string; compound: string; reconstituted_at: string | null; vial_size_mg: number; concentration_mg_per_ml: number | null; bac_water_ml: number | null; status: string };
 const DOSE_UNITS = ["mg", "mcg", "units", "mL"];
 const VIAL_STATUSES = ["sealed", "open", "used"] as const;
