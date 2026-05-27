@@ -37,6 +37,8 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Stack | null>(null);
+  
+
 
   const load = async () => {
     setLoading(true);
@@ -61,6 +63,36 @@ function Page() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("stack:prefill");
+    if (!raw) return;
+    sessionStorage.removeItem("stack:prefill");
+    let p: Partial<Stack> & { peptide_name?: string; dose?: number; dose_unit?: string; reconstituted_at?: string | null };
+    try { p = JSON.parse(raw); } catch { return; }
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data, error } = await supabase.from("stacks").insert({
+        doctor_id: u.user.id,
+        peptide_name: p.peptide_name ?? "New peptide",
+        dose: p.dose ?? null,
+        dose_unit: p.dose_unit ?? "mg",
+        reconstituted_at: p.reconstituted_at ?? null,
+        time_of_day: "AM",
+        fasted: false,
+        cycle_length_days: 30,
+        start_date: format(new Date(), "yyyy-MM-dd"),
+        frequency: "daily",
+      }).select().single();
+      if (error) { toast.error(error.message); return; }
+      toast.success("Added to stack — finish setting it up");
+      await load();
+      setEditing(data as Stack);
+
+      setSheetOpen(true);
+    })();
+  }, []);
 
   const stats = useMemo(() => {
     const active = stacks.filter((s) => {

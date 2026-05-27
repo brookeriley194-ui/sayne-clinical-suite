@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, differenceInDays } from "date-fns";
 import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX, Undo2 } from "lucide-react";
@@ -346,6 +346,7 @@ function Metric({ label, value, unit }: { label: string; value: string; unit: st
 }
 
 function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const navigate = useNavigate();
   const [compound, setCompound] = useState("");
   const [vialSize, setVialSize] = useState("");
   const [vialUnit, setVialUnit] = useState<"mg" | "mL">("mg");
@@ -361,10 +362,10 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
       ? (Number(vialSize) / Number(bacWater)).toFixed(2)
       : null;
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const save = async (goToCalculator: boolean) => {
     if (!compound.trim() || !vialSize) {
-      return toast.error("Compound and vial size are required");
+      toast.error("Compound and vial size are required");
+      return;
     }
     setSaving(true);
     const { data: u } = await supabase.auth.getUser();
@@ -384,8 +385,22 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Vial added");
-    onSaved();
+
+    if (goToCalculator) {
+      sessionStorage.setItem("calc:prefill", JSON.stringify({
+        compound: compound.trim(),
+        vialAmount: Number(vialSize),
+        vialUnit,
+        bacWater: bacWater ? Number(bacWater) : 2,
+      }));
+      navigate({ to: "/dashboard/calculator" });
+    } else {
+      onSaved();
+    }
   };
+
+  const submit = (e: React.FormEvent) => { e.preventDefault(); save(false); };
+
 
   return (
     <SheetContent className="w-full sm:max-w-md overflow-y-auto">
@@ -461,8 +476,11 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
           <Label>Notes</Label>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Optional notes" />
         </div>
-        <SheetFooter className="gap-2">
+        <SheetFooter className="gap-2 flex-col sm:flex-row">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="secondary" disabled={saving} onClick={() => save(true)}>
+            Save & Go to Calculator
+          </Button>
           <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save Vial"}</Button>
         </SheetFooter>
       </form>
