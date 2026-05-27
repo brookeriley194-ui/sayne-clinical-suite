@@ -20,13 +20,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  DayCell, FREQUENCIES, colorFor, ReorderReminders,
+  DayCell, FREQUENCIES, colorFor, ReorderReminders, VialVisual, computeRemainingDoses,
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
 
 export const Route = createFileRoute("/dashboard/research-logs")({ component: Page });
 
-type Vial = { id: string; compound: string; reconstituted_at: string | null };
+type Vial = { id: string; compound: string; reconstituted_at: string | null; vial_size_mg: number };
 const DOSE_UNITS = ["mg", "mcg", "units", "mL"];
 
 function Page() {
