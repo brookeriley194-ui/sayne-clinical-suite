@@ -113,6 +113,9 @@ function HomePage() {
         </div>
       </div>
 
+      <ReorderReminders />
+
+
       {/* Day view */}
       <section>
         <div className="flex items-baseline justify-between mb-3">
