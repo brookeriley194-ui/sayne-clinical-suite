@@ -61,6 +61,7 @@ function Page() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sendTarget, setSendTarget] = useState<Protocol | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [name, setName] = useState("");
   const [compound, setCompound] = useState<typeof COMPOUNDS[number]>("BPC-157");
