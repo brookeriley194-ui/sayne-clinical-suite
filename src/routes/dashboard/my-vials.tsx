@@ -400,8 +400,22 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label>Vial size (mg) *</Label>
-            <Input type="number" step="0.1" value={vialSize} onChange={(e) => setVialSize(e.target.value)} placeholder="5" />
+            <Label>Vial size *</Label>
+            <div className="flex gap-2">
+              <Input type="number" step="0.1" value={vialSize} onChange={(e) => setVialSize(e.target.value)} placeholder="5" className="flex-1" />
+              <div className="inline-flex rounded-md border bg-background p-0.5">
+                {(["mg", "mL"] as const).map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => setVialUnit(u)}
+                    className={`px-2.5 text-xs rounded ${vialUnit === u ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>BAC water (mL)</Label>
