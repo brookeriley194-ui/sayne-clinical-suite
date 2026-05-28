@@ -207,6 +207,12 @@ function StackGroup({
   const first = rows[0];
   const status = deriveStatus(first);
   const remaining = daysRemaining(first);
+  const [journalOpen, setJournalOpen] = useState(false);
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const jp: JournalProtocol = {
+    id: first.id, name: first.name, compound: first.compound,
+    created_at: first.created_at, ongoing: first.ongoing, duration_days: first.duration_days,
+  };
   return (
     <div className="sayne-card p-5">
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
@@ -229,7 +235,13 @@ function StackGroup({
             {name}
           </h3>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button size="sm" variant="outline" onClick={() => setJournalOpen(true)} className="gap-1.5">
+            <BookOpen className="h-3.5 w-3.5" /> Journal
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setCompleteOpen(true)} className="gap-1.5">
+            <Check className="h-3.5 w-3.5" /> Mark Complete
+          </Button>
           <Button size="sm" variant="outline" onClick={onEdit} className="gap-1.5">
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Button>
@@ -239,6 +251,10 @@ function StackGroup({
           </Button>
         </div>
       </div>
+
+      <JournalCurveModal open={journalOpen} onOpenChange={setJournalOpen} protocol={jp} />
+      <ProtocolCompletionModal open={completeOpen} onOpenChange={setCompleteOpen} protocol={jp} />
+
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {rows.map((r) => (
