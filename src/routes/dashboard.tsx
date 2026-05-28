@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  LayoutGrid, Users, FlaskConical, BarChart3, FileText, Beaker, LogOut, Home, Layers, Settings as SettingsIcon,
+  LayoutGrid, Users, FlaskConical, BarChart3, FileText, Beaker, LogOut, Home, Layers, Settings as SettingsIcon, Users2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingCalculator } from "@/components/floating-calculator";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
 });
 
-type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; bottom?: boolean };
+type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; bottom?: boolean; accent?: string };
 
 const navByRole: Record<AppRole, NavItem[]> = {
   doctor: [
@@ -27,11 +27,13 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/dashboard/patients", label: "Patients", icon: Users },
     { to: "/dashboard/vials", label: "Vials", icon: Beaker },
     { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+    { to: "/dashboard/stack-feed", label: "Stack Feed", icon: Users2, accent: "#C9A8F5" },
   ],
   researcher: [
     { to: "/dashboard/today", label: "Today", icon: Home },
     { to: "/dashboard/my-vials", label: "My Vials", icon: Beaker },
     { to: "/dashboard/protocols", label: "My Stacks", icon: Layers },
+    { to: "/dashboard/stack-feed", label: "Stack Feed", icon: Users2, accent: "#C9A8F5" },
     { to: "/dashboard/settings", label: "Settings", icon: SettingsIcon, bottom: true },
   ],
 };
@@ -91,7 +93,7 @@ function DashboardLayout() {
                   color: active ? "var(--foreground)" : "var(--muted-foreground)",
                 }}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4" style={it.accent ? { color: it.accent } : undefined} />
                 {it.label}
               </Link>
             );

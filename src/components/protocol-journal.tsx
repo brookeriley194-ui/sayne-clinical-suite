@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { X, BookOpen, Download, Lock, Share2 } from "lucide-react";
 
@@ -459,10 +459,7 @@ export function ProtocolCompletionModal({
     w.document.close();
   };
 
-  const shareToStack = () => {
-    toast.success("Shared anonymously to Stack Feed");
-    onOpenChange(false);
-  };
+  const [shareOpen, setShareOpen] = useState(false);
   const keepPrivate = async () => {
     await supabase.from("protocols").update({ ongoing: false }).eq("id", protocol.id);
     toast.success("Protocol archived privately");
@@ -510,7 +507,7 @@ export function ProtocolCompletionModal({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
-          <Button onClick={shareToStack} className="gap-2 text-[#1f3a2a] hover:opacity-90" style={{ backgroundColor: J_COLORS.recovery }}>
+          <Button onClick={() => setShareOpen(true)} className="gap-2 text-[#1f3a2a] hover:opacity-90" style={{ backgroundColor: J_COLORS.recovery }}>
             <Share2 className="size-4" /> Share Anonymously to Stack Feed
           </Button>
           <Button onClick={keepPrivate} className="gap-2 text-[#3b2766] hover:opacity-90" style={{ backgroundColor: J_COLORS.sleep }}>
@@ -520,6 +517,156 @@ export function ProtocolCompletionModal({
             <Download className="size-4" /> Export as PDF
           </Button>
         </div>
+      </DialogContent>
+      <ShareToStackFeedModal
+        open={shareOpen}
+        onOpenChange={(o) => { setShareOpen(o); if (!o) onOpenChange(false); }}
+        protocol={protocol}
+        entries={entries}
+        avgs={{ energy: aE, sleep: aS, recovery: aR, mood: aM }}
+      />
+    </Dialog>
+  );
+}
+
+/* ===========================  SHARE TO STACK FEED  =========================== */
+
+const SHARE_GOALS = ["Energy", "Recovery", "Sleep", "Gut Health", "Cognitive", "Immune", "Body Composition", "Anti-aging"];
+
+function genAnonId() {
+  return `User #${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+export function ShareToStackFeedModal({
+  open, onOpenChange, protocol, entries, avgs,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  protocol: JournalProtocol;
+  entries: JournalEntry[];
+  avgs: { energy: number | null; sleep: number | null; recovery: number | null; mood: number | null };
+}) {
+  const [tags, setTags] = useState<string[]>([]);
+  const [summary, setSummary] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [anonId] = useState(genAnonId);
+
+  function toggleTag(g: string) {
+    setTags((cur) => cur.includes(g) ? cur.filter((x) => x !== g) : cur.length >= 3 ? cur : [...cur, g]);
+  }
+
+  async function submit() {
+    setBusy(true);
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) { setBusy(false); toast.error("Sign in required"); return; }
+
+    const { data: proto } = await supabase
+      .from("protocols")
+      .select("dose, dose_unit, frequency, route, duration_days, compound")
+      .eq("id", protocol.id)
+      .maybeSingle();
+
+    const vals = [avgs.energy, avgs.sleep, avgs.recovery, avgs.mood].filter((v): v is number => v != null);
+    const overall = vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null;
+
+    const { error } = await supabase.from("shared_stacks").insert({
+      protocol_id: protocol.id,
+      user_id: u.user.id,
+      compound: proto?.compound ?? protocol.compound,
+      dose_mcg: Number(proto?.dose ?? 0),
+      dose_unit: proto?.dose_unit ?? "mg",
+      frequency: proto?.frequency ?? "daily",
+      route: proto?.route ?? "SC",
+      duration_days: proto?.duration_days ?? null,
+      avg_energy: avgs.energy,
+      avg_sleep: avgs.sleep,
+      avg_recovery: avgs.recovery,
+      avg_mood: avgs.mood,
+      overall_score: overall,
+      goal_tags: tags,
+      summary: summary.trim() || null,
+      anonymous_id: anonId,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    await supabase.from("protocols").update({ ongoing: false }).eq("id", protocol.id);
+    toast.success("Shared to Stack Feed anonymously");
+    onOpenChange(false);
+  }
+
+  const previewDose = entries.length ? `${entries.length} weekly check-ins` : "your protocol data";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl">Share to Stack Feed</DialogTitle>
+          <DialogDescription>Preview what will be shared anonymously.</DialogDescription>
+        </DialogHeader>
+
+        <div className="rounded-xl border p-4 bg-card space-y-2">
+          <div className="font-display text-lg font-bold">{protocol.compound}</div>
+          <div className="text-xs text-muted-foreground">
+            {previewDose} · average scores across all weeks
+          </div>
+          <div className="flex gap-3 pt-1">
+            {[
+              { label: "E", v: avgs.energy, c: J_COLORS.energy },
+              { label: "S", v: avgs.sleep, c: J_COLORS.sleep },
+              { label: "R", v: avgs.recovery, c: J_COLORS.recovery },
+              { label: "M", v: avgs.mood, c: J_COLORS.mood },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.c }} />
+                <span className="text-sm font-mono">{s.v != null ? s.v.toFixed(1) : "—"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Goal Tags (up to 3)</div>
+          <div className="flex flex-wrap gap-1.5">
+            {SHARE_GOALS.map((g) => {
+              const active = tags.includes(g);
+              return (
+                <button
+                  key={g}
+                  onClick={() => toggleTag(g)}
+                  className="text-xs px-2.5 py-1 rounded-full border transition-colors"
+                  style={{
+                    backgroundColor: active ? "#98E4B255" : "transparent",
+                    borderColor: active ? "#98E4B2" : "var(--border)",
+                    color: "var(--foreground)",
+                  }}
+                >
+                  {g}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">One line summary (optional)</div>
+          <Textarea
+            value={summary}
+            onChange={(e) => setSummary(e.target.value.slice(0, 140))}
+            placeholder="What would you tell someone considering this stack?"
+            rows={2}
+          />
+          <div className="text-[10px] text-muted-foreground text-right mt-1 font-mono">{summary.length}/140</div>
+        </div>
+
+        <p className="text-xs italic text-muted-foreground">
+          Your username, email, and any personal information are never shared. You appear as <strong>{anonId}</strong>.
+        </p>
+
+        <DialogFooter>
+          <Button onClick={submit} disabled={busy} className="text-[#3b2766] hover:opacity-90" style={{ backgroundColor: J_COLORS.sleep }}>
+            <Share2 className="size-4 mr-1.5" /> Share to Stack Feed
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
