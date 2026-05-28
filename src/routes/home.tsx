@@ -295,6 +295,15 @@ function ProductShowcase() {
   const sy = useSpring(my, { stiffness: 60, damping: 14, mass: 0.4 });
   const reduce = useReducedMotion();
 
+  // Scroll-driven parallax across the hero
+  const { scrollY } = useScroll();
+  const scrollYSmooth = useSpring(scrollY, { stiffness: 80, damping: 24, mass: 0.5 });
+  const dashY = useTransform(scrollYSmooth, [0, 700], [0, -38]);
+  const vialsY = useTransform(scrollYSmooth, [0, 700], [0, -70]);
+  const pillAY = useTransform(scrollYSmooth, [0, 700], [0, 28]);
+  const pillBY = useTransform(scrollYSmooth, [0, 700], [0, 48]);
+  const gaugeY = useTransform(scrollYSmooth, [0, 700], [0, -55]);
+
   function onMove(e: React.MouseEvent) {
     if (reduce) return;
     const el = ref.current;
@@ -319,60 +328,98 @@ function ProductShowcase() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.9, delay: 0.1, ease: [0.2, 0.7, 0.2, 1] }}
       className="relative h-[560px] md:h-[600px]"
-      style={{ perspective: 1200 }}
+      style={{ perspective: 1400 }}
     >
+      {/* Soft lavender ground-shadow under the stack */}
+      <div
+        aria-hidden
+        className="absolute left-[8%] right-[8%] bottom-2 h-10 rounded-[100%] blur-2xl opacity-60"
+        style={{ background: `radial-gradient(closest-side, ${LAVENDER}66, transparent 70%)` }}
+      />
+
       {/* Big dashboard window */}
-      <motion.div
-        style={{ x: sx, y: sy }}
-        className="absolute inset-0"
-      >
+      <motion.div style={{ x: sx, y: useMergeY(sy, dashY) }} className="absolute inset-0">
         <DashboardMock />
       </motion.div>
 
       {/* Floating vials card */}
       <motion.div
-        style={{ x: useSpring(useTransform2(sx, 1.8), { stiffness: 50, damping: 14 }), y: useSpring(useTransform2(sy, 1.8), { stiffness: 50, damping: 14 }) }}
+        style={{
+          x: useSpring(useTransform2(sx, 1.8), { stiffness: 50, damping: 14 }),
+          y: useMergeY(useSpring(useTransform2(sy, 1.8), { stiffness: 50, damping: 14 }), vialsY),
+        }}
         className="absolute -right-4 top-10 w-[290px] hidden md:block floating-card"
       >
-        <VialsCard />
+        <div className="suspended rounded-2xl">
+          <VialsCard />
+        </div>
       </motion.div>
 
       {/* Floating import from AI */}
       <motion.div
-        style={{ x: useSpring(useTransform2(sx, -1.5), { stiffness: 50, damping: 14 }), y: useSpring(useTransform2(sy, -1.5), { stiffness: 50, damping: 14 }) }}
+        style={{
+          x: useSpring(useTransform2(sx, -1.5), { stiffness: 50, damping: 14 }),
+          y: useMergeY(useSpring(useTransform2(sy, -1.5), { stiffness: 50, damping: 14 }), pillAY),
+        }}
         className="absolute -left-3 top-6 floating-card-slow"
       >
-        <FloatingPill
-          icon={<Sparkles className="h-4 w-4" style={{ color: LAVENDER }} />}
-          title="Import from AI"
-          sub="paste any protocol"
-          tint={LAVENDER}
-        />
+        <div className="suspended rounded-2xl">
+          <FloatingPill
+            icon={<Sparkles className="h-4 w-4" style={{ color: LAVENDER }} />}
+            title="Import from AI"
+            sub="paste any protocol"
+            tint={LAVENDER}
+          />
+        </div>
       </motion.div>
 
       {/* Floating receipt scan */}
       <motion.div
-        style={{ x: useSpring(useTransform2(sx, -2.2), { stiffness: 50, damping: 14 }), y: useSpring(useTransform2(sy, -2.2), { stiffness: 50, damping: 14 }) }}
+        style={{
+          x: useSpring(useTransform2(sx, -2.2), { stiffness: 50, damping: 14 }),
+          y: useMergeY(useSpring(useTransform2(sy, -2.2), { stiffness: 50, damping: 14 }), pillBY),
+        }}
         className="absolute -left-2 bottom-24 floating-card"
       >
-        <FloatingPill
-          icon={<ReceiptText className="h-4 w-4" style={{ color: "#B8841F" }} />}
-          title="Scan Receipt"
-          sub="add vials instantly"
-          tint={YELLOW}
-        />
+        <div className="suspended rounded-2xl">
+          <FloatingPill
+            icon={<ReceiptText className="h-4 w-4" style={{ color: "#B8841F" }} />}
+            title="Scan Receipt"
+            sub="add vials instantly"
+            tint={YELLOW}
+          />
+        </div>
       </motion.div>
 
       {/* Floating potency gauge */}
       <motion.div
-        style={{ x: useSpring(useTransform2(sx, 2.4), { stiffness: 50, damping: 14 }), y: useSpring(useTransform2(sy, 2.4), { stiffness: 50, damping: 14 }) }}
+        style={{
+          x: useSpring(useTransform2(sx, 2.4), { stiffness: 50, damping: 14 }),
+          y: useMergeY(useSpring(useTransform2(sy, 2.4), { stiffness: 50, damping: 14 }), gaugeY),
+        }}
         className="absolute -right-2 bottom-4 floating-card-slow"
       >
-        <PotencyGauge />
+        <div className="suspended rounded-2xl">
+          <PotencyGauge />
+        </div>
       </motion.div>
     </motion.div>
   );
 }
+
+// merges two motion values (sum)
+function useMergeY(a: ReturnType<typeof useMotionValue<number>>, b: ReturnType<typeof useMotionValue<number>>) {
+  const out = useMotionValue(0);
+  useEffect(() => {
+    const recompute = () => out.set(a.get() + b.get());
+    const ua = a.on("change", recompute);
+    const ub = b.on("change", recompute);
+    recompute();
+    return () => { ua(); ub(); };
+  }, [a, b, out]);
+  return out;
+}
+
 
 // helper to scale a motion value
 function useTransform2(mv: ReturnType<typeof useMotionValue<number>>, factor: number) {
