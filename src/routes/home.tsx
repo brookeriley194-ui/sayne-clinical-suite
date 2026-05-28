@@ -200,7 +200,7 @@ function HeroCopy() {
       </div>
 
       <p className="mt-4 italic text-xs font-mono" style={{ color: MUTED }}>
-        — keeping peptides sayne since 2026
+        {"\n"}
       </p>
 
       <h1 className="mt-5 font-display font-extrabold tracking-tight text-[3.2rem] md:text-[4.2rem] leading-[1.0]">
