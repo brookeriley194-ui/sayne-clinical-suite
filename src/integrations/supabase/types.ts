@@ -73,6 +73,66 @@ export type Database = {
         }
         Relationships: []
       }
+      protocol_journal_entries: {
+        Row: {
+          anonymous_pool: boolean
+          created_at: string
+          energy_score: number | null
+          id: string
+          logged_at: string
+          mood_score: number | null
+          notes: string | null
+          protocol_id: string
+          recovery_score: number | null
+          sleep_score: number | null
+          user_id: string
+          week_number: number
+        }
+        Insert: {
+          anonymous_pool?: boolean
+          created_at?: string
+          energy_score?: number | null
+          id?: string
+          logged_at?: string
+          mood_score?: number | null
+          notes?: string | null
+          protocol_id: string
+          recovery_score?: number | null
+          sleep_score?: number | null
+          user_id: string
+          week_number: number
+        }
+        Update: {
+          anonymous_pool?: boolean
+          created_at?: string
+          energy_score?: number | null
+          id?: string
+          logged_at?: string
+          mood_score?: number | null
+          notes?: string | null
+          protocol_id?: string
+          recovery_score?: number | null
+          sleep_score?: number | null
+          user_id?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_journal_entries_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "protocols"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "protocol_journal_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       protocols: {
         Row: {
           compound: string
