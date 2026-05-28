@@ -99,7 +99,7 @@ function Page() {
       supabase.from("stack_doses").select("id, stack_id, dose_date, period").gte("dose_date", past30).lte("dose_date", in30),
       supabase.from("stack_doses").select("stack_id"),
       supabase.from("protocols").select("*").order("created_at", { ascending: false }),
-      supabase.from("stacks").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
+      supabase.from("protocols").select("id, vial_id, dose, dose_unit, created_at").not("vial_id", "is", null),
     ]);
     const protocolStacks: Stack[] = ((p.data ?? []) as ProtocolRow[]).map((r) => ({
       id: r.id,
