@@ -459,10 +459,7 @@ export function ProtocolCompletionModal({
     w.document.close();
   };
 
-  const shareToStack = () => {
-    toast.success("Shared anonymously to Stack Feed");
-    onOpenChange(false);
-  };
+  const [shareOpen, setShareOpen] = useState(false);
   const keepPrivate = async () => {
     await supabase.from("protocols").update({ ongoing: false }).eq("id", protocol.id);
     toast.success("Protocol archived privately");
