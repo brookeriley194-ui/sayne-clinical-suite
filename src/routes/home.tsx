@@ -433,7 +433,7 @@ function useTransform2(mv: ReturnType<typeof useMotionValue<number>>, factor: nu
 
 function DashboardMock() {
   return (
-    <div className="glass-card h-full w-full p-4 flex gap-3 overflow-hidden">
+    <div className="glass-card-deep h-full w-full p-4 flex gap-3 overflow-hidden">
       {/* Sidebar */}
       <div className="w-[120px] shrink-0 rounded-xl bg-white/60 border border-[color:var(--border)] p-2.5 flex flex-col gap-1">
         <div className="flex items-center gap-1.5 px-1 py-1">
