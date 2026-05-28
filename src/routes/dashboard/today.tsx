@@ -263,6 +263,17 @@ function Page() {
           onSaved={() => { setSheetOpen(false); load(); }}
         />
       </Sheet>
+
+      <JournalCheckinModal
+        open={!!checkin}
+        onOpenChange={(o) => { if (!o) setCheckin(null); }}
+        protocol={checkin?.p ?? null}
+        week={checkin?.week ?? 1}
+        onSaved={() => setJournalReloadKey((k) => k + 1)}
+      />
+          onSaved={() => { setSheetOpen(false); load(); }}
+        />
+      </Sheet>
     </>
   );
 }
