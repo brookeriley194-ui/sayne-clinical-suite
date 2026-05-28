@@ -635,24 +635,43 @@ function PotencyGauge() {
   const r = 28;
   const c = 2 * Math.PI * r;
   const pct = 83;
+  const count = useMotionValue(reduce ? pct : 0);
+  const [display, setDisplay] = useState(reduce ? pct : 0);
+  useEffect(() => {
+    if (reduce) return;
+    const controls = animate(count, pct, {
+      duration: 1.8,
+      delay: 0.5,
+      ease: [0.2, 0.7, 0.2, 1],
+      onUpdate: (v) => setDisplay(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [count, reduce]);
+
   return (
     <div className="glass-card p-3 flex items-center gap-3">
       <div className="relative h-[74px] w-[74px]">
         <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stopColor={LAVENDER} />
+              <stop offset="100%" stopColor={BABY_BLUE} />
+            </linearGradient>
+          </defs>
           <circle cx="40" cy="40" r={r} stroke={`color-mix(in oklab, ${LAVENDER} 25%, white)`} strokeWidth="6" fill="none" />
           <motion.circle
             cx="40" cy="40" r={r}
-            stroke={LAVENDER}
+            stroke="url(#gaugeGrad)"
             strokeWidth="6"
             strokeLinecap="round"
             fill="none"
             strokeDasharray={c}
             initial={reduce ? false : { strokeDashoffset: c }}
             animate={{ strokeDashoffset: c * (1 - pct / 100) }}
-            transition={{ duration: 1.6, delay: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
+            transition={{ duration: 1.8, delay: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center font-mono font-semibold text-[13px]">{pct}%</div>
+        <div className="absolute inset-0 flex items-center justify-center font-mono font-semibold text-[13px]">{display}%</div>
       </div>
       <div className="leading-tight">
         <div className="font-mono text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>Avg. Potency</div>
@@ -661,6 +680,7 @@ function PotencyGauge() {
     </div>
   );
 }
+
 
 /* -------------------- Feature strip -------------------- */
 function FeatureStrip() {
