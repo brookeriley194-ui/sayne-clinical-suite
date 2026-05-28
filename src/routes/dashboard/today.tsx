@@ -708,6 +708,7 @@ type ProtocolRow = {
   id: string; name: string; compound: string; dose: number; dose_unit: string;
   frequency: string; route: string; duration_days: number | null;
   ongoing: boolean; time_of_day: string; fasted: boolean; created_at: string;
+  vial_id: string | null;
 };
 
 function ProtocolStacksSection() {
