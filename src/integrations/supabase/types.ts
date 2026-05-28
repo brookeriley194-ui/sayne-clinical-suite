@@ -201,6 +201,72 @@ export type Database = {
           },
         ]
       }
+      shared_stacks: {
+        Row: {
+          anonymous_id: string
+          avg_energy: number | null
+          avg_mood: number | null
+          avg_recovery: number | null
+          avg_sleep: number | null
+          compound: string
+          created_at: string
+          dose_mcg: number
+          dose_unit: string
+          duration_days: number | null
+          frequency: string
+          goal_tags: string[] | null
+          id: string
+          import_count: number
+          overall_score: number | null
+          protocol_id: string
+          route: string
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          anonymous_id: string
+          avg_energy?: number | null
+          avg_mood?: number | null
+          avg_recovery?: number | null
+          avg_sleep?: number | null
+          compound: string
+          created_at?: string
+          dose_mcg: number
+          dose_unit: string
+          duration_days?: number | null
+          frequency: string
+          goal_tags?: string[] | null
+          id?: string
+          import_count?: number
+          overall_score?: number | null
+          protocol_id: string
+          route: string
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          anonymous_id?: string
+          avg_energy?: number | null
+          avg_mood?: number | null
+          avg_recovery?: number | null
+          avg_sleep?: number | null
+          compound?: string
+          created_at?: string
+          dose_mcg?: number
+          dose_unit?: string
+          duration_days?: number | null
+          frequency?: string
+          goal_tags?: string[] | null
+          id?: string
+          import_count?: number
+          overall_score?: number | null
+          protocol_id?: string
+          route?: string
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       stack_doses: {
         Row: {
           created_at: string
