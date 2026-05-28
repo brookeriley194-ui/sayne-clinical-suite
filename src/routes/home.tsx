@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useSpring, useInView, useReducedMotion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useInView, useReducedMotion, useScroll, useTransform, animate } from "framer-motion";
+
 import {
   Sparkles,
   ReceiptText,
