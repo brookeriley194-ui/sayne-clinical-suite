@@ -91,6 +91,9 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Stack | null>(null);
+  const [journalProtocols, setJournalProtocols] = useState<JournalProtocol[]>([]);
+  const [checkin, setCheckin] = useState<{ p: JournalProtocol; week: number } | null>(null);
+  const [journalReloadKey, setJournalReloadKey] = useState(0);
   
 
 
