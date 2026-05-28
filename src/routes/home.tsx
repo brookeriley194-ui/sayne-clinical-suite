@@ -698,11 +698,11 @@ function FeatureStrip() {
           {features.map((f, i) => (
             <motion.div
               key={f.name}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.45, delay: i * 0.06 }}
-              whileHover={{ y: -2 }}
+              transition={{ duration: 0.55, delay: i * 0.09, ease: [0.2, 0.7, 0.2, 1] }}
+              whileHover={{ y: -3 }}
               className="group bg-white/80 backdrop-blur rounded-full pl-2.5 pr-4 py-1.5 flex items-center gap-2.5 transition-all hover:shadow-md"
               style={{ border: `1px solid ${BORDER}` }}
             >
