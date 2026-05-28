@@ -304,6 +304,8 @@ export function JournalCurveModal({
   open, onOpenChange, protocol,
 }: { open: boolean; onOpenChange: (o: boolean) => void; protocol: JournalProtocol | null }) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [checkinOpen, setCheckinOpen] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     if (!open || !protocol) return;
@@ -315,23 +317,44 @@ export function JournalCurveModal({
         .order("week_number", { ascending: true });
       setEntries((data ?? []) as JournalEntry[]);
     })();
-  }, [open, protocol]);
+  }, [open, protocol, reloadTick]);
 
   if (!protocol) return null;
   const currentWeek = weekOf(protocol);
   const tw = totalWeeks(protocol) ?? Math.max(currentWeek, 4);
   const series = buildSeries(entries, Math.max(tw, currentWeek));
   const notesEntries = entries.filter((e) => e.notes && e.notes.trim().length > 0);
+  const checkinWeek = Math.max(1, currentWeek);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-bold">{protocol.name} — Journal</DialogTitle>
-          <DialogDescription>
-            Week {currentWeek}{totalWeeks(protocol) ? ` of ${totalWeeks(protocol)}` : ""} · {entries.length} entr{entries.length === 1 ? "y" : "ies"} logged
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3 pr-8">
+            <div>
+              <DialogTitle className="font-display text-2xl font-bold">{protocol.name} — Journal</DialogTitle>
+              <DialogDescription>
+                Week {currentWeek}{totalWeeks(protocol) ? ` of ${totalWeeks(protocol)}` : ""} · {entries.length} entr{entries.length === 1 ? "y" : "ies"} logged
+              </DialogDescription>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setCheckinOpen(true)}
+              className="text-[#1f3a2a] hover:opacity-90 shrink-0"
+              style={{ backgroundColor: J_COLORS.recovery }}
+            >
+              <BookOpen className="size-4 mr-1.5" /> Log Week {checkinWeek} Check-in
+            </Button>
+          </div>
         </DialogHeader>
+
+        <JournalCheckinModal
+          open={checkinOpen}
+          onOpenChange={setCheckinOpen}
+          protocol={protocol}
+          week={checkinWeek}
+          onSaved={() => setReloadTick((n) => n + 1)}
+        />
 
         <div className="h-[360px] w-full">
           <ResponsiveContainer>
