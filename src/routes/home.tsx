@@ -206,7 +206,7 @@ function HeroCopy() {
       <h1 className="mt-5 font-display font-extrabold tracking-tight text-[3.2rem] md:text-[4.2rem] leading-[1.0]">
         <span className="block">Keeping</span>
         <span className="block">Peptides</span>
-        <span className="block gradient-text">Sayne.</span>
+        <span className="block gradient-text font-display italic">Sayne.</span>
       </h1>
       <div
         className="mt-2 h-[3px] rounded-full"
