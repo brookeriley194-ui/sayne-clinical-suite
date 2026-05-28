@@ -18,6 +18,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PTokenRouteImport } from './routes/p.$token'
 import { Route as DashboardVialsRouteImport } from './routes/dashboard/vials'
 import { Route as DashboardTodayRouteImport } from './routes/dashboard/today'
+import { Route as DashboardStackFeedRouteImport } from './routes/dashboard/stack-feed'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardResearchLogsRouteImport } from './routes/dashboard/research-logs'
 import { Route as DashboardProtocolsRouteImport } from './routes/dashboard/protocols'
@@ -70,6 +71,11 @@ const DashboardVialsRoute = DashboardVialsRouteImport.update({
 const DashboardTodayRoute = DashboardTodayRouteImport.update({
   id: '/today',
   path: '/today',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardStackFeedRoute = DashboardStackFeedRouteImport.update({
+  id: '/stack-feed',
+  path: '/stack-feed',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/stack-feed': typeof DashboardStackFeedRoute
   '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/stack-feed': typeof DashboardStackFeedRoute
   '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/dashboard/protocols': typeof DashboardProtocolsRoute
   '/dashboard/research-logs': typeof DashboardResearchLogsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/stack-feed': typeof DashboardStackFeedRoute
   '/dashboard/today': typeof DashboardTodayRoute
   '/dashboard/vials': typeof DashboardVialsRoute
   '/p/$token': typeof PTokenRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
     | '/dashboard/settings'
+    | '/dashboard/stack-feed'
     | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
     | '/dashboard/settings'
+    | '/dashboard/stack-feed'
     | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/dashboard/protocols'
     | '/dashboard/research-logs'
     | '/dashboard/settings'
+    | '/dashboard/stack-feed'
     | '/dashboard/today'
     | '/dashboard/vials'
     | '/p/$token'
@@ -306,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTodayRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/stack-feed': {
+      id: '/dashboard/stack-feed'
+      path: '/stack-feed'
+      fullPath: '/dashboard/stack-feed'
+      preLoaderRoute: typeof DashboardStackFeedRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/settings': {
       id: '/dashboard/settings'
       path: '/settings'
@@ -374,6 +393,7 @@ interface DashboardRouteChildren {
   DashboardProtocolsRoute: typeof DashboardProtocolsRoute
   DashboardResearchLogsRoute: typeof DashboardResearchLogsRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardStackFeedRoute: typeof DashboardStackFeedRoute
   DashboardTodayRoute: typeof DashboardTodayRoute
   DashboardVialsRoute: typeof DashboardVialsRoute
 }
@@ -387,6 +407,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardProtocolsRoute: DashboardProtocolsRoute,
   DashboardResearchLogsRoute: DashboardResearchLogsRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardStackFeedRoute: DashboardStackFeedRoute,
   DashboardTodayRoute: DashboardTodayRoute,
   DashboardVialsRoute: DashboardVialsRoute,
 }
