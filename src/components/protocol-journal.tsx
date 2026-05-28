@@ -507,7 +507,7 @@ export function ProtocolCompletionModal({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
-          <Button onClick={shareToStack} className="gap-2 text-[#1f3a2a] hover:opacity-90" style={{ backgroundColor: J_COLORS.recovery }}>
+          <Button onClick={() => setShareOpen(true)} className="gap-2 text-[#1f3a2a] hover:opacity-90" style={{ backgroundColor: J_COLORS.recovery }}>
             <Share2 className="size-4" /> Share Anonymously to Stack Feed
           </Button>
           <Button onClick={keepPrivate} className="gap-2 text-[#3b2766] hover:opacity-90" style={{ backgroundColor: J_COLORS.sleep }}>
