@@ -93,7 +93,7 @@ function DashboardLayout() {
                   color: active ? "var(--foreground)" : "var(--muted-foreground)",
                 }}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4" style={it.accent ? { color: it.accent } : undefined} />
                 {it.label}
               </Link>
             );
