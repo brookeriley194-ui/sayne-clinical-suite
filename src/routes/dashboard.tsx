@@ -27,11 +27,13 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/dashboard/patients", label: "Patients", icon: Users },
     { to: "/dashboard/vials", label: "Vials", icon: Beaker },
     { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+    { to: "/dashboard/stack-feed", label: "Stack Feed", icon: Users2 },
   ],
   researcher: [
     { to: "/dashboard/today", label: "Today", icon: Home },
     { to: "/dashboard/my-vials", label: "My Vials", icon: Beaker },
     { to: "/dashboard/protocols", label: "My Stacks", icon: Layers },
+    { to: "/dashboard/stack-feed", label: "Stack Feed", icon: Users2 },
     { to: "/dashboard/settings", label: "Settings", icon: SettingsIcon, bottom: true },
   ],
 };
