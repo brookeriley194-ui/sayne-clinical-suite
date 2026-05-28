@@ -738,6 +738,8 @@ type ProtocolRow = {
 function ProtocolStacksSection() {
   const [rows, setRows] = useState<ProtocolRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [journalFor, setJournalFor] = useState<JournalProtocol | null>(null);
+  const [completionFor, setCompletionFor] = useState<JournalProtocol | null>(null);
 
   async function load() {
     const { data } = await supabase.from("protocols").select("*").order("created_at", { ascending: false });
@@ -753,6 +755,27 @@ function ProtocolStacksSection() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const toJournalProtocol = (r: ProtocolRow): JournalProtocol => ({
+    id: r.id, name: r.name, compound: r.compound, created_at: r.created_at,
+    ongoing: !!r.ongoing, duration_days: r.duration_days,
+  });
+
+  // Auto-detect completion (once per protocol)
+  useEffect(() => {
+    for (const r of rows) {
+      if (r.ongoing || !r.duration_days) continue;
+      const days = differenceInDays(new Date(), new Date(r.created_at));
+      if (days >= r.duration_days) {
+        const k = `journal:completed-shown:${r.id}`;
+        if (!localStorage.getItem(k)) {
+          localStorage.setItem(k, "1");
+          setCompletionFor(toJournalProtocol(r));
+          break;
+        }
+      }
+    }
+  }, [rows]);
 
   const grouped = (() => {
     const map = new Map<string, ProtocolRow[]>();
@@ -780,12 +803,33 @@ function ProtocolStacksSection() {
         <div className="space-y-6">
           {grouped.map(([name, items]) => {
             const first = items[0];
+            const jp = toJournalProtocol(first);
+            const week = weekOf(jp);
             return (
               <div key={name} className="sayne-card p-5">
-                <div className="mb-3">
-                  <h3 className="font-display text-2xl font-semibold">{name}</h3>
-                  <div className="text-xs text-muted-foreground mt-1 font-mono">
-                    {items.length} compound{items.length === 1 ? "" : "s"} · {first.route} · {first.ongoing ? "Ongoing" : first.duration_days ? `${first.duration_days}d cycle` : ""}
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-display text-2xl font-semibold">{name}</h3>
+                    <div className="text-xs text-muted-foreground mt-1 font-mono">
+                      Week {week} · {items.length} compound{items.length === 1 ? "" : "s"} · {first.route} · {first.ongoing ? "Ongoing" : first.duration_days ? `${first.duration_days}d cycle` : ""}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setJournalFor(jp)}
+                      className="text-xs font-medium text-primary hover:underline px-2 py-1"
+                    >
+                      View Journal
+                    </button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs h-7"
+                      onClick={() => setCompletionFor(jp)}
+                    >
+                      Mark Complete
+                    </Button>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -809,9 +853,21 @@ function ProtocolStacksSection() {
           })}
         </div>
       )}
+
+      <JournalCurveModal
+        open={!!journalFor}
+        onOpenChange={(o) => { if (!o) setJournalFor(null); }}
+        protocol={journalFor}
+      />
+      <ProtocolCompletionModal
+        open={!!completionFor}
+        onOpenChange={(o) => { if (!o) setCompletionFor(null); }}
+        protocol={completionFor}
+      />
     </>
   );
 }
+
 
 function MyVialsSection({
   vials, usage, stacks, onReload,
