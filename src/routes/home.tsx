@@ -758,7 +758,7 @@ function HowItWorks() {
       </Reveal>
       <div className="grid md:grid-cols-3 gap-5">
         {steps.map((s, i) => (
-          <Reveal key={s.n} delay={i * 0.1}>
+          <Reveal key={s.n} delay={i * 0.14}>
             <motion.div whileHover={{ y: -4 }} className="glass-card overflow-hidden h-full transition-shadow hover:shadow-xl">
               <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${s.color}, color-mix(in oklab, ${s.color} 40%, white))` }} />
               <div className="p-6">
