@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useSpring, useInView, useReducedMotion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useInView, useReducedMotion, useScroll, useTransform, animate } from "framer-motion";
+
 import {
   Sparkles,
   ReceiptText,
@@ -94,9 +95,9 @@ function AmbientBackground() {
           animationDelay: "-14s",
         }}
       />
-      {/* Curved degradation arcs */}
+      {/* Curved degradation arcs — slow flowing motion */}
       <svg
-        className="absolute inset-0 h-full w-full opacity-[0.35]"
+        className="absolute inset-0 h-full w-full opacity-[0.45]"
         viewBox="0 0 1440 1200"
         preserveAspectRatio="none"
       >
@@ -106,20 +107,35 @@ function AmbientBackground() {
             <stop offset="50%" stopColor={LAVENDER} stopOpacity="0.6" />
             <stop offset="100%" stopColor={BABY_BLUE} stopOpacity="0" />
           </linearGradient>
+          <linearGradient id="arcGrad2" x1="0" x2="1">
+            <stop offset="0%" stopColor={BABY_BLUE} stopOpacity="0" />
+            <stop offset="50%" stopColor={BABY_BLUE} stopOpacity="0.45" />
+            <stop offset="100%" stopColor={LAVENDER} stopOpacity="0" />
+          </linearGradient>
         </defs>
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <path
             key={i}
-            d={`M -100 ${200 + i * 200} Q 720 ${50 + i * 180} 1540 ${280 + i * 200}`}
-            stroke="url(#arcGrad)"
+            d={`M -100 ${180 + i * 180} Q 720 ${30 + i * 170} 1540 ${260 + i * 190}`}
+            stroke={i % 2 === 0 ? "url(#arcGrad)" : "url(#arcGrad2)"}
             strokeWidth="1.2"
             fill="none"
+            className={i % 2 === 0 ? "arc-flow" : "arc-flow-slow"}
+            style={{ animationDelay: `${i * -3}s` }}
           />
         ))}
       </svg>
+      {/* Pulsing haze veil */}
+      <div
+        className="haze-pulse absolute inset-0"
+        style={{
+          background: `radial-gradient(60% 50% at 50% 30%, ${LAVENDER}1A, transparent 70%)`,
+        }}
+      />
     </div>
   );
 }
+
 
 /* -------------------- Nav -------------------- */
 function LiquidNav() {
@@ -279,6 +295,15 @@ function ProductShowcase() {
   const sy = useSpring(my, { stiffness: 60, damping: 14, mass: 0.4 });
   const reduce = useReducedMotion();
 
+  // Scroll-driven parallax across the hero
+  const { scrollY } = useScroll();
+  const scrollYSmooth = useSpring(scrollY, { stiffness: 80, damping: 24, mass: 0.5 });
+  const dashY = useTransform(scrollYSmooth, [0, 700], [0, -38]);
+  const vialsY = useTransform(scrollYSmooth, [0, 700], [0, -70]);
+  const pillAY = useTransform(scrollYSmooth, [0, 700], [0, 28]);
+  const pillBY = useTransform(scrollYSmooth, [0, 700], [0, 48]);
+  const gaugeY = useTransform(scrollYSmooth, [0, 700], [0, -55]);
+
   function onMove(e: React.MouseEvent) {
     if (reduce) return;
     const el = ref.current;
@@ -303,60 +328,98 @@ function ProductShowcase() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.9, delay: 0.1, ease: [0.2, 0.7, 0.2, 1] }}
       className="relative h-[560px] md:h-[600px]"
-      style={{ perspective: 1200 }}
+      style={{ perspective: 1400 }}
     >
+      {/* Soft lavender ground-shadow under the stack */}
+      <div
+        aria-hidden
+        className="absolute left-[8%] right-[8%] bottom-2 h-10 rounded-[100%] blur-2xl opacity-60"
+        style={{ background: `radial-gradient(closest-side, ${LAVENDER}66, transparent 70%)` }}
+      />
+
       {/* Big dashboard window */}
-      <motion.div
-        style={{ x: sx, y: sy }}
-        className="absolute inset-0"
-      >
+      <motion.div style={{ x: sx, y: useMergeY(sy, dashY) }} className="absolute inset-0">
         <DashboardMock />
       </motion.div>
 
       {/* Floating vials card */}
       <motion.div
-        style={{ x: useSpring(useTransform2(sx, 1.8), { stiffness: 50, damping: 14 }), y: useSpring(useTransform2(sy, 1.8), { stiffness: 50, damping: 14 }) }}
+        style={{
+          x: useSpring(useTransform2(sx, 1.8), { stiffness: 50, damping: 14 }),
+          y: useMergeY(useSpring(useTransform2(sy, 1.8), { stiffness: 50, damping: 14 }), vialsY),
+        }}
         className="absolute -right-4 top-10 w-[290px] hidden md:block floating-card"
       >
-        <VialsCard />
+        <div className="suspended rounded-2xl">
+          <VialsCard />
+        </div>
       </motion.div>
 
       {/* Floating import from AI */}
       <motion.div
-        style={{ x: useSpring(useTransform2(sx, -1.5), { stiffness: 50, damping: 14 }), y: useSpring(useTransform2(sy, -1.5), { stiffness: 50, damping: 14 }) }}
+        style={{
+          x: useSpring(useTransform2(sx, -1.5), { stiffness: 50, damping: 14 }),
+          y: useMergeY(useSpring(useTransform2(sy, -1.5), { stiffness: 50, damping: 14 }), pillAY),
+        }}
         className="absolute -left-3 top-6 floating-card-slow"
       >
-        <FloatingPill
-          icon={<Sparkles className="h-4 w-4" style={{ color: LAVENDER }} />}
-          title="Import from AI"
-          sub="paste any protocol"
-          tint={LAVENDER}
-        />
+        <div className="suspended rounded-2xl">
+          <FloatingPill
+            icon={<Sparkles className="h-4 w-4" style={{ color: LAVENDER }} />}
+            title="Import from AI"
+            sub="paste any protocol"
+            tint={LAVENDER}
+          />
+        </div>
       </motion.div>
 
       {/* Floating receipt scan */}
       <motion.div
-        style={{ x: useSpring(useTransform2(sx, -2.2), { stiffness: 50, damping: 14 }), y: useSpring(useTransform2(sy, -2.2), { stiffness: 50, damping: 14 }) }}
+        style={{
+          x: useSpring(useTransform2(sx, -2.2), { stiffness: 50, damping: 14 }),
+          y: useMergeY(useSpring(useTransform2(sy, -2.2), { stiffness: 50, damping: 14 }), pillBY),
+        }}
         className="absolute -left-2 bottom-24 floating-card"
       >
-        <FloatingPill
-          icon={<ReceiptText className="h-4 w-4" style={{ color: "#B8841F" }} />}
-          title="Scan Receipt"
-          sub="add vials instantly"
-          tint={YELLOW}
-        />
+        <div className="suspended rounded-2xl">
+          <FloatingPill
+            icon={<ReceiptText className="h-4 w-4" style={{ color: "#B8841F" }} />}
+            title="Scan Receipt"
+            sub="add vials instantly"
+            tint={YELLOW}
+          />
+        </div>
       </motion.div>
 
       {/* Floating potency gauge */}
       <motion.div
-        style={{ x: useSpring(useTransform2(sx, 2.4), { stiffness: 50, damping: 14 }), y: useSpring(useTransform2(sy, 2.4), { stiffness: 50, damping: 14 }) }}
+        style={{
+          x: useSpring(useTransform2(sx, 2.4), { stiffness: 50, damping: 14 }),
+          y: useMergeY(useSpring(useTransform2(sy, 2.4), { stiffness: 50, damping: 14 }), gaugeY),
+        }}
         className="absolute -right-2 bottom-4 floating-card-slow"
       >
-        <PotencyGauge />
+        <div className="suspended rounded-2xl">
+          <PotencyGauge />
+        </div>
       </motion.div>
     </motion.div>
   );
 }
+
+// merges two motion values (sum)
+function useMergeY(a: ReturnType<typeof useMotionValue<number>>, b: ReturnType<typeof useMotionValue<number>>) {
+  const out = useMotionValue(0);
+  useEffect(() => {
+    const recompute = () => out.set(a.get() + b.get());
+    const ua = a.on("change", recompute);
+    const ub = b.on("change", recompute);
+    recompute();
+    return () => { ua(); ub(); };
+  }, [a, b, out]);
+  return out;
+}
+
 
 // helper to scale a motion value
 function useTransform2(mv: ReturnType<typeof useMotionValue<number>>, factor: number) {
@@ -370,7 +433,7 @@ function useTransform2(mv: ReturnType<typeof useMotionValue<number>>, factor: nu
 
 function DashboardMock() {
   return (
-    <div className="glass-card h-full w-full p-4 flex gap-3 overflow-hidden">
+    <div className="glass-card-deep h-full w-full p-4 flex gap-3 overflow-hidden">
       {/* Sidebar */}
       <div className="w-[120px] shrink-0 rounded-xl bg-white/60 border border-[color:var(--border)] p-2.5 flex flex-col gap-1">
         <div className="flex items-center gap-1.5 px-1 py-1">
@@ -572,24 +635,43 @@ function PotencyGauge() {
   const r = 28;
   const c = 2 * Math.PI * r;
   const pct = 83;
+  const count = useMotionValue(reduce ? pct : 0);
+  const [display, setDisplay] = useState(reduce ? pct : 0);
+  useEffect(() => {
+    if (reduce) return;
+    const controls = animate(count, pct, {
+      duration: 1.8,
+      delay: 0.5,
+      ease: [0.2, 0.7, 0.2, 1],
+      onUpdate: (v) => setDisplay(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [count, reduce]);
+
   return (
     <div className="glass-card p-3 flex items-center gap-3">
       <div className="relative h-[74px] w-[74px]">
         <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stopColor={LAVENDER} />
+              <stop offset="100%" stopColor={BABY_BLUE} />
+            </linearGradient>
+          </defs>
           <circle cx="40" cy="40" r={r} stroke={`color-mix(in oklab, ${LAVENDER} 25%, white)`} strokeWidth="6" fill="none" />
           <motion.circle
             cx="40" cy="40" r={r}
-            stroke={LAVENDER}
+            stroke="url(#gaugeGrad)"
             strokeWidth="6"
             strokeLinecap="round"
             fill="none"
             strokeDasharray={c}
             initial={reduce ? false : { strokeDashoffset: c }}
             animate={{ strokeDashoffset: c * (1 - pct / 100) }}
-            transition={{ duration: 1.6, delay: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
+            transition={{ duration: 1.8, delay: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center font-mono font-semibold text-[13px]">{pct}%</div>
+        <div className="absolute inset-0 flex items-center justify-center font-mono font-semibold text-[13px]">{display}%</div>
       </div>
       <div className="leading-tight">
         <div className="font-mono text-[10px] uppercase tracking-wider" style={{ color: MUTED }}>Avg. Potency</div>
@@ -598,6 +680,7 @@ function PotencyGauge() {
     </div>
   );
 }
+
 
 /* -------------------- Feature strip -------------------- */
 function FeatureStrip() {
@@ -615,11 +698,11 @@ function FeatureStrip() {
           {features.map((f, i) => (
             <motion.div
               key={f.name}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
               viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.45, delay: i * 0.06 }}
-              whileHover={{ y: -2 }}
+              transition={{ duration: 0.55, delay: i * 0.09, ease: [0.2, 0.7, 0.2, 1] }}
+              whileHover={{ y: -3 }}
               className="group bg-white/80 backdrop-blur rounded-full pl-2.5 pr-4 py-1.5 flex items-center gap-2.5 transition-all hover:shadow-md"
               style={{ border: `1px solid ${BORDER}` }}
             >
@@ -675,7 +758,7 @@ function HowItWorks() {
       </Reveal>
       <div className="grid md:grid-cols-3 gap-5">
         {steps.map((s, i) => (
-          <Reveal key={s.n} delay={i * 0.1}>
+          <Reveal key={s.n} delay={i * 0.14}>
             <motion.div whileHover={{ y: -4 }} className="glass-card overflow-hidden h-full transition-shadow hover:shadow-xl">
               <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${s.color}, color-mix(in oklab, ${s.color} 40%, white))` }} />
               <div className="p-6">
