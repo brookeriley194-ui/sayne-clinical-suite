@@ -104,7 +104,7 @@ function Page() {
     const protocolStacks: Stack[] = ((p.data ?? []) as ProtocolRow[]).map((r) => ({
       id: r.id,
       peptide_name: r.compound,
-      vial_id: null,
+      vial_id: (r as ProtocolRow & { vial_id: string | null }).vial_id ?? null,
       reconstituted_at: null,
       time_of_day: r.time_of_day ?? "AM",
       fasted: !!r.fasted,
