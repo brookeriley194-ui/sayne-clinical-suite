@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { format } from "date-fns";
+import { JournalCurveModal, ProtocolCompletionModal, type JournalProtocol } from "@/components/protocol-journal";
 
 export const Route = createFileRoute("/dashboard/protocols")({ component: Page });
 
