@@ -124,6 +124,10 @@ function Page() {
       created_at: r.created_at,
     }));
     setStacks(protocolStacks);
+    setJournalProtocols(((p.data ?? []) as ProtocolRow[]).map((r) => ({
+      id: r.id, name: r.name, compound: r.compound, created_at: r.created_at,
+      ongoing: !!r.ongoing, duration_days: r.duration_days,
+    })).filter(isProtocolActive));
     const vialList = (v.data ?? []) as Vial[];
     setVials(vialList);
     setVialUsage(computeVialUsages(
