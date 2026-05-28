@@ -271,9 +271,6 @@ function Page() {
         week={checkin?.week ?? 1}
         onSaved={() => setJournalReloadKey((k) => k + 1)}
       />
-          onSaved={() => { setSheetOpen(false); load(); }}
-        />
-      </Sheet>
     </>
   );
 }
