@@ -26,6 +26,10 @@ import {
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
 import { VialCard, computeVialUsages, type Vial as VialFull, type VialUsage } from "@/routes/dashboard/my-vials";
+import {
+  JournalBanner, JournalCheckinModal, JournalCurveModal, ProtocolCompletionModal,
+  weekOf, isProtocolActive, type JournalProtocol,
+} from "@/components/protocol-journal";
 
 export const Route = createFileRoute("/dashboard/today")({ component: Page });
 
