@@ -443,6 +443,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_shared_stack_import: {
+        Args: { _stack_id: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "doctor" | "researcher"
