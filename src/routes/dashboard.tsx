@@ -19,7 +19,7 @@ export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
 });
 
-type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; bottom?: boolean };
+type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; bottom?: boolean; accent?: string };
 
 const navByRole: Record<AppRole, NavItem[]> = {
   doctor: [
