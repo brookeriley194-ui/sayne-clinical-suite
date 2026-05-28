@@ -95,9 +95,9 @@ function AmbientBackground() {
           animationDelay: "-14s",
         }}
       />
-      {/* Curved degradation arcs */}
+      {/* Curved degradation arcs — slow flowing motion */}
       <svg
-        className="absolute inset-0 h-full w-full opacity-[0.35]"
+        className="absolute inset-0 h-full w-full opacity-[0.45]"
         viewBox="0 0 1440 1200"
         preserveAspectRatio="none"
       >
@@ -107,20 +107,35 @@ function AmbientBackground() {
             <stop offset="50%" stopColor={LAVENDER} stopOpacity="0.6" />
             <stop offset="100%" stopColor={BABY_BLUE} stopOpacity="0" />
           </linearGradient>
+          <linearGradient id="arcGrad2" x1="0" x2="1">
+            <stop offset="0%" stopColor={BABY_BLUE} stopOpacity="0" />
+            <stop offset="50%" stopColor={BABY_BLUE} stopOpacity="0.45" />
+            <stop offset="100%" stopColor={LAVENDER} stopOpacity="0" />
+          </linearGradient>
         </defs>
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <path
             key={i}
-            d={`M -100 ${200 + i * 200} Q 720 ${50 + i * 180} 1540 ${280 + i * 200}`}
-            stroke="url(#arcGrad)"
+            d={`M -100 ${180 + i * 180} Q 720 ${30 + i * 170} 1540 ${260 + i * 190}`}
+            stroke={i % 2 === 0 ? "url(#arcGrad)" : "url(#arcGrad2)"}
             strokeWidth="1.2"
             fill="none"
+            className={i % 2 === 0 ? "arc-flow" : "arc-flow-slow"}
+            style={{ animationDelay: `${i * -3}s` }}
           />
         ))}
       </svg>
+      {/* Pulsing haze veil */}
+      <div
+        className="haze-pulse absolute inset-0"
+        style={{
+          background: `radial-gradient(60% 50% at 50% 30%, ${LAVENDER}1A, transparent 70%)`,
+        }}
+      />
     </div>
   );
 }
+
 
 /* -------------------- Nav -------------------- */
 function LiquidNav() {
