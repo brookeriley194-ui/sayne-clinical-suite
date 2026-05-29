@@ -19,6 +19,7 @@ function SettingsPage() {
   const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
   const [name, setName] = useState(meta.full_name ?? meta.name ?? "");
   const [saving, setSaving] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const saveName = async () => {
     setSaving(true);
