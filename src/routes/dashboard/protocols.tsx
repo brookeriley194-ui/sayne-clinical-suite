@@ -701,7 +701,7 @@ function BuildStackModal({
               <Button type="button" size="sm" variant="outline"
                 onClick={() => setRows((p) => [...p, emptyRow()])}
                 className="gap-1">
-                <Plus className="h-3.5 w-3.5" /> Add compound
+                <Plus className="h-3.5 w-3.5" /> Add another compound
               </Button>
             </div>
             {rows.map((r, i) => (
