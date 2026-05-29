@@ -571,10 +571,22 @@ function VialCalcSheet({ vial, onUpdated }: { vial: Vial; onUpdated: () => void 
   const [reconDate, setReconDate] = useState<Date | undefined>(
     vial.reconstituted_at ? new Date(vial.reconstituted_at) : undefined,
   );
-  const [dose, setDose] = useState("");
-  const [unit, setUnit] = useState<"mcg" | "mg" | "IU" | "units">("mcg");
-  const [syringeType, setSyringeType] = useState<SyringeType>("insulin_1");
+  const [dose, setDose] = useState<string>(vial.default_dose != null ? String(vial.default_dose) : "");
+  const [unit, setUnit] = useState<"mcg" | "mg" | "IU" | "units">(
+    (["mcg","mg","IU","units"] as const).includes(vial.default_dose_unit as "mcg") ? (vial.default_dose_unit as "mcg") : "mcg",
+  );
+  const syringeKey = `calc:syringe:${vial.id}`;
+  const [syringeType, setSyringeType] = useState<SyringeType>(() => {
+    if (typeof window === "undefined") return "insulin_1";
+    const saved = localStorage.getItem(syringeKey);
+    const valid: SyringeType[] = ["insulin_0_3","insulin_0_5","insulin_1","standard_1","standard_3"];
+    return (saved && (valid as string[]).includes(saved)) ? (saved as SyringeType) : "insulin_1";
+  });
+  useEffect(() => {
+    try { localStorage.setItem(syringeKey, syringeType); } catch { /* ignore */ }
+  }, [syringeKey, syringeType]);
   const [saving, setSaving] = useState(false);
+
 
   // If sold pre-mixed in mL, treat numeric value as mg-equivalent of solution volume basis.
   const sizeMg = size ? Number(size) : 0;
