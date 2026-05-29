@@ -1137,8 +1137,32 @@ function ImportFromAIModal({
 }
 
 function ParsedCompoundCard({
-  index, p, onUpdate,
-}: { index: number; p: Parsed; onUpdate: (patch: Partial<Parsed>) => void }) {
+  index, p, onUpdate, matchedVialId, userId, onVialAdded,
+}: {
+  index: number; p: Parsed; onUpdate: (patch: Partial<Parsed>) => void;
+  matchedVialId: string | null; userId: string | null; onVialAdded: () => Promise<void> | void;
+}) {
+  const [addingVial, setAddingVial] = useState(false);
+  const [vialSize, setVialSize] = useState("");
+  const [savingVial, setSavingVial] = useState(false);
+
+  async function quickAddVial() {
+    if (!userId || !p.compound) return;
+    if (!vialSize || Number(vialSize) <= 0) { toast.error("Enter vial size in mg"); return; }
+    setSavingVial(true);
+    const { error } = await supabase.from("vials").insert({
+      doctor_id: userId,
+      compound: p.compound,
+      vial_size_mg: Number(vialSize),
+      status: "sealed",
+    });
+    setSavingVial(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`${p.compound} vial added`);
+    setAddingVial(false);
+    setVialSize("");
+    await onVialAdded();
+  }
   const fields = [
     p.compound,
     p.dose,
