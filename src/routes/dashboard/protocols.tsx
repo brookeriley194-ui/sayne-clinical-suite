@@ -866,22 +866,75 @@ type Parsed = {
   notes: string | null;
 };
 
+type VialLite = { id: string; compound: string };
+
+function normalizeCompound(c: string) {
+  return c.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function generateStackName(text: string, list: Parsed[]) {
+  const lower = text.toLowerCase();
+  const goalMap: [RegExp, string][] = [
+    [/gut|leaky|bpc[- ]?157|repair/, "Gut Repair"],
+    [/recovery|healing|injury|tendon|tb[- ]?500/, "Recovery"],
+    [/anxiety|mood|stress|calm|selank/, "Calm"],
+    [/sleep|insomnia|dsip/, "Sleep"],
+    [/fat loss|weight|glp|tirzep|semaglu|reta/, "Fat Loss"],
+    [/cognitive|focus|nootropic|semax/, "Cognitive"],
+    [/growth|\bgh\b|ghrp|cjc|ipamor|hexarelin|tesamor/, "Growth"],
+    [/energy|mitochon|mots/, "Energy"],
+    [/longevity|epital|nad|ss[- ]?31/, "Longevity"],
+    [/libido|pt[- ]?141/, "Libido"],
+    [/skin|hair|ghk/, "Skin & Hair"],
+  ];
+  const goals: string[] = [];
+  for (const [re, label] of goalMap) {
+    if (re.test(lower) && !goals.includes(label)) goals.push(label);
+  }
+  if (goals.length === 0) {
+    const first = list.find((p) => p.compound)?.compound;
+    return first ? `${first} Stack` : "My Stack";
+  }
+  if (goals.length === 1) return `${goals[0]} Stack`;
+  if (goals.length === 2) return `${goals[0]} & ${goals[1]} Stack`;
+  return `${goals.slice(0, -1).join(", ")} & ${goals[goals.length - 1]} Stack`;
+}
+
 function ImportFromAIModal({
   open, onClose, onSaved,
 }: { open: boolean; onClose: () => void; onSaved: () => void }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [text, setText] = useState("");
   const [parsing, setParsing] = useState(false);
   const [parsedList, setParsedList] = useState<Parsed[] | null>(null);
+  const [stackName, setStackName] = useState("");
+  const [userVials, setUserVials] = useState<VialLite[]>([]);
   const [agreed, setAgreed] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  async function loadVials() {
+    const { data } = await supabase
+      .from("vials")
+      .select("id, compound")
+      .neq("status", "used");
+    setUserVials((data ?? []) as VialLite[]);
+  }
 
   useEffect(() => {
     if (!open) {
       setText(""); setParsedList(null); setAgreed(false);
-      setParsing(false); setSaving(false);
+      setParsing(false); setSaving(false); setStackName("");
+      return;
     }
+    void loadVials();
   }, [open]);
+
+  function matchVial(compound: string | null): string | null {
+    if (!compound) return null;
+    const n = normalizeCompound(compound);
+    return userVials.find((v) => normalizeCompound(v.compound) === n)?.id ?? null;
+  }
 
   async function handleParse() {
     if (text.trim().length < 5) { toast.error("Paste a protocol first"); return; }
@@ -899,7 +952,9 @@ function ImportFromAIModal({
       toast.error("No compounds detected — try rewording");
       return;
     }
-    setParsedList(list.map((p) => ({ ...p })));
+    const items = list.map((p) => ({ ...p }));
+    setParsedList(items);
+    setStackName(generateStackName(text, items));
   }
 
   function updateOne(i: number, patch: Partial<Parsed>) {
@@ -910,10 +965,11 @@ function ImportFromAIModal({
     if (!user) { toast.error("Not signed in"); return; }
     if (!parsedList) return;
     if (!agreed) { toast.error("Please acknowledge the disclaimer"); return; }
+    const finalName = stackName.trim() || "My Stack";
 
     const rows = parsedList.map((p) => {
       const compound = (COMPOUNDS as readonly string[]).includes(p.compound ?? "")
-        ? (p.compound as string) : "Other";
+        ? (p.compound as string) : (p.compound ?? "Other");
       const dose_unit = (UNITS as readonly string[]).includes(p.dose_unit ?? "")
         ? (p.dose_unit as string) : "mcg";
       const frequency = (FREQUENCIES as readonly string[]).includes(p.frequency ?? "")
@@ -921,7 +977,7 @@ function ImportFromAIModal({
       const route = (ROUTES as readonly string[]).includes(p.route ?? "")
         ? (p.route as string) : "Subcutaneous";
       return {
-        name: `${compound} Stack`,
+        name: finalName,
         compound,
         dose: p.dose ?? 0,
         dose_unit,
@@ -932,19 +988,32 @@ function ImportFromAIModal({
         notes: p.notes,
         doctor_id: user.id,
         source: "ai_import",
+        vial_id: matchVial(p.compound),
       };
     });
 
     const bad = rows.findIndex((r) => !r.dose || r.dose <= 0);
-    if (bad !== -1) { toast.error(`Stack #${bad + 1}: dose is required`); return; }
+    if (bad !== -1) { toast.error(`Compound #${bad + 1}: dose is required`); return; }
 
     setSaving(true);
     const { error } = await supabase.from("protocols").insert(rows);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Your stack has been imported", {
-      icon: <Check className="h-4 w-4" style={{ color: LAVENDER }} />,
-    });
+
+    const unmatched = rows.filter((r) => !r.vial_id).length;
+    toast.success(`Your stack has been imported — ${finalName}`);
+    if (unmatched > 0) {
+      setTimeout(() => {
+        toast(`${unmatched} of your compounds don't have vials yet. Add them now?`, {
+          duration: 10000,
+          action: {
+            label: "Add Vials",
+            onClick: () => navigate({ to: "/dashboard/my-vials" }),
+          },
+          cancel: { label: "Later", onClick: () => {} },
+        });
+      }, 400);
+    }
     onSaved();
   }
 
@@ -996,19 +1065,39 @@ function ImportFromAIModal({
 
           {parsedList && total > 0 && (
             <div className="space-y-4">
-              <h3
-                className="text-lg font-bold"
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              <div
+                className="sayne-card p-4 space-y-2"
+                style={{
+                  backgroundColor: `color-mix(in oklab, ${LAVENDER} 10%, transparent)`,
+                  borderColor: `color-mix(in oklab, ${LAVENDER} 40%, transparent)`,
+                }}
               >
-                Sayne detected {total} compound{total === 1 ? "" : "s"}
-              </h3>
+                <Label htmlFor="stack-name" className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Stack name
+                </Label>
+                <Input
+                  id="stack-name"
+                  value={stackName}
+                  onChange={(e) => setStackName(e.target.value)}
+                  maxLength={120}
+                  className="text-lg font-semibold border-0 bg-transparent px-0 focus-visible:ring-0 shadow-none h-auto py-1"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif", color: NAVY }}
+                />
+              </div>
+
+              <div className="text-xs uppercase tracking-wider text-muted-foreground font-mono">
+                {total} compound{total === 1 ? "" : "s"} in this stack
+              </div>
 
               {parsedList.map((p, i) => (
                 <ParsedCompoundCard
                   key={i}
                   index={i}
                   p={p}
+                  matchedVialId={matchVial(p.compound)}
+                  userId={user?.id ?? null}
                   onUpdate={(patch) => updateOne(i, patch)}
+                  onVialAdded={loadVials}
                 />
               ))}
             </div>
@@ -1037,7 +1126,7 @@ function ImportFromAIModal({
                 style={{ backgroundColor: MINT, color: NAVY }}
               >
                 <Check className="h-4 w-4" />
-                {saving ? "Saving…" : `Save to My Stacks${total > 1 ? ` (${total})` : ""}`}
+                {saving ? "Saving…" : "Save to My Stacks"}
               </Button>
             </>
           )}
