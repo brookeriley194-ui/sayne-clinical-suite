@@ -59,6 +59,7 @@ function DashboardLayout() {
 
   // First-login tutorial trigger: created <5min ago AND zero vials AND not completed
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [tutorialStart, setTutorialStart] = useState(0);
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -70,17 +71,22 @@ function DashboardLayout() {
         const { count } = await supabase
           .from("vials")
           .select("*", { count: "exact", head: true });
-        if (!cancelled && (count ?? 0) === 0) setTutorialOpen(true);
+        if (!cancelled && (count ?? 0) === 0) { setTutorialStart(0); setTutorialOpen(true); }
       } catch { /* noop */ }
     })();
     return () => { cancelled = true; };
   }, [user]);
 
-  // Global event so any page can re-open the tutorial without unmounting it on navigation
+  // Global event so any page can re-open the tutorial without unmounting it on navigation.
+  // Optional event detail { step: number } jumps directly to that step.
   useEffect(() => {
-    const handler = () => setTutorialOpen(true);
-    window.addEventListener("sayne:open-tutorial", handler);
-    return () => window.removeEventListener("sayne:open-tutorial", handler);
+    const handler = (e: Event) => {
+      const step = (e as CustomEvent<{ step?: number }>).detail?.step ?? 0;
+      setTutorialStart(step);
+      setTutorialOpen(true);
+    };
+    window.addEventListener("sayne:open-tutorial", handler as EventListener);
+    return () => window.removeEventListener("sayne:open-tutorial", handler as EventListener);
   }, []);
 
   async function handleLogout() {
@@ -189,7 +195,7 @@ function DashboardLayout() {
       </div>
       <FloatingCalculator />
       <InstallBanner />
-      <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+      <Tutorial open={tutorialOpen} startStep={tutorialStart} onClose={() => setTutorialOpen(false)} />
     </div>
   );
 }

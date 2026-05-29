@@ -62,7 +62,7 @@ export function InstallBanner() {
         Add Sayne to your home screen
       </div>
       <button
-        onClick={() => window.dispatchEvent(new Event("sayne:open-tutorial"))}
+        onClick={() => window.dispatchEvent(new CustomEvent("sayne:open-tutorial", { detail: { step: 5 } }))}
         className="text-xs font-medium shrink-0"
         style={{ color: "#3a7fa3" }}
       >
