@@ -307,6 +307,7 @@ type Step = {
   visual: ReactNode;
   callout?: { tone: "blue" | "lavender" | "mint" | "yellow"; text: string };
   icon?: React.ComponentType<{ className?: string }>;
+  route?: string;
 };
 
 function buildSteps(device: DeviceKind): Step[] {
@@ -316,6 +317,7 @@ function buildSteps(device: DeviceKind): Step[] {
       italicSub: "Keeping Peptides Sayne.",
       body: "Sayne is your personal peptide research companion. Track your vials, manage your stack, monitor compound potency, and log your outcomes — all in one place. This takes 60 seconds.",
       visual: <StepWelcome />,
+      route: "/dashboard/today",
     },
     {
       title: "Start with your vials.",
@@ -323,6 +325,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepVials />,
       callout: { tone: "blue", text: "Tip: Use Scan Receipt after every peptide order. Sayne adds all your vials in one tap." },
       icon: Beaker,
+      route: "/dashboard/my-vials",
     },
     {
       title: "Never guess your draw volume again.",
@@ -330,6 +333,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepCalculator />,
       callout: { tone: "lavender", text: "Tip: Tap Calculate Dose on any vial card to open the calculator pre-filled for that vial." },
       icon: Calculator,
+      route: "/dashboard/my-vials",
     },
     {
       title: "Build your stack.",
@@ -337,6 +341,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepStack />,
       callout: { tone: "mint", text: "Tip: Copy your AI protocol and paste it directly into Import from AI. Sayne handles the rest." },
       icon: Layers,
+      route: "/dashboard/protocols",
     },
     {
       title: "Your daily command center.",
@@ -344,6 +349,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepToday />,
       callout: { tone: "yellow", text: "Tip: Check off your doses every day. This builds your outcome data over time." },
       icon: CalendarDays,
+      route: "/dashboard/today",
     },
     {
       title: "Add Sayne to your home screen.",
@@ -351,6 +357,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepInstall device={device} />,
       callout: { tone: "blue", text: "Installed apps load faster and feel just like a native app." },
       icon: Smartphone,
+      route: "/dashboard/settings",
     },
     {
       title: "Track outcomes. Share what works.",
@@ -358,6 +365,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepFeed />,
       callout: { tone: "lavender", text: "Tip: Weekly check-ins take 60 seconds and unlock your full outcome curve at cycle end." },
       icon: Users2,
+      route: "/dashboard/stack-feed",
     },
   ];
 }
