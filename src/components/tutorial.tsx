@@ -377,8 +377,16 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
   const steps = useMemo(() => buildSteps(device), [device]);
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);
+  const navigate = useNavigate();
 
   useEffect(() => { if (open) setIndex(0); }, [open]);
+
+  // Jump to the relevant section as the tutorial progresses
+  useEffect(() => {
+    if (!open) return;
+    const target = steps[index]?.route;
+    if (target) navigate({ to: target }).catch(() => {});
+  }, [open, index, steps, navigate]);
 
   if (!open) return null;
 
@@ -394,13 +402,15 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
   const prev = () => { if (index === 0) return; setDir(-1); setIndex((i) => i - 1); };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-stretch md:items-center justify-center"
-         style={{ background: "rgba(201,168,245,0.55)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}>
+    <div
+      className="fixed inset-0 z-[100] pointer-events-none flex items-end md:items-end justify-center md:justify-end p-4 md:p-6"
+    >
       <div
-        className="relative bg-card w-full md:max-w-[560px] md:rounded-[20px] md:my-8 overflow-hidden flex flex-col"
+        className="pointer-events-auto relative bg-card w-full md:max-w-[440px] rounded-[20px] overflow-hidden flex flex-col"
         style={{
-          boxShadow: "0 30px 80px -28px rgba(120,90,200,0.35), 0 12px 30px -12px rgba(120,90,200,0.18)",
-          maxHeight: "100dvh",
+          boxShadow: "0 30px 80px -28px rgba(120,90,200,0.45), 0 12px 30px -12px rgba(120,90,200,0.25)",
+          maxHeight: "min(82dvh, 760px)",
+          border: "1px solid color-mix(in oklab, var(--border) 60%, transparent)",
         }}
       >
         {/* Header: dots + skip */}
