@@ -876,7 +876,11 @@ type Parsed = {
   duration_days: number | null;
   ongoing: boolean;
   notes: string | null;
+  fasted?: boolean;
+  time_of_day?: string | null;
+  custom_days?: string[];
 };
+
 
 type VialLite = { id: string; compound: string };
 
@@ -979,15 +983,28 @@ function ImportFromAIModal({
     if (!agreed) { toast.error("Please acknowledge the disclaimer"); return; }
     const finalName = stackName.trim() || "My Stack";
 
+    const fastedRegex = /\b(fasted|empty stomach|before breakfast|upon waking|first thing)\b/i;
+    const textFasted = fastedRegex.test(text);
+    const DAY_ORDER = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
     const rows = parsedList.map((p) => {
       const compound = (COMPOUNDS as readonly string[]).includes(p.compound ?? "")
         ? (p.compound as string) : (p.compound ?? "Other");
       const dose_unit = (UNITS as readonly string[]).includes(p.dose_unit ?? "")
         ? (p.dose_unit as string) : "mcg";
-      const frequency = (FREQUENCIES as readonly string[]).includes(p.frequency ?? "")
+      let frequency = (FREQUENCIES as readonly string[]).includes(p.frequency ?? "")
         ? (p.frequency as string) : "Once Daily";
+      if (frequency === "Custom" && p.custom_days && p.custom_days.length > 0) {
+        const days = DAY_ORDER.filter((d) => p.custom_days!.includes(d));
+        frequency = `Custom (${days.join(", ")})`;
+      }
       const route = (ROUTES as readonly string[]).includes(p.route ?? "")
         ? (p.route as string) : "Subcutaneous";
+      const fasted = p.fasted === true
+        || fastedRegex.test(p.notes ?? "")
+        || textFasted;
+      const time_of_day = ["AM", "PM", "Both"].includes(p.time_of_day ?? "")
+        ? (p.time_of_day as string) : "AM";
       return {
         name: finalName,
         compound,
@@ -1001,8 +1018,11 @@ function ImportFromAIModal({
         doctor_id: user.id,
         source: "ai_import",
         vial_id: matchVial(p.compound),
+        fasted,
+        time_of_day,
       };
     });
+
 
     const bad = rows.findIndex((r) => !r.dose || r.dose <= 0);
     if (bad !== -1) { toast.error(`Compound #${bad + 1}: dose is required`); return; }

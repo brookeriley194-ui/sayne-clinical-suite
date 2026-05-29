@@ -35,7 +35,11 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `You parse peptide research stacks from free text. The text may describe MULTIPLE compounds stacked together — extract EACH compound as a separate entry in the protocols array. Match values to provided enums when possible. If a field cannot be confidently determined, return null. Never invent values.`;
+    const systemPrompt = `You parse peptide research stacks from free text. The text may describe MULTIPLE compounds stacked together — extract EACH compound as a separate entry in the protocols array. Match values to provided enums when possible. If a field cannot be confidently determined, return null. Never invent values.
+For each compound also detect:
+- fasted: true if the text says to take it fasted, on an empty stomach, before breakfast, or upon waking with nothing in the stomach.
+- time_of_day: "AM" (morning/upon waking/before breakfast), "PM" (evening/before bed/at night), or "Both" if both.
+- custom_days: when frequency is "Custom", list the weekday abbreviations it should be taken on, e.g. ["Mon","Thu"]. Allowed values: Sun, Mon, Tue, Wed, Thu, Fri, Sat. Return [] when frequency is not Custom.`;
 
     const body = {
       model: "google/gemini-2.5-flash",
@@ -67,9 +71,15 @@ serve(async (req) => {
                       route: { type: ["string", "null"], enum: [...ROUTES, null] },
                       duration_days: { type: ["integer", "null"] },
                       ongoing: { type: "boolean" },
+                      fasted: { type: "boolean" },
+                      time_of_day: { type: ["string", "null"], enum: ["AM", "PM", "Both", null] },
+                      custom_days: {
+                        type: "array",
+                        items: { type: "string", enum: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"] },
+                      },
                       notes: { type: ["string", "null"] },
                     },
-                    required: ["compound", "dose", "dose_unit", "frequency", "route", "duration_days", "ongoing", "notes"],
+                    required: ["compound", "dose", "dose_unit", "frequency", "route", "duration_days", "ongoing", "fasted", "time_of_day", "custom_days", "notes"],
                     additionalProperties: false,
                   },
                 },
@@ -82,6 +92,7 @@ serve(async (req) => {
       ],
       tool_choice: { type: "function", function: { name: "extract_protocols" } },
     };
+
 
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
