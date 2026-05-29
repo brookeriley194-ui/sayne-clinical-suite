@@ -71,17 +71,20 @@ function VialMock({
 
 function StepWelcome() {
   return (
-    <div className="relative flex flex-col items-center justify-center py-6">
+    <div className="relative flex flex-col items-center justify-center py-8">
       <div
         className="absolute inset-0 -z-10 blur-3xl opacity-60"
         style={{ background: "radial-gradient(circle at 50% 50%, #C9A8F5 0%, transparent 60%)" }}
       />
-      <div className="flex items-center gap-3">
-        <span className="font-display text-5xl font-bold tracking-tight">SAYNE</span>
-        <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden>
-          <path d="M4 30 Q21 4 38 30" stroke="#C9A8F5" strokeWidth="2" strokeLinecap="round" fill="none" />
-          <circle cx="38" cy="30" r="3" fill="#89CFF0" />
-        </svg>
+      <div className="inline-flex items-center gap-3">
+        <span className="font-display text-5xl font-bold tracking-tight text-foreground">
+          SAYNE
+        </span>
+        <span
+          aria-hidden
+          className="h-3 w-3 rounded-full"
+          style={{ backgroundColor: "var(--secondary)" }}
+        />
       </div>
     </div>
   );
