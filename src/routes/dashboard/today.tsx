@@ -147,11 +147,15 @@ function Page() {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel("today-protocols")
+      .channel("today-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "protocols" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "vials" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "stack_doses" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "stacks" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
 
   useEffect(() => {
     const raw = sessionStorage.getItem("stack:prefill");
