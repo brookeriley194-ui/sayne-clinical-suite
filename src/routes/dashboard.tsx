@@ -181,6 +181,8 @@ function DashboardLayout() {
         </main>
       </div>
       <FloatingCalculator />
+      <InstallBanner />
+      <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </div>
   );
 }
