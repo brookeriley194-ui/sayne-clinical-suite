@@ -36,8 +36,11 @@ export type Vial = {
   status: string;
   lot_number: string | null;
   notes: string | null;
+  default_dose: number | null;
+  default_dose_unit: string | null;
   created_at: string;
 };
+
 
 const STATUSES = ["sealed", "open", "used"] as const;
 
