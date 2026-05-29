@@ -859,7 +859,18 @@ function ProtocolStacksSection() {
                     const pot = v?.reconstituted_at ? (potencyPct(v.reconstituted_at) ?? 100) : 100;
                     return (
                       <div key={r.id} className="rounded-lg border p-3 space-y-2">
-                        <div className="font-semibold text-sm">{r.compound}</div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-semibold text-sm">{r.compound}</div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditing(r)}
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                            title="Edit compound"
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        </div>
                         <div className="flex items-baseline gap-1.5 font-mono">
                           <span className="text-xl font-semibold tabular-nums">{r.dose}</span>
                           <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
