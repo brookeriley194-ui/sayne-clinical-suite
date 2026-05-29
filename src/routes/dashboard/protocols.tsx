@@ -135,6 +135,7 @@ function Page() {
               Build a Stack
             </Button>
             <Button
+              data-tour="import-from-ai"
               onClick={() => setImportOpen(true)}
               className="gap-2 hover:opacity-90"
               style={{ backgroundColor: LAVENDER, color: NAVY }}
@@ -149,7 +150,7 @@ function Page() {
       <Tabs defaultValue="stacks">
         <TabsList className="mb-4">
           <TabsTrigger value="stacks">My Stacks</TabsTrigger>
-          <TabsTrigger value="log">Research Log</TabsTrigger>
+          <TabsTrigger value="log" data-tour="research-log-tab">Research Log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="stacks">
@@ -166,14 +167,15 @@ function Page() {
             </div>
           ) : (
             <div className="space-y-6">
-              {groupedStacks.map((g) => (
-                <StackGroup
-                  key={g.name}
-                  name={g.name}
-                  rows={g.rows}
-                  onEdit={() => handleEditStack(g.name, g.rows)}
-                  onDelete={() => handleDeleteStack(g.name, g.rows)}
-                />
+              {groupedStacks.map((g, i) => (
+                <div key={g.name} data-tour={i === 0 ? "stack-card" : undefined}>
+                  <StackGroup
+                    name={g.name}
+                    rows={g.rows}
+                    onEdit={() => handleEditStack(g.name, g.rows)}
+                    onDelete={() => handleDeleteStack(g.name, g.rows)}
+                  />
+                </div>
               ))}
             </div>
           )}

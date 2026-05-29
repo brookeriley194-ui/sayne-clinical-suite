@@ -172,7 +172,7 @@ function Page() {
         subtitle="Personal inventory and reconstitution history."
         action={
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" className="gap-2" onClick={() => setReceiptOpen(true)}>
+            <Button variant="outline" className="gap-2" data-tour="scan-receipt" onClick={() => setReceiptOpen(true)}>
               <ReceiptText className="size-4" /> Import Receipt
             </Button>
             <Sheet open={open} onOpenChange={setOpen}>
@@ -228,7 +228,7 @@ function Page() {
           No {tab} vials. Switch tabs to see others.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div data-tour="vials-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {visibleVials.map((v) => (
             <VialCard
               key={v.id}
