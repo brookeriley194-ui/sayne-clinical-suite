@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { X, Beaker, Calculator, Layers, CalendarDays, Users2, Smartphone, Share } from "lucide-react";
 
@@ -70,17 +71,20 @@ function VialMock({
 
 function StepWelcome() {
   return (
-    <div className="relative flex flex-col items-center justify-center py-6">
+    <div className="relative flex flex-col items-center justify-center py-8">
       <div
         className="absolute inset-0 -z-10 blur-3xl opacity-60"
         style={{ background: "radial-gradient(circle at 50% 50%, #C9A8F5 0%, transparent 60%)" }}
       />
-      <div className="flex items-center gap-3">
-        <span className="font-display text-5xl font-bold tracking-tight">SAYNE</span>
-        <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden>
-          <path d="M4 30 Q21 4 38 30" stroke="#C9A8F5" strokeWidth="2" strokeLinecap="round" fill="none" />
-          <circle cx="38" cy="30" r="3" fill="#89CFF0" />
-        </svg>
+      <div className="inline-flex items-center gap-3">
+        <span className="font-display text-5xl font-bold tracking-tight text-foreground">
+          SAYNE
+        </span>
+        <span
+          aria-hidden
+          className="h-3 w-3 rounded-full"
+          style={{ backgroundColor: "var(--secondary)" }}
+        />
       </div>
     </div>
   );
@@ -303,6 +307,7 @@ type Step = {
   visual: ReactNode;
   callout?: { tone: "blue" | "lavender" | "mint" | "yellow"; text: string };
   icon?: React.ComponentType<{ className?: string }>;
+  route?: string;
 };
 
 function buildSteps(device: DeviceKind): Step[] {
@@ -312,6 +317,7 @@ function buildSteps(device: DeviceKind): Step[] {
       italicSub: "Keeping Peptides Sayne.",
       body: "Sayne is your personal peptide research companion. Track your vials, manage your stack, monitor compound potency, and log your outcomes — all in one place. This takes 60 seconds.",
       visual: <StepWelcome />,
+      route: "/dashboard/today",
     },
     {
       title: "Start with your vials.",
@@ -319,6 +325,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepVials />,
       callout: { tone: "blue", text: "Tip: Use Scan Receipt after every peptide order. Sayne adds all your vials in one tap." },
       icon: Beaker,
+      route: "/dashboard/my-vials",
     },
     {
       title: "Never guess your draw volume again.",
@@ -326,6 +333,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepCalculator />,
       callout: { tone: "lavender", text: "Tip: Tap Calculate Dose on any vial card to open the calculator pre-filled for that vial." },
       icon: Calculator,
+      route: "/dashboard/my-vials",
     },
     {
       title: "Build your stack.",
@@ -333,6 +341,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepStack />,
       callout: { tone: "mint", text: "Tip: Copy your AI protocol and paste it directly into Import from AI. Sayne handles the rest." },
       icon: Layers,
+      route: "/dashboard/protocols",
     },
     {
       title: "Your daily command center.",
@@ -340,6 +349,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepToday />,
       callout: { tone: "yellow", text: "Tip: Check off your doses every day. This builds your outcome data over time." },
       icon: CalendarDays,
+      route: "/dashboard/today",
     },
     {
       title: "Add Sayne to your home screen.",
@@ -347,6 +357,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepInstall device={device} />,
       callout: { tone: "blue", text: "Installed apps load faster and feel just like a native app." },
       icon: Smartphone,
+      route: "/dashboard/settings",
     },
     {
       title: "Track outcomes. Share what works.",
@@ -354,6 +365,7 @@ function buildSteps(device: DeviceKind): Step[] {
       visual: <StepFeed />,
       callout: { tone: "lavender", text: "Tip: Weekly check-ins take 60 seconds and unlock your full outcome curve at cycle end." },
       icon: Users2,
+      route: "/dashboard/stack-feed",
     },
   ];
 }
@@ -365,8 +377,16 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
   const steps = useMemo(() => buildSteps(device), [device]);
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);
+  const navigate = useNavigate();
 
   useEffect(() => { if (open) setIndex(0); }, [open]);
+
+  // Jump to the relevant section as the tutorial progresses
+  useEffect(() => {
+    if (!open) return;
+    const target = steps[index]?.route;
+    if (target) navigate({ to: target }).catch(() => {});
+  }, [open, index, steps, navigate]);
 
   if (!open) return null;
 
@@ -382,13 +402,15 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
   const prev = () => { if (index === 0) return; setDir(-1); setIndex((i) => i - 1); };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-stretch md:items-center justify-center"
-         style={{ background: "rgba(201,168,245,0.55)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}>
+    <div
+      className="fixed inset-0 z-[100] pointer-events-none flex items-end md:items-end justify-center md:justify-end p-4 md:p-6"
+    >
       <div
-        className="relative bg-card w-full md:max-w-[560px] md:rounded-[20px] md:my-8 overflow-hidden flex flex-col"
+        className="pointer-events-auto relative bg-card w-full md:max-w-[440px] rounded-[20px] overflow-hidden flex flex-col"
         style={{
-          boxShadow: "0 30px 80px -28px rgba(120,90,200,0.35), 0 12px 30px -12px rgba(120,90,200,0.18)",
-          maxHeight: "100dvh",
+          boxShadow: "0 30px 80px -28px rgba(120,90,200,0.45), 0 12px 30px -12px rgba(120,90,200,0.25)",
+          maxHeight: "min(82dvh, 760px)",
+          border: "1px solid color-mix(in oklab, var(--border) 60%, transparent)",
         }}
       >
         {/* Header: dots + skip */}
