@@ -125,7 +125,17 @@ function Page() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("vials-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "vials" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "protocols" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "stack_doses" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
 
   const stats = useMemo(() => {
     const open = vials.filter((v) => v.status === "open").length;
