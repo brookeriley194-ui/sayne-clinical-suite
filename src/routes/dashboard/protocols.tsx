@@ -135,6 +135,7 @@ function Page() {
               Build a Stack
             </Button>
             <Button
+              data-tour="import-from-ai"
               onClick={() => setImportOpen(true)}
               className="gap-2 hover:opacity-90"
               style={{ backgroundColor: LAVENDER, color: NAVY }}
