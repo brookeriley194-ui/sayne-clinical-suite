@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format, differenceInDays } from "date-fns";
-import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX, Undo2, ReceiptText, Upload, Calculator as CalcIcon, Loader2, X, Save, Layers } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Droplet, PackageX, Undo2, ReceiptText, Upload, Calculator as CalcIcon, Loader2, X, Save, Layers, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, EmptyCard } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
@@ -366,6 +366,14 @@ export function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChan
           <Sheet>
             <SheetTrigger asChild>
               <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
+                <Pencil className="size-3.5" /> Edit
+              </Button>
+            </SheetTrigger>
+            <EditVialSheet vial={vial} onUpdated={onUpdated} />
+          </Sheet>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
                 <CalcIcon className="size-3.5" /> Calc
               </Button>
             </SheetTrigger>
@@ -559,6 +567,111 @@ function AddVialSheet({ onClose, onSaved }: { onClose: () => void; onSaved: () =
             Save & Go to Calculator
           </Button>
           <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save Vial"}</Button>
+        </SheetFooter>
+      </form>
+    </SheetContent>
+  );
+}
+
+function EditVialSheet({ vial, onUpdated }: { vial: Vial; onUpdated: () => void }) {
+  const [compound, setCompound] = useState(vial.compound);
+  const [vialSize, setVialSize] = useState(String(vial.vial_size_mg ?? ""));
+  const [bacWater, setBacWater] = useState(vial.bac_water_ml != null ? String(vial.bac_water_ml) : "");
+  const [reconDate, setReconDate] = useState<Date | undefined>(vial.reconstituted_at ? new Date(vial.reconstituted_at) : undefined);
+  const [status, setStatus] = useState<string>(vial.status);
+  const [lot, setLot] = useState(vial.lot_number ?? "");
+  const [notes, setNotes] = useState(vial.notes ?? "");
+  const [saving, setSaving] = useState(false);
+
+  const conc = vialSize && bacWater && Number(bacWater) > 0
+    ? (Number(vialSize) / Number(bacWater)).toFixed(2)
+    : null;
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!compound.trim() || !vialSize) {
+      toast.error("Compound and vial size are required");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from("vials").update({
+      compound: compound.trim(),
+      vial_size_mg: Number(vialSize),
+      bac_water_ml: bacWater ? Number(bacWater) : null,
+      concentration_mg_per_ml: conc ? Number(conc) : null,
+      reconstituted_at: reconDate ? reconDate.toISOString() : null,
+      status,
+      lot_number: lot.trim() || null,
+      notes: notes.trim() || null,
+    }).eq("id", vial.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Vial updated");
+    onUpdated();
+  };
+
+  return (
+    <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+      <SheetHeader>
+        <SheetTitle>Edit Vial</SheetTitle>
+        <SheetDescription>Update vial details. Changes sync everywhere.</SheetDescription>
+      </SheetHeader>
+      <form onSubmit={save} className="space-y-4 py-4">
+        <div className="space-y-2">
+          <Label>Compound *</Label>
+          <Input value={compound} onChange={(e) => setCompound(e.target.value)} placeholder="Peptide name" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label>Vial size (mg) *</Label>
+            <Input type="number" step="0.1" value={vialSize} onChange={(e) => setVialSize(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>BAC water (mL)</Label>
+            <Input type="number" step="0.1" value={bacWater} onChange={(e) => setBacWater(e.target.value)} />
+          </div>
+        </div>
+        {conc && (
+          <div className="rounded-md bg-muted/40 p-3 flex items-center gap-2 text-sm">
+            <Droplet className="size-4 text-primary" />
+            Concentration: <span className="font-mono font-semibold">{conc} mg/mL</span>
+          </div>
+        )}
+        <div className="space-y-2">
+          <Label>Date reconstituted</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" className="w-full justify-start font-normal">
+                <CalendarIcon className="size-4 mr-2" />
+                {reconDate ? format(reconDate, "PPP") : "Not yet reconstituted"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={reconDate} onSelect={setReconDate} initialFocus />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Lot #</Label>
+            <Input value={lot} onChange={(e) => setLot(e.target.value)} placeholder="optional" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Notes</Label>
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+        </div>
+        <SheetFooter>
+          <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
         </SheetFooter>
       </form>
     </SheetContent>

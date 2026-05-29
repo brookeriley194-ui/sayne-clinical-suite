@@ -4,6 +4,7 @@ import { format, differenceInDays, addDays, isSameDay, startOfDay } from "date-f
 import {
   Plus, Trash2, Sun, Moon, Utensils, Calendar as CalendarIcon, Pencil,
 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { StatCard, EmptyCard } from "@/components/dashboard-ui";
@@ -746,6 +747,7 @@ function ProtocolStacksSection() {
   const [loading, setLoading] = useState(true);
   const [journalFor, setJournalFor] = useState<JournalProtocol | null>(null);
   const [completionFor, setCompletionFor] = useState<JournalProtocol | null>(null);
+  const [editing, setEditing] = useState<ProtocolRow | null>(null);
 
   async function load() {
     const [p, v] = await Promise.all([
@@ -857,7 +859,18 @@ function ProtocolStacksSection() {
                     const pot = v?.reconstituted_at ? (potencyPct(v.reconstituted_at) ?? 100) : 100;
                     return (
                       <div key={r.id} className="rounded-lg border p-3 space-y-2">
-                        <div className="font-semibold text-sm">{r.compound}</div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="font-semibold text-sm">{r.compound}</div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditing(r)}
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                            title="Edit compound"
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        </div>
                         <div className="flex items-baseline gap-1.5 font-mono">
                           <span className="text-xl font-semibold tabular-nums">{r.dose}</span>
                           <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
@@ -899,7 +912,137 @@ function ProtocolStacksSection() {
         onOpenChange={(o) => { if (!o) setCompletionFor(null); }}
         protocol={completionFor}
       />
+      <Sheet open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null); }}>
+        {editing && (
+          <EditProtocolSheet
+            key={editing.id}
+            row={editing}
+            vials={Object.values(vialMap)}
+            onClose={() => setEditing(null)}
+            onSaved={() => { setEditing(null); load(); }}
+          />
+        )}
+      </Sheet>
     </>
+  );
+}
+
+function EditProtocolSheet({
+  row, vials, onClose, onSaved,
+}: { row: ProtocolRow; vials: Vial[]; onClose: () => void; onSaved: () => void }) {
+  const [compound, setCompound] = useState(row.compound);
+  const [dose, setDose] = useState(String(row.dose ?? ""));
+  const [doseUnit, setDoseUnit] = useState(row.dose_unit);
+  const [frequency, setFrequency] = useState(row.frequency);
+  const [route, setRoute] = useState(row.route);
+  const [timeOfDay, setTimeOfDay] = useState(row.time_of_day);
+  const [fasted, setFasted] = useState(!!row.fasted);
+  const [vialId, setVialId] = useState<string>(row.vial_id ?? "none");
+  const [saving, setSaving] = useState(false);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!compound.trim() || !dose) {
+      toast.error("Compound and dose are required");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from("protocols").update({
+      compound: compound.trim(),
+      dose: Number(dose),
+      dose_unit: doseUnit,
+      frequency,
+      route,
+      time_of_day: timeOfDay,
+      fasted,
+      vial_id: vialId === "none" ? null : vialId,
+    }).eq("id", row.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Compound updated");
+    onSaved();
+  };
+
+  const matchingVials = vials.filter((v) =>
+    v.compound.trim().toLowerCase() === compound.trim().toLowerCase() || v.id === row.vial_id,
+  );
+
+  return (
+    <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+      <SheetHeader>
+        <SheetTitle>Edit Compound</SheetTitle>
+        <SheetDescription>Updates apply across My Stacks, My Vials, and Today.</SheetDescription>
+      </SheetHeader>
+      <form onSubmit={save} className="space-y-4 py-4">
+        <div className="space-y-2">
+          <Label>Compound *</Label>
+          <Input value={compound} onChange={(e) => setCompound(e.target.value)} />
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-2 col-span-2">
+            <Label>Dose *</Label>
+            <Input type="number" step="0.01" value={dose} onChange={(e) => setDose(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Unit</Label>
+            <Select value={doseUnit} onValueChange={setDoseUnit}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {DOSE_UNITS.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label>Frequency</Label>
+            <Input value={frequency} onChange={(e) => setFrequency(e.target.value)} placeholder="daily, M/Th, etc." />
+          </div>
+          <div className="space-y-2">
+            <Label>Route</Label>
+            <Input value={route} onChange={(e) => setRoute(e.target.value)} placeholder="SubQ, IM…" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
+            <Label>Time of day</Label>
+            <Select value={timeOfDay} onValueChange={setTimeOfDay}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="AM">AM</SelectItem>
+                <SelectItem value="PM">PM</SelectItem>
+                <SelectItem value="Both">Both</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Linked vial</Label>
+            <Select value={vialId} onValueChange={setVialId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {matchingVials.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.compound} · {v.vial_size_mg}mg
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex items-center justify-between rounded-md border p-3">
+          <div>
+            <div className="text-sm font-medium">Take fasted</div>
+            <div className="text-xs text-muted-foreground">Empty stomach</div>
+          </div>
+          <Switch checked={fasted} onCheckedChange={setFasted} />
+        </div>
+        <SheetFooter className="gap-2 flex-col sm:flex-row">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</Button>
+        </SheetFooter>
+      </form>
+    </SheetContent>
   );
 }
 
