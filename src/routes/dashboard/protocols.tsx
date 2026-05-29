@@ -589,7 +589,17 @@ function BuildStackModal({
 
 
   function updateRow(i: number, patch: Partial<CompoundRow>) {
-    setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+    setRows((prev) => prev.map((r, idx) => {
+      if (idx !== i) return r;
+      const next = { ...r, ...patch };
+      // Auto-match a vial by compound name when none is linked
+      if (patch.compound !== undefined && next.vial_id === "none" && next.compound && next.compound !== "Other") {
+        const n = next.compound.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const match = vials.find((v) => v.compound.toLowerCase().replace(/[^a-z0-9]/g, "") === n);
+        if (match) next.vial_id = match.id;
+      }
+      return next;
+    }));
   }
   function removeRow(i: number) {
     setRows((prev) => prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i));
