@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useNavigate, Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth, type AppRole } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { SayneLogo } from "@/components/sayne-logo";
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingCalculator } from "@/components/floating-calculator";
+import { Tutorial, TUTORIAL_FLAG } from "@/components/tutorial";
+import { InstallBanner } from "@/components/install-banner";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
@@ -54,6 +56,25 @@ function DashboardLayout() {
       navigate({ to: items[0].to, replace: true });
     }
   }, [pathname, items, navigate]);
+
+  // First-login tutorial trigger: created <5min ago AND zero vials AND not completed
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (localStorage.getItem(TUTORIAL_FLAG) === "true") return;
+        const created = user.created_at ? new Date(user.created_at).getTime() : 0;
+        if (!created || Date.now() - created > 5 * 60 * 1000) return;
+        const { count } = await supabase
+          .from("vials")
+          .select("*", { count: "exact", head: true });
+        if (!cancelled && (count ?? 0) === 0) setTutorialOpen(true);
+      } catch { /* noop */ }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
@@ -160,6 +181,8 @@ function DashboardLayout() {
         </main>
       </div>
       <FloatingCalculator />
+      <InstallBanner />
+      <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </div>
   );
 }
