@@ -256,32 +256,39 @@ function StackGroup({
       <ProtocolCompletionModal open={completeOpen} onOpenChange={setCompleteOpen} protocol={jp} />
 
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {rows.map((r) => (
-          <div key={r.id} className="rounded-lg border p-3 space-y-2" style={{ borderColor: "var(--border)" }}>
-            <div className="font-semibold text-sm">{r.compound}</div>
-            <div className="flex items-baseline gap-1.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-              <span className="text-xl font-semibold tabular-nums">{r.dose}</span>
-              <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono mb-2">
+        {rows.length} compound{rows.length === 1 ? "" : "s"} in this stack
+      </div>
+      <div className="divide-y rounded-lg border" style={{ borderColor: "var(--border)" }}>
+        {rows.map((r) => {
+          const rRemaining = daysRemaining(r);
+          return (
+            <div key={r.id} className="p-3 flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-[140px]">
+                <div className="font-semibold text-sm">{r.compound}</div>
+                {!r.vial_id && (
+                  <div className="text-[10px] text-muted-foreground mt-0.5">vial not set up</div>
+                )}
+              </div>
+              <div className="flex items-baseline gap-1.5" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                <span className="text-lg font-semibold tabular-nums">{r.dose}</span>
+                <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
+              </div>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
                 style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
                 {r.frequency}
               </span>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
                 style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
-                {r.time_of_day}
+                {r.route}
               </span>
-              {r.fasted && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
-                  style={{ backgroundColor: "var(--panel)", border: "1px solid var(--border)" }}>
-                  Fasted
-                </span>
-              )}
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono"
+                style={{ backgroundColor: `color-mix(in oklab, ${LAVENDER} 30%, transparent)`, color: NAVY }}>
+                {r.ongoing ? "Ongoing" : rRemaining != null ? `${rRemaining}d left` : `${r.duration_days ?? "—"}d`}
+              </span>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
