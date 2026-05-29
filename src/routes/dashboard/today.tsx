@@ -243,7 +243,7 @@ function Page() {
 
       <ReorderReminders />
 
-      <DoseCalendar stacks={stacks} doses={doses} onToggle={toggleDose} />
+      <div data-tour="today-calendar"><DoseCalendar stacks={stacks} doses={doses} onToggle={toggleDose} /></div>
 
       <div className="mt-6" />
 
