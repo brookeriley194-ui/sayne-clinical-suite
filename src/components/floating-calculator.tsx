@@ -48,6 +48,7 @@ export function FloatingCalculator() {
     <>
       <button
         type="button"
+        data-tour="floating-calc"
         onClick={() => setOpen(true)}
         aria-label="Open dose calculator"
         className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
