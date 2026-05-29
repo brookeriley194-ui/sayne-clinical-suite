@@ -372,14 +372,22 @@ function buildSteps(device: DeviceKind): Step[] {
 
 /* ---------- Modal ---------- */
 
-export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function Tutorial({
+  open,
+  onClose,
+  startStep = 0,
+}: {
+  open: boolean;
+  onClose: () => void;
+  startStep?: number;
+}) {
   const device = useMemo(detectDevice, []);
   const steps = useMemo(() => buildSteps(device), [device]);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(startStep);
   const [dir, setDir] = useState(1);
   const navigate = useNavigate();
 
-  useEffect(() => { if (open) setIndex(0); }, [open]);
+  useEffect(() => { if (open) setIndex(Math.min(Math.max(startStep, 0), 6)); }, [open, startStep]);
 
   // Jump to the relevant section as the tutorial progresses
   useEffect(() => {
@@ -395,6 +403,7 @@ export function Tutorial({ open, onClose }: { open: boolean; onClose: () => void
 
   const finish = () => {
     try { localStorage.setItem(TUTORIAL_FLAG, "true"); } catch {}
+    navigate({ to: "/dashboard/my-vials" }).catch(() => {});
     onClose();
   };
 
