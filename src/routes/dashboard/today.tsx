@@ -846,20 +846,41 @@ function ProtocolStacksSection() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {items.map((r) => (
-                    <div key={r.id} className="rounded-lg border p-3 space-y-2">
-                      <div className="font-semibold text-sm">{r.compound}</div>
-                      <div className="flex items-baseline gap-1.5 font-mono">
-                        <span className="text-xl font-semibold tabular-nums">{r.dose}</span>
-                        <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
+                  {items.map((r) => {
+                    const v = r.vial_id ? vialMap[r.vial_id] : null;
+                    const concMcgMl = v && v.concentration_mg_per_ml ? v.concentration_mg_per_ml * 1000 : 0;
+                    const doseMcg = r.dose_unit === "mg" ? r.dose * 1000
+                      : r.dose_unit === "mcg" ? r.dose
+                      : r.dose_unit === "mL" ? r.dose * concMcgMl
+                      : r.dose * 0.01 * concMcgMl;
+                    const pot = v?.reconstituted_at ? (potencyPct(v.reconstituted_at) ?? 100) : 100;
+                    return (
+                      <div key={r.id} className="rounded-lg border p-3 space-y-2">
+                        <div className="font-semibold text-sm">{r.compound}</div>
+                        <div className="flex items-baseline gap-1.5 font-mono">
+                          <span className="text-xl font-semibold tabular-nums">{r.dose}</span>
+                          <span className="text-xs text-muted-foreground">{r.dose_unit}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <Badge variant="outline" className="text-[10px]">{r.frequency}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{r.time_of_day}</Badge>
+                          {r.fasted && <Badge variant="outline" className="text-[10px]">Fasted</Badge>}
+                        </div>
+                        {v && concMcgMl > 0 && (
+                          <div className="mt-2 pt-2 border-t">
+                            <SyringeVisualizer
+                              compound={r.compound}
+                              dose_mcg={doseMcg}
+                              concentration_mcg_per_ml={concMcgMl}
+                              potency_score={pot}
+                              syringe_type="insulin_1"
+                            />
+                          </div>
+                        )}
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        <Badge variant="outline" className="text-[10px]">{r.frequency}</Badge>
-                        <Badge variant="outline" className="text-[10px]">{r.time_of_day}</Badge>
-                        {r.fasted && <Badge variant="outline" className="text-[10px]">Fasted</Badge>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+
                 </div>
               </div>
             );
