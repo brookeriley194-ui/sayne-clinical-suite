@@ -76,6 +76,13 @@ function DashboardLayout() {
     return () => { cancelled = true; };
   }, [user]);
 
+  // Global event so any page can re-open the tutorial without unmounting it on navigation
+  useEffect(() => {
+    const handler = () => setTutorialOpen(true);
+    window.addEventListener("sayne:open-tutorial", handler);
+    return () => window.removeEventListener("sayne:open-tutorial", handler);
+  }, []);
+
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
     if (error) { toast.error(error.message); return; }

@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, User as UserIcon, Sparkles, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Tutorial } from "@/components/tutorial";
 
 export const Route = createFileRoute("/dashboard/settings")({ component: SettingsPage });
 
@@ -19,7 +18,6 @@ function SettingsPage() {
   const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
   const [name, setName] = useState(meta.full_name ?? meta.name ?? "");
   const [saving, setSaving] = useState(false);
-  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const saveName = async () => {
     setSaving(true);
@@ -92,7 +90,7 @@ function SettingsPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => setTutorialOpen(true)}
+              onClick={() => window.dispatchEvent(new Event("sayne:open-tutorial"))}
               style={{ borderColor: "#C9A8F5", color: "#6b4ca8" }}
               className="hover:bg-[rgba(201,168,245,0.12)]"
             >
@@ -107,8 +105,6 @@ function SettingsPage() {
           </Button>
         </section>
       </div>
-
-      <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </>
   );
 }
