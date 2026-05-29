@@ -103,6 +103,14 @@ export function DosePill({
         {stack.dose != null && (
           <span className="ml-1 font-mono tabular-nums opacity-80">{stack.dose}{stack.dose_unit}</span>
         )}
+        {stack.fasted && (
+          <span className={cn(
+            "ml-1 inline-flex items-center rounded-sm bg-[var(--secondary)]/40 text-[var(--foreground)] font-medium uppercase tracking-wider align-middle",
+            size === "lg" ? "px-1.5 py-0.5 text-[9px]" : "px-1 text-[8px]",
+          )}>
+            Fasted
+          </span>
+        )}
       </span>
     </button>
   );
