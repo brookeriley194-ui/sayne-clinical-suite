@@ -150,7 +150,7 @@ function Page() {
       <Tabs defaultValue="stacks">
         <TabsList className="mb-4">
           <TabsTrigger value="stacks">My Stacks</TabsTrigger>
-          <TabsTrigger value="log">Research Log</TabsTrigger>
+          <TabsTrigger value="log" data-tour="research-log-tab">Research Log</TabsTrigger>
         </TabsList>
 
         <TabsContent value="stacks">
