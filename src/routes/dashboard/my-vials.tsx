@@ -228,7 +228,7 @@ function Page() {
           No {tab} vials. Switch tabs to see others.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div data-tour="vials-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {visibleVials.map((v) => (
             <VialCard
               key={v.id}
