@@ -167,14 +167,15 @@ function Page() {
             </div>
           ) : (
             <div className="space-y-6">
-              {groupedStacks.map((g) => (
-                <StackGroup
-                  key={g.name}
-                  name={g.name}
-                  rows={g.rows}
-                  onEdit={() => handleEditStack(g.name, g.rows)}
-                  onDelete={() => handleDeleteStack(g.name, g.rows)}
-                />
+              {groupedStacks.map((g, i) => (
+                <div key={g.name} data-tour={i === 0 ? "stack-card" : undefined}>
+                  <StackGroup
+                    name={g.name}
+                    rows={g.rows}
+                    onEdit={() => handleEditStack(g.name, g.rows)}
+                    onDelete={() => handleDeleteStack(g.name, g.rows)}
+                  />
+                </div>
               ))}
             </div>
           )}
