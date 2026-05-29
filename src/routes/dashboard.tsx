@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useNavigate, Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth, type AppRole } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { SayneLogo } from "@/components/sayne-logo";
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingCalculator } from "@/components/floating-calculator";
+import { Tutorial, TUTORIAL_FLAG } from "@/components/tutorial";
+import { InstallBanner } from "@/components/install-banner";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
