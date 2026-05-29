@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { Tutorial } from "@/components/tutorial";
 
 const DISMISS_KEY = "sayne_install_dismissed";
 const DISMISS_DAYS = 14;
