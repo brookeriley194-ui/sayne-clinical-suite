@@ -90,7 +90,7 @@ function SettingsPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => setTutorialOpen(true)}
+              onClick={() => window.dispatchEvent(new Event("sayne:open-tutorial"))}
               style={{ borderColor: "#C9A8F5", color: "#6b4ca8" }}
               className="hover:bg-[rgba(201,168,245,0.12)]"
             >
@@ -105,8 +105,6 @@ function SettingsPage() {
           </Button>
         </section>
       </div>
-
-      <Tutorial open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </>
   );
 }
