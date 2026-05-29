@@ -26,6 +26,7 @@ import {
   type Stack, type DoseLog,
 } from "@/components/dose-shared";
 import { VialCard, computeVialUsages, type Vial as VialFull, type VialUsage } from "@/routes/dashboard/my-vials";
+import { SyringeVisualizer } from "@/components/syringe-visualizer";
 import {
   JournalBanner, JournalCheckinModal, JournalCurveModal, ProtocolCompletionModal,
   weekOf, isProtocolActive, type JournalProtocol,
