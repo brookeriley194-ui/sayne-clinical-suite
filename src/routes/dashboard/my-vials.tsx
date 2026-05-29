@@ -366,6 +366,14 @@ export function VialCard({ vial, usage, onDelete, onMarkEmpty, onRestore, onChan
           <Sheet>
             <SheetTrigger asChild>
               <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
+                <Pencil className="size-3.5" /> Edit
+              </Button>
+            </SheetTrigger>
+            <EditVialSheet vial={vial} onUpdated={onUpdated} />
+          </Sheet>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5">
                 <CalcIcon className="size-3.5" /> Calc
               </Button>
             </SheetTrigger>
