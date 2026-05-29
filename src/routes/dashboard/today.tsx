@@ -747,6 +747,7 @@ function ProtocolStacksSection() {
   const [loading, setLoading] = useState(true);
   const [journalFor, setJournalFor] = useState<JournalProtocol | null>(null);
   const [completionFor, setCompletionFor] = useState<JournalProtocol | null>(null);
+  const [editing, setEditing] = useState<ProtocolRow | null>(null);
 
   async function load() {
     const [p, v] = await Promise.all([
