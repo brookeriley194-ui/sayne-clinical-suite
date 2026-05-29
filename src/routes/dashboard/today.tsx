@@ -741,13 +741,20 @@ type ProtocolRow = {
 
 function ProtocolStacksSection() {
   const [rows, setRows] = useState<ProtocolRow[]>([]);
+  const [vialMap, setVialMap] = useState<Record<string, Vial>>({});
   const [loading, setLoading] = useState(true);
   const [journalFor, setJournalFor] = useState<JournalProtocol | null>(null);
   const [completionFor, setCompletionFor] = useState<JournalProtocol | null>(null);
 
   async function load() {
-    const { data } = await supabase.from("protocols").select("*").order("created_at", { ascending: false });
-    setRows((data ?? []) as ProtocolRow[]);
+    const [p, v] = await Promise.all([
+      supabase.from("protocols").select("*").order("created_at", { ascending: false }),
+      supabase.from("vials").select("*"),
+    ]);
+    setRows((p.data ?? []) as ProtocolRow[]);
+    const map: Record<string, Vial> = {};
+    for (const vv of ((v.data ?? []) as Vial[])) map[vv.id] = vv;
+    setVialMap(map);
     setLoading(false);
   }
 
@@ -756,9 +763,11 @@ function ProtocolStacksSection() {
     const channel = supabase
       .channel("protocols-today")
       .on("postgres_changes", { event: "*", schema: "public", table: "protocols" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "vials" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
 
   const toJournalProtocol = (r: ProtocolRow): JournalProtocol => ({
     id: r.id, name: r.name, compound: r.compound, created_at: r.created_at,
