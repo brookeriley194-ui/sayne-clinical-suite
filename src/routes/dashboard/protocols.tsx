@@ -876,7 +876,11 @@ type Parsed = {
   duration_days: number | null;
   ongoing: boolean;
   notes: string | null;
+  fasted?: boolean;
+  time_of_day?: string | null;
+  custom_days?: string[];
 };
+
 
 type VialLite = { id: string; compound: string };
 
