@@ -1199,6 +1199,68 @@ function ParsedCompoundCard({
         </div>
       </div>
 
+      {p.compound && (
+        matchedVialId ? (
+          <div
+            className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium"
+            style={{
+              backgroundColor: `color-mix(in oklab, ${MINT} 28%, transparent)`,
+              color: NAVY,
+              border: `1px solid color-mix(in oklab, ${MINT} 50%, transparent)`,
+            }}
+          >
+            <Check className="h-3.5 w-3.5" />
+            Linked to your {p.compound} vial
+          </div>
+        ) : (
+          <div
+            className="rounded-md px-3 py-2 text-xs"
+            style={{
+              backgroundColor: "color-mix(in oklab, #FBE7A1 35%, transparent)",
+              border: "1px solid color-mix(in oklab, #E8C76A 45%, transparent)",
+              color: "#6b5413",
+            }}
+          >
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="font-medium">No {p.compound} vial yet</span>
+              {!addingVial && (
+                <button
+                  type="button"
+                  onClick={() => setAddingVial(true)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold hover:opacity-90"
+                  style={{ backgroundColor: NAVY, color: "#fff" }}
+                >
+                  <Plus className="h-3 w-3" /> Add vial
+                </button>
+              )}
+            </div>
+            {addingVial && (
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <Input
+                  type="number" step="any" min="0"
+                  placeholder="Vial size (mg)"
+                  value={vialSize}
+                  onChange={(e) => setVialSize(e.target.value)}
+                  className="h-8 font-mono text-xs flex-1 min-w-[120px] bg-white"
+                />
+                <Button
+                  type="button" size="sm" onClick={quickAddVial} disabled={savingVial}
+                  className="h-8 text-xs" style={{ backgroundColor: MINT, color: NAVY }}
+                >
+                  {savingVial ? "Saving…" : "Save vial"}
+                </Button>
+                <Button
+                  type="button" size="sm" variant="ghost" onClick={() => { setAddingVial(false); setVialSize(""); }}
+                  className="h-8 text-xs"
+                >
+                  Skip
+                </Button>
+              </div>
+            )}
+          </div>
+        )
+      )}
+
       <ParsedRow label="Compound" value={p.compound}>
         <Select value={p.compound ?? ""} onValueChange={(v) => onUpdate({ compound: v })}>
           <SelectTrigger className="h-8"><SelectValue placeholder="Pick a compound" /></SelectTrigger>
