@@ -21,10 +21,12 @@ type Props = {
 };
 
 function fluidColor(score: number) {
-  if (score >= 85) return { hex: "#89CFF0", label: "Optimal" };
-  if (score >= 70) return { hex: "#FFD580", label: "Acceptable" };
-  if (score >= 50) return { hex: "#FFB3C6", label: "Degraded" };
-  return { hex: "#DDD5F0", label: "Discard" };
+  // Unified Sayne blue across all syringes & vials
+  const hex = "#7dd3fc";
+  if (score >= 85) return { hex, label: "Optimal" };
+  if (score >= 70) return { hex, label: "Acceptable" };
+  if (score >= 50) return { hex, label: "Degraded" };
+  return { hex, label: "Discard" };
 }
 
 export function SyringeVisualizer({
