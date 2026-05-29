@@ -4,6 +4,7 @@ import { format, differenceInDays, addDays, isSameDay, startOfDay } from "date-f
 import {
   Plus, Trash2, Sun, Moon, Utensils, Calendar as CalendarIcon, Pencil,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { StatCard, EmptyCard } from "@/components/dashboard-ui";
