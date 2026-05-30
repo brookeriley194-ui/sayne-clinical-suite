@@ -4,12 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Heart, Search, Users2, X, Download, ArrowRight } from "lucide-react";
+import { Heart, Search, Users2, X, Download, ArrowRight, Sparkles, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import {
+  STACK_TEMPLATES, TEMPLATE_CATEGORIES, maxDuration, allTemplateCompounds,
+  type StackTemplate,
+} from "@/lib/stack-templates";
 
 export const Route = createFileRoute("/dashboard/stack-feed")({
   component: StackFeedPage,
@@ -28,8 +33,8 @@ const C = {
   mood: "#FFD580",
 };
 
-const COMPOUNDS = ["BPC-157", "TB-500", "MOTS-C", "Ipamorelin", "CJC-1295", "Selank", "Semax", "PT-141", "Tesamorelin", "GHK-Cu", "SS-31", "Epitalon"];
-const GOALS = ["Energy", "Recovery", "Sleep", "Gut Health", "Cognitive", "Immune", "Body Composition", "Anti-aging", "Sexual Health", "Anti-inflammatory", "Stress"];
+const COMPOUNDS = ["BPC-157", "TB-500", "MOTS-C", "Ipamorelin", "CJC-1295", "Selank", "Semax", "PT-141", "Tesamorelin", "GHK-Cu", "SS-31 (Elamipretide)", "Epitalon (Epithalon)", "KPV", "DSIP", "Thymosin Alpha-1", "Glutathione", "Semaglutide", "Tirzepatide", "NAD+", "MK-677 (Ibutamoren)", "AOD-9604"];
+const GOALS = ["Energy", "Recovery", "Sleep", "Gut Health", "Cognitive", "Immune", "Body Composition", "Anti-aging", "Sexual Health", "Anti-inflammatory", "Stress", "Fat Loss", "Metabolic Health", "Skin & Hair"];
 const DURATIONS = [
   { label: "Under 4 weeks", min: 0, max: 27 },
   { label: "4-8 weeks", min: 28, max: 55 },
@@ -66,16 +71,20 @@ function StackFeedPage() {
   const [stacks, setStacks] = useState<SharedStack[]>([]);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+
+  // shared filters
   const [q, setQ] = useState("");
   const [compounds, setCompounds] = useState<Set<string>>(new Set());
   const [goals, setGoals] = useState<Set<string>>(new Set());
   const [durIdx, setDurIdx] = useState<number | null>(null);
   const [sort, setSort] = useState<Sort>("Most Recent");
+
   const [saved, setSaved] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set();
     try { return new Set(JSON.parse(localStorage.getItem("sayne:saved-stacks") ?? "[]")); } catch { return new Set(); }
   });
   const [importStack, setImportStack] = useState<SharedStack | null>(null);
+  const [importTemplate, setImportTemplate] = useState<StackTemplate | null>(null);
 
   useEffect(() => { localStorage.setItem("sayne:saved-stacks", JSON.stringify([...saved])); }, [saved]);
 
@@ -92,7 +101,7 @@ function StackFeedPage() {
   }
   useEffect(() => { load(); }, []);
 
-  const filtered = useMemo(() => {
+  const filteredCommunity = useMemo(() => {
     const ql = q.trim().toLowerCase();
     let arr = stacks.filter((s) => {
       if (compounds.size && !compounds.has(s.compound)) return false;
@@ -118,6 +127,45 @@ function StackFeedPage() {
     return arr;
   }, [stacks, q, compounds, goals, durIdx, sort]);
 
+  const filteredTemplates = useMemo(() => {
+    const ql = q.trim().toLowerCase();
+    return STACK_TEMPLATES.filter((tmpl) => {
+      if (compounds.size) {
+        const tc = new Set(allTemplateCompounds(tmpl));
+        let hit = false;
+        for (const c of compounds) if (tc.has(c)) { hit = true; break; }
+        if (!hit) return false;
+      }
+      if (goals.size) {
+        const tg = new Set(tmpl.goal_tags);
+        let hit = false;
+        for (const g of goals) if (tg.has(g)) { hit = true; break; }
+        if (!hit) return false;
+      }
+      if (durIdx != null) {
+        const d = maxDuration(tmpl);
+        const r = DURATIONS[durIdx];
+        if (d < r.min || d > r.max) return false;
+      }
+      if (ql) {
+        const hay = [
+          tmpl.name, tmpl.description, tmpl.goal_tags.join(" "),
+          tmpl.compounds.map((c) => c.compound).join(" "),
+        ].join(" ").toLowerCase();
+        if (!hay.includes(ql)) return false;
+      }
+      return true;
+    });
+  }, [q, compounds, goals, durIdx]);
+
+  // Group templates by category preserving order
+  const groupedTemplates = useMemo(() => {
+    const m = new Map<string, StackTemplate[]>();
+    for (const cat of TEMPLATE_CATEGORIES) m.set(cat, []);
+    for (const t of filteredTemplates) m.get(t.category)!.push(t);
+    return Array.from(m.entries()).filter(([, arr]) => arr.length > 0);
+  }, [filteredTemplates]);
+
   function toggle<T>(set: Set<T>, v: T, setter: (s: Set<T>) => void) {
     const n = new Set(set);
     n.has(v) ? n.delete(v) : n.add(v);
@@ -130,7 +178,7 @@ function StackFeedPage() {
       {!dismissed && (
         <div className="flex items-start gap-3 rounded-xl px-4 py-3 border" style={{ backgroundColor: `${C.pink}55`, borderColor: `${C.pink}` }}>
           <div className="text-sm leading-relaxed flex-1" style={{ color: "#7a3e4f" }}>
-            <strong>Stack Feed</strong> contains user-shared research protocols and self-reported outcomes. This is not medical advice. Always consult your physician before beginning any protocol. Sayne does not verify or endorse any shared content.
+            <strong>Stack Feed</strong> contains educational templates and user-shared protocols. This is not medical advice. Always consult a qualified professional before beginning any protocol.
           </div>
           <button onClick={() => setDismissed(true)} className="p-1 rounded hover:bg-black/5" aria-label="Dismiss">
             <X className="h-4 w-4" style={{ color: "#7a3e4f" }} />
@@ -145,30 +193,78 @@ function StackFeedPage() {
         </div>
         <div>
           <h1 className="font-display text-3xl font-bold">Stack Feed</h1>
-          <p className="text-sm text-muted-foreground">Browse what real researchers ran, and how it went.</p>
+          <p className="text-sm text-muted-foreground">Browse starter templates and real protocols shared by the community.</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-        {/* Feed */}
-        <div className="space-y-4 min-w-0">
-          {loading ? (
-            <div className="text-sm text-muted-foreground py-12 text-center">Loading…</div>
-          ) : filtered.length === 0 ? (
-            <div className="rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
-              No shared stacks match your filters yet.
-            </div>
-          ) : (
-            filtered.map((s) => (
-              <StackCard
-                key={s.id}
-                stack={s}
-                saved={saved.has(s.id)}
-                onSaveToggle={() => toggle(saved, s.id, setSaved)}
-                onImport={() => setImportStack(s)}
-              />
-            ))
-          )}
+        {/* Main column with tabs */}
+        <div className="min-w-0">
+          <Tabs defaultValue="templates">
+            <TabsList className="mb-4">
+              <TabsTrigger value="templates" className="gap-1.5">
+                <BookOpen className="h-3.5 w-3.5" /> Templates
+              </TabsTrigger>
+              <TabsTrigger value="community" className="gap-1.5">
+                <Users2 className="h-3.5 w-3.5" /> Community
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="templates" className="space-y-5">
+              <div
+                className="rounded-xl px-4 py-3 border text-sm leading-relaxed"
+                style={{ backgroundColor: `${C.lavender}1f`, borderColor: `${C.lavender}55`, color: "var(--foreground)" }}
+              >
+                <div className="flex items-center gap-2 mb-1 font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <Sparkles className="h-4 w-4" style={{ color: C.lavender }} /> Starter templates
+                </div>
+                Starter templates to help you get going. These are common protocol structures for reference, not personal results or medical advice.
+              </div>
+
+              {groupedTemplates.length === 0 ? (
+                <div className="rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
+                  No templates match your filters.
+                </div>
+              ) : (
+                groupedTemplates.map(([category, list]) => (
+                  <section key={category} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: C.lavender }} />
+                      <h2 className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-mono">
+                        {category}
+                      </h2>
+                      <span className="text-[10px] text-muted-foreground font-mono">{list.length}</span>
+                    </div>
+                    <div className="space-y-3">
+                      {list.map((tmpl) => (
+                        <TemplateCard key={tmpl.id} template={tmpl} onImport={() => setImportTemplate(tmpl)} />
+                      ))}
+                    </div>
+                  </section>
+                ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="community" className="space-y-4">
+              {loading ? (
+                <div className="text-sm text-muted-foreground py-12 text-center">Loading…</div>
+              ) : filteredCommunity.length === 0 ? (
+                <div className="rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
+                  No community-shared stacks yet. Check back soon, or browse the Templates tab.
+                </div>
+              ) : (
+                filteredCommunity.map((s) => (
+                  <StackCard
+                    key={s.id}
+                    stack={s}
+                    saved={saved.has(s.id)}
+                    onSaveToggle={() => toggle(saved, s.id, setSaved)}
+                    onImport={() => setImportStack(s)}
+                  />
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Filters */}
@@ -210,6 +306,7 @@ function StackFeedPage() {
       </div>
 
       <ImportModal stack={importStack} onClose={() => setImportStack(null)} onImported={load} />
+      <ImportTemplateModal template={importTemplate} onClose={() => setImportTemplate(null)} />
     </div>
   );
 }
@@ -242,7 +339,82 @@ function Chip({ active, color, onClick, children }: { active: boolean; color: st
   );
 }
 
-/* ============ stack card ============ */
+/* ============ template card ============ */
+function TemplateCard({ template, onImport }: { template: StackTemplate; onImport: () => void }) {
+  const dur = maxDuration(template);
+  return (
+    <div
+      className="rounded-2xl border bg-card p-5 hover:shadow-sm transition-shadow relative"
+      style={{ borderColor: `${C.lavender}55` }}
+    >
+      {/* Template badge */}
+      <div className="absolute top-4 right-4">
+        <span
+          className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-full font-semibold"
+          style={{ backgroundColor: `${C.lavender}`, color: "#3b2766" }}
+        >
+          <BookOpen className="h-3 w-3" /> Template
+        </span>
+      </div>
+
+      {/* Title */}
+      <div className="pr-24 mb-2">
+        <h3
+          className="text-xl font-bold leading-tight"
+          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+        >
+          {template.name}
+        </h3>
+        <div className="text-[11px] text-muted-foreground font-mono mt-1">
+          {template.compounds.length} compound{template.compounds.length === 1 ? "" : "s"} · {Math.round(dur / 7)} wk
+        </div>
+      </div>
+
+      {/* Goal tags */}
+      {template.goal_tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {template.goal_tags.map((g) => (
+            <span key={g} className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: `${C.mint}40`, color: "#1f4a31" }}>{g}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Description */}
+      <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+        {template.description}
+      </p>
+
+      {/* Compound rows */}
+      <div className="rounded-xl border divide-y mb-4" style={{ borderColor: "var(--border)" }}>
+        {template.compounds.map((c, i) => (
+          <div key={i} className="px-3 py-2 flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <div className="text-sm font-medium truncate">{c.compound}</div>
+              <div className="text-[11px] text-muted-foreground font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                {c.dose}{c.dose_unit} · {c.frequency} · {c.route}
+              </div>
+            </div>
+            <div className="text-[11px] font-mono text-muted-foreground whitespace-nowrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+              {c.duration_days}d
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-[10px] italic text-muted-foreground">
+          Educational template. Not medical advice.
+        </div>
+        <Button onClick={onImport} size="sm" className="gap-1.5 text-[#3b2766] hover:opacity-90" style={{ backgroundColor: C.lavender }}>
+          <Download className="h-3.5 w-3.5" /> Import This Template
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ============ community stack card ============ */
 function StackCard({
   stack, saved, onSaveToggle, onImport,
 }: { stack: SharedStack; saved: boolean; onSaveToggle: () => void; onImport: () => void }) {
@@ -261,7 +433,6 @@ function StackCard({
 
   return (
     <div className="rounded-2xl border bg-card p-5 hover:shadow-sm transition-shadow">
-      {/* top row */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center flex-wrap gap-2 min-w-0">
           <h3 className="font-display text-xl font-bold truncate">{stack.compound}</h3>
@@ -279,12 +450,10 @@ function StackCard({
         </button>
       </div>
 
-      {/* dose */}
       <div className="text-sm font-mono text-muted-foreground mb-3" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
         {stack.dose_mcg} {stack.dose_unit} · {stack.frequency}
       </div>
 
-      {/* mini outcome dots */}
       <div className="flex items-center gap-4 mb-3">
         {dots.map((d) => (
           <div key={d.key} className="flex items-center gap-1.5">
@@ -297,7 +466,6 @@ function StackCard({
         ))}
       </div>
 
-      {/* overall bar */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
           <span>Overall outcome</span>
@@ -308,7 +476,6 @@ function StackCard({
         </div>
       </div>
 
-      {/* goal tags */}
       {(stack.goal_tags?.length ?? 0) > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {stack.goal_tags!.map((g) => (
@@ -317,7 +484,6 @@ function StackCard({
         </div>
       )}
 
-      {/* notes */}
       {note && (
         <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
           {expanded ? note : truncated}
@@ -329,7 +495,6 @@ function StackCard({
         </p>
       )}
 
-      {/* bottom row */}
       <div className="flex items-center justify-between pt-3 border-t">
         <div className="text-xs text-muted-foreground">
           <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{stack.import_count}</span> people imported this
@@ -346,7 +511,7 @@ function StackCard({
   );
 }
 
-/* ============ import modal ============ */
+/* ============ community import modal ============ */
 function ImportModal({ stack, onClose, onImported }: { stack: SharedStack | null; onClose: () => void; onImported: () => void }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -395,6 +560,150 @@ function ImportModal({ stack, onClose, onImported }: { stack: SharedStack | null
           </Button>
           <Button onClick={() => doImport(false)} disabled={busy} className="text-[#3b2766] hover:opacity-90" style={{ backgroundColor: C.lavender }}>
             Import
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ============ template import modal ============ */
+function ImportTemplateModal({ template, onClose }: { template: StackTemplate | null; onClose: () => void }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [missingVials, setMissingVials] = useState<string[]>([]);
+  const [checked, setChecked] = useState(false);
+
+  // When a template is opened, check the user's vials for compound matches
+  useEffect(() => {
+    let cancelled = false;
+    async function checkVials() {
+      setChecked(false);
+      setMissingVials([]);
+      if (!template || !user) return;
+      const { data, error } = await supabase
+        .from("vials")
+        .select("compound")
+        .eq("doctor_id", user.id);
+      if (cancelled) return;
+      if (error) { setChecked(true); return; }
+      const owned = new Set((data ?? []).map((v: { compound: string }) => v.compound.toLowerCase()));
+      const missing = Array.from(
+        new Set(template.compounds.map((c) => c.compound))
+      ).filter((c) => !owned.has(c.toLowerCase()));
+      setMissingVials(missing);
+      setChecked(true);
+    }
+    void checkVials();
+    return () => { cancelled = true; };
+  }, [template, user]);
+
+  async function doImport(customize: boolean) {
+    if (!template || !user) return;
+    setBusy(true);
+
+    // Pull vials for auto-matching
+    const { data: vialRows } = await supabase
+      .from("vials")
+      .select("id, compound, status")
+      .eq("doctor_id", user.id);
+    const vialByCompound = new Map<string, string>();
+    for (const v of vialRows ?? []) {
+      const key = (v as { compound: string }).compound.toLowerCase();
+      if (!vialByCompound.has(key)) vialByCompound.set(key, (v as { id: string }).id);
+    }
+
+    // Pick the dominant route for the stack-level route field (most-common across compounds)
+    const routeCount = new Map<string, number>();
+    for (const c of template.compounds) routeCount.set(c.route, (routeCount.get(c.route) ?? 0) + 1);
+    const dominantRoute = Array.from(routeCount.entries()).sort((a, b) => b[1] - a[1])[0][0];
+    const maxDur = Math.max(...template.compounds.map((c) => c.duration_days));
+
+    const rows = template.compounds.map((c) => ({
+      name: template.name,
+      compound: c.compound,
+      dose: c.dose,
+      dose_unit: c.dose_unit,
+      frequency: c.frequency,
+      route: c.route,
+      duration_days: c.duration_days,
+      ongoing: false,
+      doctor_id: user.id,
+      source: "template_import",
+      time_of_day: c.time_of_day,
+      fasted: false,
+      vial_id: vialByCompound.get(c.compound.toLowerCase()) ?? null,
+      notes: `Imported from template: ${template.name}. ${template.description}`,
+    }));
+
+    const { error } = await supabase.from("protocols").insert(rows);
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+
+    onClose();
+    toast.success(
+      missingVials.length
+        ? `Template imported · ${missingVials.length} vial${missingVials.length === 1 ? "" : "s"} not on hand`
+        : "Template imported to your stacks",
+    );
+    if (customize) {
+      navigate({ to: "/dashboard/protocols" });
+    } else if (missingVials.length) {
+      navigate({ to: "/dashboard/my-vials" });
+    } else {
+      navigate({ to: "/dashboard/protocols" });
+    }
+  }
+
+  return (
+    <Dialog open={!!template} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl flex items-center gap-2">
+            <BookOpen className="h-5 w-5" style={{ color: C.lavender }} />
+            Import Template
+          </DialogTitle>
+          <DialogDescription asChild>
+            <div className="space-y-3 pt-1">
+              {template && (
+                <>
+                  <div className="text-sm">
+                    Import <strong>{template.name}</strong> as a new stack with{" "}
+                    <strong>{template.compounds.length}</strong> compound{template.compounds.length === 1 ? "" : "s"} into{" "}
+                    <strong>My Stacks</strong>?
+                  </div>
+                  <div className="rounded-lg p-3" style={{ backgroundColor: `${C.lavender}1f` }}>
+                    <div className="text-xs text-muted-foreground mb-1">Compounds</div>
+                    <ul className="text-sm space-y-0.5">
+                      {template.compounds.map((c, i) => (
+                        <li key={i} className="font-mono" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                          • {c.compound} {c.dose}{c.dose_unit} · {c.frequency}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {checked && missingVials.length > 0 && (
+                    <div className="rounded-lg p-3 border text-xs" style={{ backgroundColor: `${C.yellow}33`, borderColor: `${C.yellow}` }}>
+                      <strong>Heads up:</strong> You don't have vials on hand for:{" "}
+                      <span className="font-mono">{missingVials.join(", ")}</span>.
+                      You can still import — we'll prompt you to add them in My Vials.
+                    </div>
+                  )}
+                  <div className="text-[10px] italic text-muted-foreground">
+                    Educational template. Not medical advice.
+                  </div>
+                </>
+              )}
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button onClick={() => doImport(true)} disabled={busy} className="text-[#1f4a66] hover:opacity-90" style={{ backgroundColor: C.babyBlue }}>
+            Customize First <ArrowRight className="h-3.5 w-3.5 ml-1" />
+          </Button>
+          <Button onClick={() => doImport(false)} disabled={busy} className="text-[#3b2766] hover:opacity-90" style={{ backgroundColor: C.lavender }}>
+            Import Template
           </Button>
         </DialogFooter>
       </DialogContent>
