@@ -37,7 +37,7 @@ import { MilestoneCelebration } from "@/components/milestone-celebration";
 import { useStreak } from "@/hooks/use-streak";
 import { isScheduled } from "@/components/dose-shared";
 import { playCompletionFlourish } from "@/lib/dose-fx";
-import { toast as sonnerToast } from "sonner";
+
 
 export const Route = createFileRoute("/dashboard/today")({ component: Page });
 
