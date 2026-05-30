@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/dashboard-ui";
@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User as UserIcon, Sparkles, PlayCircle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { LogOut, User as UserIcon, Sparkles, PlayCircle, Volume2 } from "lucide-react";
 import { toast } from "sonner";
+import { getSoundEnabled, setSoundEnabled, playCheckSound } from "@/lib/dose-fx";
 
 export const Route = createFileRoute("/dashboard/settings")({ component: SettingsPage });
+
 
 function SettingsPage() {
   const { user } = useAuth();
