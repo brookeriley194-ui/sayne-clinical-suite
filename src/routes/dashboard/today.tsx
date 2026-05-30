@@ -223,6 +223,19 @@ function Page() {
   };
 
 
+  // Today's progress: scheduled doses for today vs logged.
+  const todayProgress = useMemo(() => {
+    const today = startOfDay(new Date());
+    const todayStr = format(today, "yyyy-MM-dd");
+    const scheduledToday = stacks.filter((s) => isScheduled(s, today));
+    let total = 0;
+    for (const s of scheduledToday) {
+      total += s.time_of_day === "Both" ? 2 : 1;
+    }
+    const logged = doses.filter((d) => d.dose_date === todayStr).length;
+    return { logged: Math.min(logged, total), total };
+  }, [stacks, doses]);
+
   const toggleDose = async (stack: Stack, date: Date, period: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
     const existing = doses.find((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
@@ -231,6 +244,7 @@ function Page() {
       if (error) return toast.error(error.message);
       setDoses((prev) => prev.filter((d) => d.id !== existing.id));
       setDoseCounts((prev) => ({ ...prev, [stack.id]: Math.max(0, (prev[stack.id] ?? 0) - 1) }));
+      recalcStreak();
     } else {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return toast.error("Not signed in");
@@ -240,8 +254,20 @@ function Page() {
       if (error) return toast.error(error.message);
       setDoses((prev) => [...prev, data as DoseLog]);
       setDoseCounts((prev) => ({ ...prev, [stack.id]: (prev[stack.id] ?? 0) + 1 }));
+      // Was this the final dose of today?
+      if (format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")) {
+        const willBeLogged = todayProgress.logged + 1;
+        if (todayProgress.total > 0 && willBeLogged >= todayProgress.total) {
+          playCompletionFlourish();
+          setStreakPulse(true);
+          setTimeout(() => setStreakPulse(false), 800);
+          toast.success("All doses logged for today 🌿", { duration: 2500 });
+        }
+      }
+      recalcStreak();
     }
   };
+
 
   const openAdd = () => { setEditing(null); setSheetOpen(true); };
   const openEdit = (s: Stack) => { setEditing(s); setSheetOpen(true); };
