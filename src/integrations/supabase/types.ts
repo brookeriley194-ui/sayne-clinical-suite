@@ -380,6 +380,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          last_logged_date: string | null
+          longest_streak: number
+          milestones_celebrated: number[]
+          notifications_config: Json
+          sound_enabled: boolean
+          streak_freeze_used: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          last_logged_date?: string | null
+          longest_streak?: number
+          milestones_celebrated?: number[]
+          notifications_config?: Json
+          sound_enabled?: boolean
+          streak_freeze_used?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          last_logged_date?: string | null
+          longest_streak?: number
+          milestones_celebrated?: number[]
+          notifications_config?: Json
+          sound_enabled?: boolean
+          streak_freeze_used?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vials: {
         Row: {
           bac_water_ml: number | null
@@ -446,6 +485,27 @@ export type Database = {
       increment_shared_stack_import: {
         Args: { _stack_id: string }
         Returns: number
+      }
+      recalc_streak: {
+        Args: { _user_id: string }
+        Returns: {
+          created_at: string
+          current_streak: number
+          last_logged_date: string | null
+          longest_streak: number
+          milestones_celebrated: number[]
+          notifications_config: Json
+          sound_enabled: boolean
+          streak_freeze_used: boolean
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_streaks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
