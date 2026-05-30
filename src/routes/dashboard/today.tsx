@@ -321,9 +321,11 @@ function Page() {
         week={checkin?.week ?? 1}
         onSaved={() => setJournalReloadKey((k) => k + 1)}
       />
+      <MilestoneCelebration milestone={celebrate} onDismiss={acknowledgeMilestone} />
     </>
   );
 }
+
 
 function DoseCalendar({
   stacks, doses, onToggle,
