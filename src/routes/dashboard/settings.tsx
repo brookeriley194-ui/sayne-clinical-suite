@@ -83,6 +83,22 @@ function SettingsPage() {
 
         <section className="sayne-card p-6">
           <div className="flex items-center gap-2 mb-3">
+            <Volume2 className="size-4 text-primary" />
+            <h2 className="font-display text-lg font-semibold">Sounds</h2>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-medium">Completion sound</div>
+              <p className="text-xs text-muted-foreground">Play a soft chime when you log a dose.</p>
+            </div>
+            <Switch checked={sound} onCheckedChange={toggleSound} />
+          </div>
+        </section>
+
+
+
+        <section className="sayne-card p-6">
+          <div className="flex items-center gap-2 mb-3">
             <PlayCircle className="size-4" style={{ color: "#C9A8F5" }} />
             <h2 className="font-display text-lg font-semibold">Help & Tutorial</h2>
           </div>
