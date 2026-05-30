@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/dashboard-ui";
@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User as UserIcon, Sparkles, PlayCircle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { LogOut, User as UserIcon, Sparkles, PlayCircle, Volume2 } from "lucide-react";
 import { toast } from "sonner";
+import { getSoundEnabled, setSoundEnabled, playCheckSound } from "@/lib/dose-fx";
 
 export const Route = createFileRoute("/dashboard/settings")({ component: SettingsPage });
+
 
 function SettingsPage() {
   const { user } = useAuth();
@@ -18,6 +21,14 @@ function SettingsPage() {
   const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
   const [name, setName] = useState(meta.full_name ?? meta.name ?? "");
   const [saving, setSaving] = useState(false);
+  const [sound, setSound] = useState(false);
+  useEffect(() => { setSound(getSoundEnabled()); }, []);
+  const toggleSound = (on: boolean) => {
+    setSound(on);
+    setSoundEnabled(on);
+    if (on) playCheckSound();
+  };
+
 
   const saveName = async () => {
     setSaving(true);
@@ -69,6 +80,22 @@ function SettingsPage() {
             <Badge variant="outline">Free</Badge>
           </div>
         </section>
+
+        <section className="sayne-card p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Volume2 className="size-4 text-primary" />
+            <h2 className="font-display text-lg font-semibold">Sounds</h2>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-medium">Completion sound</div>
+              <p className="text-xs text-muted-foreground">Play a soft chime when you log a dose.</p>
+            </div>
+            <Switch checked={sound} onCheckedChange={toggleSound} />
+          </div>
+        </section>
+
+
 
         <section className="sayne-card p-6">
           <div className="flex items-center gap-2 mb-3">

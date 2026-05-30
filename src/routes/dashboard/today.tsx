@@ -32,8 +32,15 @@ import {
   JournalBanner, JournalCheckinModal, JournalCurveModal, ProtocolCompletionModal,
   weekOf, isProtocolActive, type JournalProtocol,
 } from "@/components/protocol-journal";
+import { StreakCard } from "@/components/streak-card";
+import { MilestoneCelebration } from "@/components/milestone-celebration";
+import { useStreak } from "@/hooks/use-streak";
+import { isScheduled } from "@/components/dose-shared";
+import { playCompletionFlourish } from "@/lib/dose-fx";
+
 
 export const Route = createFileRoute("/dashboard/today")({ component: Page });
+
 
 function potencyPct(reconstituted_at: string | null): number | null {
   if (!reconstituted_at) return null;
@@ -96,6 +103,10 @@ function Page() {
   const [journalProtocols, setJournalProtocols] = useState<JournalProtocol[]>([]);
   const [checkin, setCheckin] = useState<{ p: JournalProtocol; week: number } | null>(null);
   const [journalReloadKey, setJournalReloadKey] = useState(0);
+  const { row: streakRow, loading: streakLoading, recalc: recalcStreak, celebrate, acknowledgeMilestone } = useStreak();
+  const [streakPulse, setStreakPulse] = useState(false);
+
+
   
 
 
@@ -212,6 +223,19 @@ function Page() {
   };
 
 
+  // Today's progress: scheduled doses for today vs logged.
+  const todayProgress = useMemo(() => {
+    const today = startOfDay(new Date());
+    const todayStr = format(today, "yyyy-MM-dd");
+    const scheduledToday = stacks.filter((s) => isScheduled(s, today));
+    let total = 0;
+    for (const s of scheduledToday) {
+      total += s.time_of_day === "Both" ? 2 : 1;
+    }
+    const logged = doses.filter((d) => d.dose_date === todayStr).length;
+    return { logged: Math.min(logged, total), total };
+  }, [stacks, doses]);
+
   const toggleDose = async (stack: Stack, date: Date, period: string) => {
     const dateStr = format(date, "yyyy-MM-dd");
     const existing = doses.find((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
@@ -220,6 +244,7 @@ function Page() {
       if (error) return toast.error(error.message);
       setDoses((prev) => prev.filter((d) => d.id !== existing.id));
       setDoseCounts((prev) => ({ ...prev, [stack.id]: Math.max(0, (prev[stack.id] ?? 0) - 1) }));
+      recalcStreak();
     } else {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return toast.error("Not signed in");
@@ -229,8 +254,20 @@ function Page() {
       if (error) return toast.error(error.message);
       setDoses((prev) => [...prev, data as DoseLog]);
       setDoseCounts((prev) => ({ ...prev, [stack.id]: (prev[stack.id] ?? 0) + 1 }));
+      // Was this the final dose of today?
+      if (format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")) {
+        const willBeLogged = todayProgress.logged + 1;
+        if (todayProgress.total > 0 && willBeLogged >= todayProgress.total) {
+          playCompletionFlourish();
+          setStreakPulse(true);
+          setTimeout(() => setStreakPulse(false), 800);
+          toast.success("All doses logged for today 🌿", { duration: 2500 });
+        }
+      }
+      recalcStreak();
     }
   };
+
 
   const openAdd = () => { setEditing(null); setSheetOpen(true); };
   const openEdit = (s: Stack) => { setEditing(s); setSheetOpen(true); };
@@ -238,11 +275,18 @@ function Page() {
   return (
     <>
       <GreetingHeader vials={vials} />
+      <StreakCard
+        row={streakRow}
+        loading={streakLoading}
+        todayProgress={todayProgress}
+        pulseStreak={streakPulse}
+      />
       <JournalBanner
         key={journalReloadKey}
         protocols={journalProtocols}
         onOpenCheckin={(p, week) => setCheckin({ p, week })}
       />
+
       <div className="mb-4 flex justify-end">
         <Button className="gap-2" onClick={openAdd}><Plus className="size-4" /> Add to Stack</Button>
       </div>
@@ -277,9 +321,11 @@ function Page() {
         week={checkin?.week ?? 1}
         onSaved={() => setJournalReloadKey((k) => k + 1)}
       />
+      <MilestoneCelebration milestone={celebrate} onDismiss={acknowledgeMilestone} />
     </>
   );
 }
+
 
 function DoseCalendar({
   stacks, doses, onToggle,
