@@ -103,6 +103,10 @@ function Page() {
   const [journalProtocols, setJournalProtocols] = useState<JournalProtocol[]>([]);
   const [checkin, setCheckin] = useState<{ p: JournalProtocol; week: number } | null>(null);
   const [journalReloadKey, setJournalReloadKey] = useState(0);
+  const { row: streakRow, loading: streakLoading, recalc: recalcStreak, celebrate, acknowledgeMilestone } = useStreak();
+  const [streakPulse, setStreakPulse] = useState(false);
+
+
   
 
 
