@@ -21,6 +21,14 @@ function SettingsPage() {
   const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
   const [name, setName] = useState(meta.full_name ?? meta.name ?? "");
   const [saving, setSaving] = useState(false);
+  const [sound, setSound] = useState(false);
+  useEffect(() => { setSound(getSoundEnabled()); }, []);
+  const toggleSound = (on: boolean) => {
+    setSound(on);
+    setSoundEnabled(on);
+    if (on) playCheckSound();
+  };
+
 
   const saveName = async () => {
     setSaving(true);
