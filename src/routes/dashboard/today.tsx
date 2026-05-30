@@ -275,11 +275,18 @@ function Page() {
   return (
     <>
       <GreetingHeader vials={vials} />
+      <StreakCard
+        row={streakRow}
+        loading={streakLoading}
+        todayProgress={todayProgress}
+        pulseStreak={streakPulse}
+      />
       <JournalBanner
         key={journalReloadKey}
         protocols={journalProtocols}
         onOpenCheckin={(p, week) => setCheckin({ p, week })}
       />
+
       <div className="mb-4 flex justify-end">
         <Button className="gap-2" onClick={openAdd}><Plus className="size-4" /> Add to Stack</Button>
       </div>
