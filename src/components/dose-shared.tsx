@@ -1,9 +1,11 @@
 import { format, differenceInDays, startOfDay } from "date-fns";
-import { Sun, Moon, Check, AlertTriangle, ShoppingCart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Sun, Moon, AlertTriangle, ShoppingCart } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { haptic, playCheckSound } from "@/lib/dose-fx";
+
 
 export type Stack = {
   id: string;
