@@ -78,33 +78,126 @@ export function DosePill({
 }) {
   const dateStr = format(day, "yyyy-MM-dd");
   const taken = doses.some((dd) => dd.stack_id === stack.id && dd.dose_date === dateStr && dd.period === period);
+  const wasTakenRef = useRef(taken);
+  const [justChecked, setJustChecked] = useState(false);
+  const [particles, setParticles] = useState<{ id: number; dx: number; dy: number }[]>([]);
+  const [showFloat, setShowFloat] = useState(false);
+  const accent = colorFor(stack.id);
+
+  // Detect a transition into "taken" — that's when we play the satisfying FX.
+  useEffect(() => {
+    if (taken && !wasTakenRef.current) {
+      setJustChecked(true);
+      haptic(15);
+      playCheckSound();
+      // Particle burst: 6 dots radiating in a circle
+      const burst = Array.from({ length: 6 }, (_, i) => {
+        const angle = (Math.PI * 2 * i) / 6;
+        return { id: Date.now() + i, dx: Math.cos(angle) * 22, dy: Math.sin(angle) * 22 };
+      });
+      setParticles(burst);
+      setShowFloat(true);
+      const t1 = setTimeout(() => setJustChecked(false), 400);
+      const t2 = setTimeout(() => setParticles([]), 500);
+      const t3 = setTimeout(() => setShowFloat(false), 950);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }
+    if (!taken && wasTakenRef.current) {
+      haptic(8);
+    }
+    wasTakenRef.current = taken;
+  }, [taken]);
+
+  const handleClick = () => {
+    onToggle(stack, day, period);
+  };
+
+  const compoundLabel = stack.peptide_name;
+  const boxSize = size === "lg" ? 16 : 12;
+
   return (
     <button
       type="button"
-      onClick={() => onToggle(stack, day, period)}
+      onClick={handleClick}
       title={`${stack.peptide_name}${stack.dose ? ` · ${stack.dose}${stack.dose_unit}` : ""} (${period})`}
       className={cn(
-        "flex items-center gap-1 rounded w-full transition-opacity hover:opacity-80",
+        "relative flex items-center gap-1 rounded w-full will-change-transform transition-[opacity,background] duration-200 hover:opacity-90",
         size === "lg" ? "px-2.5 py-2 text-sm gap-2" : "px-1 py-0.5 text-[10px]",
-        taken && "opacity-60",
+        taken && "opacity-70",
+        justChecked && "dose-pop",
       )}
-      style={{ background: `${colorFor(stack.id)}25`, borderLeft: `3px solid ${colorFor(stack.id)}` }}
+      style={{ background: `${accent}25`, borderLeft: `3px solid ${accent}` }}
     >
+      {/* Custom animated checkbox */}
       <span
         className={cn(
-          "rounded-sm border grid place-items-center shrink-0",
+          "relative rounded-sm border grid place-items-center shrink-0 overflow-visible",
           size === "lg" ? "size-4" : "size-3",
-          taken ? "border-transparent" : "border-current opacity-60",
         )}
-        style={taken ? { background: colorFor(stack.id) } : undefined}
+        style={{
+          borderColor: taken ? "transparent" : "currentColor",
+          background: taken ? accent : "transparent",
+          transition: "background-color 280ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 220ms ease",
+        }}
       >
-        {taken && <Check className={size === "lg" ? "size-3 text-white" : "size-2.5 text-white"} strokeWidth={3} />}
-      </span>
-      <span className={cn("truncate flex-1 text-left", taken && "line-through")}>
-        {stack.peptide_name}
-        {stack.dose != null && (
-          <span className="ml-1 font-mono tabular-nums opacity-80">{stack.dose}{stack.dose_unit}</span>
+        {taken && (
+          <svg
+            viewBox="0 0 16 16"
+            width={boxSize}
+            height={boxSize}
+            className="overflow-visible"
+            aria-hidden
+          >
+            <path
+              d="M3.5 8.5 L7 12 L12.5 4.5"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={justChecked ? "dose-check-draw" : undefined}
+            />
+          </svg>
         )}
+        {/* Particle burst */}
+        {particles.map((p) => (
+          <span
+            key={p.id}
+            className="dose-particle absolute left-1/2 top-1/2 rounded-full pointer-events-none"
+            style={{
+              width: 6,
+              height: 6,
+              background: accent,
+              ["--px" as string]: `${p.dx}px`,
+              ["--py" as string]: `${p.dy}px`,
+            } as React.CSSProperties}
+          />
+        ))}
+      </span>
+
+      <span className={cn("relative truncate flex-1 text-left", taken && "opacity-90")}>
+        <span className="relative inline">
+          {compoundLabel}
+          {stack.dose != null && (
+            <span className="ml-1 font-mono tabular-nums opacity-80">{stack.dose}{stack.dose_unit}</span>
+          )}
+          {/* Strikethrough overlay that draws left -> right when checked */}
+          {taken && (
+            <span
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute left-0 top-1/2 h-px bg-current",
+                justChecked ? "dose-strike" : "",
+              )}
+              style={{
+                width: "100%",
+                transform: justChecked ? undefined : "scaleX(1)",
+                transformOrigin: "left center",
+                opacity: 0.7,
+              }}
+            />
+          )}
+        </span>
         {stack.fasted && (
           <span className={cn(
             "ml-1 inline-flex items-center rounded-sm bg-[var(--secondary)]/40 text-[var(--foreground)] font-medium uppercase tracking-wider align-middle",
@@ -114,9 +207,25 @@ export function DosePill({
           </span>
         )}
       </span>
+
+      {/* Floating "-1 dose · compound" indicator */}
+      {showFloat && (
+        <span
+          aria-hidden
+          className="dose-float-up pointer-events-none absolute left-1/2 -top-2 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm"
+          style={{
+            background: `color-mix(in oklab, ${accent} 18%, var(--card))`,
+            color: "var(--foreground)",
+            border: `1px solid color-mix(in oklab, ${accent} 35%, transparent)`,
+          }}
+        >
+          −1 dose · {compoundLabel}
+        </span>
+      )}
     </button>
   );
 }
+
 
 export function DayCell({
   day, stacks, doses, onToggle, isToday, size = "md",
