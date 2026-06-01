@@ -12,7 +12,7 @@ export function LegalLayout({
 }: {
   title: string;
   lastUpdated: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <div style={{ backgroundColor: "#F8F5FF", color: INK }} className="min-h-screen flex flex-col">
