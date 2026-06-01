@@ -150,7 +150,7 @@ function PricingPage() {
               }
               features={[
                 "Track up to 3 vials",
-                "2 active stacks",
+                "1 active stack",
                 "Unlimited dose calculator",
                 "3 AI protocol imports",
                 "3 receipt scans",
