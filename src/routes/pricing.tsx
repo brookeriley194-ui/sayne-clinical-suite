@@ -71,15 +71,12 @@ function PricingPage() {
 
       <main className="flex-1 w-full px-5 md:px-8">
         <section className="mx-auto max-w-5xl pt-8 md:pt-14 pb-6 text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.2, 0.7, 0.2, 1] }}
+          <h1
             className="font-display font-bold tracking-tight text-4xl md:text-5xl"
             style={{ color: INK, fontFamily: "Syne, 'Space Grotesk', system-ui, sans-serif" }}
           >
             Simple pricing. Start free.
-          </motion.h1>
+          </h1>
           <p className="mt-4 text-base md:text-lg max-w-2xl mx-auto" style={{ color: MUTED }}>
             Track your first stack free. Upgrade when you're ready for unlimited everything.
           </p>
