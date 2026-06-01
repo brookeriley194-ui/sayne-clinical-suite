@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { FloatingCalculator } from "@/components/floating-calculator";
 import { Tutorial, TUTORIAL_FLAG } from "@/components/tutorial";
 import { InstallBanner } from "@/components/install-banner";
+import { SayneFooter } from "@/components/sayne-footer";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardLayout,
@@ -191,6 +192,7 @@ function DashboardLayout() {
 
         <main className="flex-1 p-6 md:p-8 overflow-auto">
           <Outlet />
+          <SayneFooter />
         </main>
       </div>
       <FloatingCalculator />

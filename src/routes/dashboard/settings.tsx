@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { LogOut, User as UserIcon, Sparkles, PlayCircle, Volume2 } from "lucide-react";
+import { LogOut, User as UserIcon, Sparkles, PlayCircle, Volume2, FileText, ChevronRight, ShieldCheck, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { getSoundEnabled, setSoundEnabled, playCheckSound } from "@/lib/dose-fx";
 
@@ -123,6 +123,33 @@ function SettingsPage() {
             >
               Watch Tutorial
             </Button>
+          </div>
+        </section>
+
+        <section className="sayne-card p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldCheck className="size-4 text-primary" />
+            <h2 className="font-display text-lg font-semibold">Legal</h2>
+          </div>
+          <div className="divide-y divide-[color:var(--border)]/60">
+            {[
+              { to: "/privacy", label: "Privacy Policy", icon: ShieldCheck },
+              { to: "/terms", label: "Terms of Service", icon: FileText },
+              { to: "/disclaimer", label: "Disclaimer", icon: AlertTriangle },
+            ].map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                target="_blank"
+                className="flex items-center justify-between py-3 group transition-colors hover:text-foreground"
+              >
+                <span className="flex items-center gap-3 text-sm">
+                  <Icon className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  {label}
+                </span>
+                <ChevronRight className="size-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            ))}
           </div>
         </section>
 

@@ -60,16 +60,25 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          terms_accepted: boolean
+          terms_accepted_at: string | null
+          terms_version: string | null
         }
         Insert: {
           created_at?: string
           email: string
           id: string
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+          terms_version?: string | null
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+          terms_version?: string | null
         }
         Relationships: []
       }
