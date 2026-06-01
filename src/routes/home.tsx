@@ -162,7 +162,7 @@ function LiquidNav() {
           <a href="#features" className="hover:text-foreground transition-colors">Features</a>
           <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
           <Link to="/login" className="hover:text-foreground transition-colors">Stack Feed</Link>
-          <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+          <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
         </nav>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm" className="bg-white/60 backdrop-blur border-[color:var(--border)]">
