@@ -114,7 +114,26 @@ function SignupPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
             </div>
-            <Button type="submit" disabled={loading} className="w-full bg-indigo-200 font-mono">
+            <div className="flex items-start gap-3 rounded-[10px] border border-[color:var(--border)] bg-[color:var(--card)]/50 p-3">
+              <Checkbox
+                id="consent"
+                checked={consent}
+                onCheckedChange={(v) => setConsent(v === true)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="consent" className="text-xs leading-relaxed font-normal text-muted-foreground cursor-pointer">
+                I am 18 or older and agree to the{" "}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline-offset-4 hover:underline">
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline-offset-4 hover:underline">
+                  Privacy Policy
+                </a>
+                . I understand that Sayne is a research and tracking tool that does not provide medical advice.
+              </Label>
+            </div>
+            <Button type="submit" disabled={loading || !consent} className="w-full bg-indigo-200 font-mono">
               {loading ? "Creating account…" : "Create account"}
             </Button>
           </form>
