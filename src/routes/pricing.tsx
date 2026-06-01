@@ -370,7 +370,7 @@ function PlanCard({
           </li>
         ))}
       </ul>
-    </motion.div>
+    </div>
   );
 }
 
