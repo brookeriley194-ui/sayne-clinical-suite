@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { SayneLogo } from "@/components/sayne-logo";
 import { Stethoscope, FlaskConical } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const TERMS_VERSION = "2026-06-01";
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
@@ -24,6 +27,7 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"doctor" | "researcher">("doctor");
+  const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,6 +39,10 @@ function SignupPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!consent) {
+      toast.error("Please agree to the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
     const parsed = schema.safeParse({ email, password, role });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
@@ -47,7 +55,11 @@ function SignupPage() {
       password: parsed.data.password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { role: parsed.data.role },
+        data: {
+          role: parsed.data.role,
+          terms_accepted: true,
+          terms_version: TERMS_VERSION,
+        },
       },
     });
     setLoading(false);
