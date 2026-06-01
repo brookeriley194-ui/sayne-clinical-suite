@@ -98,8 +98,15 @@ function buildSteps(device: DeviceKind): TourStep[] {
       id: "research-log",
       route: "/dashboard/protocols",
       selector: "research-log-tab",
-      title: "Track outcomes, learn from others.",
-      body: "Log how you feel each week to build your outcome curve over time. Browse the community Stack Feed to see what protocols others are running.",
+      title: "Track your outcomes.",
+      body: "Log how you feel each week in the Research Log to build your outcome curve over time — see what's actually working for you across energy, sleep, recovery, and mood.",
+    },
+    {
+      id: "stack-feed",
+      route: "/dashboard/stack-feed",
+      selector: "stack-feed-header",
+      title: "Learn from the community.",
+      body: "Browse the Stack Feed to see real protocols other researchers are running, filter by goal or compound, and import a stack into your own setup with one tap.",
       cta: device === "desktop" ? "Start Using Sayne →" : "Next",
     },
     {
