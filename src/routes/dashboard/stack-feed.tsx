@@ -187,7 +187,7 @@ function StackFeedPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" data-tour="stack-feed-header">
         <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${C.lavender}33` }}>
           <Users2 className="h-5 w-5" style={{ color: C.lavender }} />
         </div>
