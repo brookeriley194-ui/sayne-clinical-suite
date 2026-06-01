@@ -1002,6 +1002,7 @@ function Footer() {
         </div>
         <div className="flex flex-col md:flex-row items-center gap-3 md:gap-5">
           {[
+            { to: "/pricing", label: "Pricing" },
             { to: "/privacy", label: "Privacy Policy" },
             { to: "/terms", label: "Terms of Service" },
             { to: "/disclaimer", label: "Disclaimer" },
