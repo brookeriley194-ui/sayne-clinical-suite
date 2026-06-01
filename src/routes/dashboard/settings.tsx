@@ -72,12 +72,19 @@ function SettingsPage() {
             <Sparkles className="size-4 text-primary" />
             <h2 className="font-display text-lg font-semibold">Subscription</h2>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm font-medium">Current plan</div>
-              <p className="text-xs text-muted-foreground">Free tier — upgrade for advanced tracking.</p>
+              <p className="text-xs text-muted-foreground">Free tier — upgrade for unlimited everything.</p>
             </div>
             <Badge variant="outline">Free</Badge>
+          </div>
+          <div>
+            <Button asChild size="sm" className="gap-1.5"
+              style={{ background: "linear-gradient(135deg, #89CFF0 0%, #C9A8F5 120%)", color: "#1F1240" }}
+            >
+              <Link to="/pricing">Upgrade to Pro <ChevronRight className="size-4" /></Link>
+            </Button>
           </div>
         </section>
 
