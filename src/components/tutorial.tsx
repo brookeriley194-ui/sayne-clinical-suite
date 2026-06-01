@@ -124,10 +124,14 @@ function useSpotlight(selector: string | undefined, active: boolean) {
   const [rect, setRect] = useState<Rect | null>(null);
 
   useLayoutEffect(() => {
-    if (!active || !selector) { setRect(null); return; }
+    // Always clear stale rect first so the previous step's spotlight
+    // doesn't briefly appear as a "random white box" on the new page.
+    setRect(null);
+    if (!active || !selector) return;
     let raf = 0;
     let tries = 0;
     let stopped = false;
+
 
     const measure = () => {
       const el = document.querySelector<HTMLElement>(`[data-tour="${selector}"]`);
