@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { SayneLogo } from "@/components/sayne-logo";
 import { SayneFooter } from "@/components/sayne-footer";
 
@@ -17,9 +16,7 @@ export function LegalLayout({
   return (
     <div style={{ backgroundColor: "#F8F5FF", color: INK }} className="min-h-screen flex flex-col">
       <header className="w-full px-6 md:px-10 py-6">
-        <Link to="/" className="inline-flex">
-          <SayneLogo />
-        </Link>
+        <SayneLogo />
       </header>
 
       <main className="flex-1 w-full px-5 md:px-8">
