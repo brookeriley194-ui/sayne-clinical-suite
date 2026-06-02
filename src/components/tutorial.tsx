@@ -516,3 +516,152 @@ export function Tutorial({
     </div>
   );
 }
+
+/* --------------------- Completion Choice Modal --------------------- */
+
+type ChoiceKey = "stack" | "vials" | "feed";
+
+function CompletionChoice({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const [burst, setBurst] = useState<ChoiceKey | null>(null);
+
+  const choices: { key: ChoiceKey; label: string; sub: string; to: string; Icon: typeof Layers }[] = [
+    {
+      key: "stack",
+      label: "I already have a stack protocol — let's build.",
+      sub: "Go to My Stacks and create or import your protocol.",
+      to: "/dashboard/protocols",
+      Icon: Layers,
+    },
+    {
+      key: "vials",
+      label: "I don't have a stack protocol — add vials.",
+      sub: "Start by logging the vials you already have.",
+      to: "/dashboard/my-vials",
+      Icon: FlaskConical,
+    },
+    {
+      key: "feed",
+      label: "I want to explore stacks.",
+      sub: "Browse community protocols on the Stack Feed.",
+      to: "/dashboard/stack-feed",
+      Icon: Sparkles,
+    },
+  ];
+
+  const pick = (c: (typeof choices)[number]) => {
+    if (burst) return;
+    setBurst(c.key);
+    window.setTimeout(() => {
+      navigate({ to: c.to }).catch(() => {});
+      onClose();
+    }, 650);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" role="dialog" aria-modal>
+      {/* Backdrop */}
+      <div className="absolute inset-0" style={{ background: "rgba(15,12,30,0.72)", backdropFilter: "blur(6px)" }} />
+
+      {/* Ambient pulsing glow behind card */}
+      <motion.div
+        aria-hidden
+        className="absolute"
+        style={{
+          width: 520,
+          height: 520,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(201,168,245,0.45), transparent 65%)",
+          filter: "blur(40px)",
+        }}
+        animate={{ scale: [1, 1.08, 1], opacity: [0.55, 0.85, 0.55] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1] }}
+        className="relative w-full max-w-md rounded-[18px] p-6"
+        style={{
+          background: "var(--card)",
+          border: "1.5px solid #C9A8F5",
+          boxShadow:
+            "0 30px 80px -20px rgba(120,90,200,0.55), 0 0 0 1px rgba(201,168,245,0.25)",
+        }}
+      >
+        <div className="text-center mb-5">
+          <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: "#8a6dc9" }}>
+            You're all set
+          </span>
+          <h3 className="font-display text-2xl font-bold leading-tight mt-1">Where do you want to start?</h3>
+          <p className="text-sm text-muted-foreground mt-1">Pick the path that fits you — you can always switch later.</p>
+        </div>
+
+        <div className="space-y-3">
+          {choices.map((c) => {
+            const active = burst === c.key;
+            return (
+              <button
+                key={c.key}
+                onClick={() => pick(c)}
+                className="relative w-full text-left rounded-xl px-4 py-3 flex items-start gap-3 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{
+                  background: "rgba(201,168,245,0.08)",
+                  border: "1px solid rgba(201,168,245,0.35)",
+                }}
+              >
+                <span
+                  className="mt-0.5 h-9 w-9 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ background: "rgba(201,168,245,0.22)" }}
+                >
+                  <c.Icon className="h-5 w-5" style={{ color: "#6b4ca8" }} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-semibold text-sm leading-snug">{c.label}</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">{c.sub}</span>
+                </span>
+
+                {/* glowing ring on hover */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-xl opacity-0 hover:opacity-100 transition-opacity"
+                  style={{
+                    boxShadow:
+                      "0 0 0 1px rgba(201,168,245,0.6), 0 0 24px 2px rgba(201,168,245,0.45)",
+                  }}
+                />
+
+                {/* purple burst on click */}
+                <AnimatePresence>
+                  {active && (
+                    <motion.span
+                      aria-hidden
+                      initial={{ opacity: 0.9, scale: 0.2 }}
+                      animate={{ opacity: 0, scale: 2.4 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.65, ease: "easeOut" }}
+                      className="pointer-events-none absolute inset-0 rounded-xl"
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(201,168,245,0.75), rgba(201,168,245,0) 65%)",
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="mt-5 mx-auto block text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          Maybe later
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
