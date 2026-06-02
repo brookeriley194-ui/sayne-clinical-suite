@@ -452,8 +452,17 @@ export function Tutorial({
 
   const [showChoice, setShowChoice] = useState(false);
 
+  const closeChoice = () => {
+    setShowChoice(false);
+    onClose();
+  };
+
+  if (showChoice) {
+    return <CompletionChoice onClose={closeChoice} />;
+  }
+
   if (!open || !step) {
-    return showChoice ? <CompletionChoice onClose={() => { setShowChoice(false); onClose(); }} /> : null;
+    return null;
   }
 
   const isLast = index === steps.length - 1;
