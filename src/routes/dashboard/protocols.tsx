@@ -456,6 +456,7 @@ const emptyRow = (): CompoundRow => ({
 function BuildStackModal({
   open, onClose, onSaved, userId, editing,
 }: { open: boolean; onClose: () => void; onSaved: () => void; userId: string | null; editing?: { name: string; rows: Stack[] } | null }) {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [rows, setRows] = useState<CompoundRow[]>([emptyRow()]);
   const [route, setRoute] = useState<typeof ROUTES[number]>("Subcutaneous");
@@ -731,6 +732,17 @@ function BuildStackModal({
                       ))}
                     </SelectContent>
                   </Select>
+                  {r.vial_id === "none" && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 h-8"
+                      onClick={() => navigate({ to: "/dashboard/my-vials" })}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Add a vial
+                    </Button>
+                  )}
                 </div>
 
                 {r.vial_id === "none" && (
