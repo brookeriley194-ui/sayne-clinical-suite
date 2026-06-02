@@ -238,7 +238,7 @@ export function FloatingCalculator() {
               border: "1px solid rgba(201,168,245,0.30)",
             }}
           >
-            <MiniSyringe fillPct={fillPct} insulin={spec.insulin} />
+            <MiniSyringe fillPct={fillPct} insulin={spec.insulin} maxMl={spec.maxMl} />
             <div className="mt-2 grid grid-cols-3 gap-2">
               <div className="rounded-md bg-muted/40 p-2 text-center">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Draw to</div>
