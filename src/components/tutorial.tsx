@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { X, Smartphone, Share } from "lucide-react";
+import { X, Smartphone, Share, Layers, FlaskConical, Sparkles } from "lucide-react";
 
 export const TUTORIAL_FLAG = "sayne_tutorial_completed";
+
 
 type DeviceKind = "ios" | "android" | "desktop";
 function detectDevice(): DeviceKind {
