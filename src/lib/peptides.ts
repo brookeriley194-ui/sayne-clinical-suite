@@ -11,6 +11,7 @@ export const PEPTIDES: readonly string[] = [
   "CJC-1295",
   "CJC-1295 DAC",
   "CJC-1295 no DAC",
+  "CJC-1295 (no DAC) / Ipamorelin Blend",
   "Cagrilintide",
   "Cerebrolysin",
   "DSIP",
