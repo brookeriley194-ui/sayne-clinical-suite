@@ -125,7 +125,7 @@ function Page() {
         title="My Stacks"
         subtitle="Track everything you're running. Import from AI, build your own, or grab one from the community."
         action={
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap" data-tour="stack-actions">
             <Button
               onClick={() => { setEditingStack(null); setBuildOpen(true); }}
               className="gap-2 hover:opacity-90"
