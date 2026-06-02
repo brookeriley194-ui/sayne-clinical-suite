@@ -431,7 +431,7 @@ export function Tutorial({
                 Step {index + 1} of {steps.length}
               </span>
               <button
-                onClick={finish}
+                onClick={skip}
                 className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
               >
                 Skip tour <X className="h-3 w-3" />
@@ -472,6 +472,23 @@ export function Tutorial({
             <p className="text-sm text-muted-foreground leading-relaxed mt-2">
               {step.body}
             </p>
+            {step.visual}
+            {step.note && (
+              <div
+                className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
+                style={{
+                  background: "rgba(201,168,245,0.12)",
+                  border: "1px solid rgba(201,168,245,0.35)",
+                  color: "var(--foreground)",
+                }}
+              >
+                <span className="font-mono uppercase tracking-wider text-[9px] mr-1" style={{ color: "#8a6dc9" }}>
+                  Tip
+                </span>
+                {step.note}
+              </div>
+            )}
+
 
             {/* Footer */}
             <div className="mt-4 flex items-center justify-between gap-2">
