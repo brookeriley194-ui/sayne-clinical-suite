@@ -132,9 +132,10 @@ function buildSteps(device: DeviceKind): TourStep[] {
     {
       id: "import-from-ai",
       route: "/dashboard/protocols",
-      selector: "import-from-ai",
+      selector: "stack-actions",
       title: "Start with your protocol.",
-      body: "Most people start here. Got a protocol from Claude, ChatGPT, or Gemini? Paste it and Sayne organizes it into a stack automatically — no manual entry.",
+      body: "Most people start here. Got a protocol from Claude, ChatGPT, or Gemini? Paste it into Import from AI and Sayne organizes it into a stack automatically. No AI protocol? Tap Build a Stack to create one manually.",
+      note: "Don't want to build a stack yet? We got you — head to My Vials to add your vials first.",
     },
     {
       id: "stack-card",
@@ -149,6 +150,7 @@ function buildSteps(device: DeviceKind): TourStep[] {
       selector: "scan-receipt",
       title: "Track your inventory.",
       body: "Your vials track remaining doses and real-time potency. Add them manually, or tap Import Receipt to upload a purchase receipt and Sayne adds them automatically.",
+      note: "Didn't import all your vials from the My Stacks tab? No worries — you can upload the rest right here.",
     },
     {
       id: "calculator",
@@ -156,14 +158,18 @@ function buildSteps(device: DeviceKind): TourStep[] {
       selector: "floating-calc",
       title: "Never guess a dose.",
       body: "Tap the calculator on any page (or Calculate Dose on a vial) and Sayne shows your exact draw volume on your syringe. No math required.",
+      note: "On the go and need a quick calculator? It lives on every page so you can pull it up anytime.",
     },
     {
       id: "today",
       route: "/dashboard/today",
       selector: "today-calendar",
       title: "Your daily command center.",
-      body: "Today shows your AM and PM doses. Check them off as you take them — Sayne automatically updates your vial inventory and builds your tracking history.",
+      body: "Today shows your AM and PM doses. Check them off as you take them — and don't forget to log them daily so you don't break your streak.",
+      note: "Vials automatically drain as you log doses. When inventory hits a low threshold, Sayne reminds you to reorder so you never run out mid-protocol.",
+      visual: <DrainingVialVisual />,
     },
+
     {
       id: "research-log",
       route: "/dashboard/protocols",
