@@ -446,7 +446,8 @@ export function Tutorial({
 
   // Card size estimate (used to compute placement)
   const cardW = Math.min(360, (typeof window !== "undefined" ? window.innerWidth : 360) - 24);
-  const cardH = 220;
+  const isCalcStep = step?.id === "calculator";
+  const cardH = isCalcStep ? 460 : 220;
   const pos = !isCenter && rect ? tooltipPosition(rect, cardW, cardH) : null;
 
   const [showChoice, setShowChoice] = useState(false);
