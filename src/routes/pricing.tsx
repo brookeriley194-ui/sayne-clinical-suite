@@ -149,7 +149,7 @@ function PricingPage() {
                 </Button>
               }
               features={[
-                "Track up to 3 vials",
+                "Track up to 2 vials",
                 "1 active stack",
                 "Unlimited dose calculator",
                 "3 AI protocol imports",
@@ -157,6 +157,7 @@ function PricingPage() {
                 "Browse the Stack Feed",
                 "7-day history",
                 "Daily dose tracking",
+                "7-day streak tracking",
               ]}
               checkColor={BABY_BLUE}
             />
