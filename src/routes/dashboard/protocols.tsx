@@ -768,16 +768,60 @@ function BuildStackModal({
                       ))}
                     </SelectContent>
                   </Select>
-                  {r.vial_id === "none" && (
+                  {r.vial_id === "none" && addVialIdx !== i && (
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       className="gap-1 h-8"
-                      onClick={() => navigate({ to: "/dashboard/my-vials" })}
+                      onClick={() => {
+                        setAddVialIdx(i);
+                        setNewVial({ compound: r.compound && r.compound !== "Other" ? r.compound : "", size: "", bac: "", saving: false });
+                      }}
                     >
                       <Plus className="h-3.5 w-3.5" /> Add a vial
                     </Button>
+                  )}
+                  {addVialIdx === i && (
+                    <div className="rounded-lg border p-3 space-y-3" style={{ borderColor: "var(--border)", background: "color-mix(in oklab, var(--primary) 4%, transparent)" }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">New vial</span>
+                        <button type="button" className="text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => { setAddVialIdx(null); setNewVial({ compound: "", size: "", bac: "", saving: false }); }}>
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Peptide</Label>
+                        <PeptideCombobox value={newVial.compound} onChange={(v) => setNewVial((p) => ({ ...p, compound: v }))} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Vial size (mg)</Label>
+                          <Input type="number" inputMode="decimal" step="any" min="0"
+                            value={newVial.size} placeholder="e.g. 5"
+                            onChange={(e) => setNewVial((p) => ({ ...p, size: e.target.value }))}
+                            className="font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">BAC water (ml) <span className="text-muted-foreground">(optional)</span></Label>
+                          <Input type="number" inputMode="decimal" step="any" min="0"
+                            value={newVial.bac} placeholder="e.g. 2"
+                            onChange={(e) => setNewVial((p) => ({ ...p, bac: e.target.value }))}
+                            className="font-mono" />
+                        </div>
+                      </div>
+                      {newVial.size && newVial.bac && Number(newVial.size) > 0 && Number(newVial.bac) > 0 && (
+                        <p className="text-[11px] text-muted-foreground font-mono">
+                          Concentration: {(Number(newVial.size) / Number(newVial.bac)).toFixed(2)} mg/ml
+                        </p>
+                      )}
+                      <Button type="button" size="sm" className="gap-1 h-8 w-full"
+                        disabled={newVial.saving}
+                        onClick={() => void quickAddVialForRow(i)}>
+                        {newVial.saving ? "Adding…" : "Add vial & link"}
+                      </Button>
+                    </div>
                   )}
                 </div>
 
