@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Calculator } from "lucide-react";
-import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
