@@ -1327,6 +1327,32 @@ function ParsedCompoundCard({
             {FREQUENCIES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
           </SelectContent>
         </Select>
+        {p.frequency === "Custom" && (
+          <div className="flex flex-wrap gap-1.5 pt-2">
+            {DAY_LABELS.map((d) => {
+              const on = (p.custom_days ?? []).includes(d);
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => {
+                    const cur = p.custom_days ?? [];
+                    const next = on ? cur.filter((x) => x !== d) : [...cur, d];
+                    onUpdate({ custom_days: next });
+                  }}
+                  className="px-2.5 py-1 rounded-full text-xs font-medium border transition-colors"
+                  style={{
+                    backgroundColor: on ? BABY_BLUE : "transparent",
+                    color: on ? NAVY : "var(--foreground)",
+                    borderColor: on ? BABY_BLUE : "var(--border)",
+                  }}
+                >
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </ParsedRow>
 
       <ParsedRow label="Route" value={p.route}>
