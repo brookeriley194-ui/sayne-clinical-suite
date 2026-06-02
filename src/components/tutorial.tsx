@@ -334,7 +334,7 @@ export function Tutorial({
   };
   const skip = () => {
     try { localStorage.setItem(TUTORIAL_FLAG, "true"); } catch {}
-    onClose();
+    setShowChoice(true);
   };
   const next = () => (isLast ? finish() : setIndex((i) => i + 1));
   const prev = () => (index === 0 ? null : setIndex((i) => i - 1));
