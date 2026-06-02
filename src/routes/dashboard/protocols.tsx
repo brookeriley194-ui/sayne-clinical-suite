@@ -466,19 +466,55 @@ function BuildStackModal({
   const [vials, setVials] = useState<VialOpt[]>([]);
   const [vialProtocols, setVialProtocols] = useState<Record<string, { dose: number | null; dose_unit: string; frequency: string; duration_days: number | null; ongoing: boolean; time_of_day: string; fasted: boolean }>>({});
   const [saving, setSaving] = useState(false);
+  const [addVialIdx, setAddVialIdx] = useState<number | null>(null);
+  const [newVial, setNewVial] = useState<{ compound: string; size: string; bac: string; saving: boolean }>({ compound: "", size: "", bac: "", saving: false });
+
+  async function fetchVials() {
+    const { data } = await supabase.from("vials")
+      .select("id, compound, vial_size_mg, status, default_dose, default_dose_unit")
+      .neq("status", "used")
+      .order("created_at", { ascending: false });
+    setVials((data ?? []) as VialOpt[]);
+    return (data ?? []) as VialOpt[];
+  }
+
+  async function quickAddVialForRow(i: number) {
+    if (!userId) { toast.error("Not signed in"); return; }
+    const compound = newVial.compound || rows[i].compound;
+    if (!compound) { toast.error("Choose a peptide"); return; }
+    const size = Number(newVial.size);
+    if (!size || size <= 0) { toast.error("Enter vial size in mg"); return; }
+    const bac = newVial.bac ? Number(newVial.bac) : null;
+    if (newVial.bac && (!bac || bac <= 0)) { toast.error("Enter valid BAC water amount"); return; }
+    setNewVial((p) => ({ ...p, saving: true }));
+    const { data, error } = await supabase.from("vials").insert({
+      doctor_id: userId,
+      compound,
+      vial_size_mg: size,
+      bac_water_ml: bac,
+      concentration_mg_per_ml: bac ? size / bac : null,
+      status: bac ? "reconstituted" : "sealed",
+      reconstituted_at: bac ? new Date().toISOString() : null,
+    }).select("id").single();
+    setNewVial((p) => ({ ...p, saving: false }));
+    if (error || !data) { toast.error(error?.message ?? "Failed to add vial"); return; }
+    toast.success(`${compound} vial added to My Vials`);
+    await fetchVials();
+    handleVialChange(i, data.id);
+    setAddVialIdx(null);
+    setNewVial({ compound: "", size: "", bac: "", saving: false });
+  }
 
   useEffect(() => {
     if (!open) {
       setName(""); setRows([emptyRow()]);
       setRoute("Subcutaneous"); setOngoing(false);
       setDuration(""); setNotes(""); setSaving(false);
+      setAddVialIdx(null); setNewVial({ compound: "", size: "", bac: "", saving: false });
       return;
     }
-    void supabase.from("vials")
-      .select("id, compound, vial_size_mg, status, default_dose, default_dose_unit")
-      .neq("status", "used")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setVials((data ?? []) as VialOpt[]));
+    void fetchVials();
+
 
     // Pull most recent protocol per vial so we can autofill dose/freq/cycle
     void supabase.from("protocols")
@@ -732,16 +768,60 @@ function BuildStackModal({
                       ))}
                     </SelectContent>
                   </Select>
-                  {r.vial_id === "none" && (
+                  {r.vial_id === "none" && addVialIdx !== i && (
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       className="gap-1 h-8"
-                      onClick={() => navigate({ to: "/dashboard/my-vials" })}
+                      onClick={() => {
+                        setAddVialIdx(i);
+                        setNewVial({ compound: r.compound && r.compound !== "Other" ? r.compound : "", size: "", bac: "", saving: false });
+                      }}
                     >
                       <Plus className="h-3.5 w-3.5" /> Add a vial
                     </Button>
+                  )}
+                  {addVialIdx === i && (
+                    <div className="rounded-lg border p-3 space-y-3" style={{ borderColor: "var(--border)", background: "color-mix(in oklab, var(--primary) 4%, transparent)" }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">New vial</span>
+                        <button type="button" className="text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => { setAddVialIdx(null); setNewVial({ compound: "", size: "", bac: "", saving: false }); }}>
+                          Cancel
+                        </button>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Peptide</Label>
+                        <PeptideCombobox value={newVial.compound} onChange={(v) => setNewVial((p) => ({ ...p, compound: v }))} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Vial size (mg)</Label>
+                          <Input type="number" inputMode="decimal" step="any" min="0"
+                            value={newVial.size} placeholder="e.g. 5"
+                            onChange={(e) => setNewVial((p) => ({ ...p, size: e.target.value }))}
+                            className="font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">BAC water (ml) <span className="text-muted-foreground">(optional)</span></Label>
+                          <Input type="number" inputMode="decimal" step="any" min="0"
+                            value={newVial.bac} placeholder="e.g. 2"
+                            onChange={(e) => setNewVial((p) => ({ ...p, bac: e.target.value }))}
+                            className="font-mono" />
+                        </div>
+                      </div>
+                      {newVial.size && newVial.bac && Number(newVial.size) > 0 && Number(newVial.bac) > 0 && (
+                        <p className="text-[11px] text-muted-foreground font-mono">
+                          Concentration: {(Number(newVial.size) / Number(newVial.bac)).toFixed(2)} mg/ml
+                        </p>
+                      )}
+                      <Button type="button" size="sm" className="gap-1 h-8 w-full"
+                        disabled={newVial.saving}
+                        onClick={() => void quickAddVialForRow(i)}>
+                        {newVial.saving ? "Adding…" : "Add vial & link"}
+                      </Button>
+                    </div>
                   )}
                 </div>
 
