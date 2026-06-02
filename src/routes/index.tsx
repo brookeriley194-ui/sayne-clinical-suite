@@ -11,7 +11,7 @@ function IndexRedirect() {
   const navigate = useNavigate();
   useEffect(() => {
     if (loading) return;
-    navigate({ to: session ? "/dashboard" : "/login", replace: true });
+    navigate({ to: session ? "/dashboard" : "/home", replace: true });
   }, [session, loading, navigate]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
