@@ -35,11 +35,33 @@ function UnitToggle<T extends string>({ value, onChange, options }: { value: T; 
   );
 }
 
-function MiniSyringe({ fillPct, insulin }: { fillPct: number; insulin: boolean }) {
+function MiniSyringe({ fillPct, insulin, maxMl }: { fillPct: number; insulin: boolean; maxMl: number }) {
   const f = Math.max(0, Math.min(1, fillPct));
   const barrelX = 30;
   const barrelW = 240;
-  const tickCount = insulin ? 10 : 10;
+  const barrelY = 32;
+  const barrelH = 22;
+  const needleStart = barrelX + barrelW; // 270
+  const fluidW = barrelW * f;
+  const fluidX = needleStart - fluidW; // flush against needle base — no gap
+  const stopperX = fluidX - 6;
+
+  // Numbering: start at 10 at the base (closest to needle), increment by 10 toward plunger.
+  // For insulin: max units = maxMl * 100. For mL syringes: increments of maxMl/10.
+  const maxValue = insulin ? Math.round(maxMl * 100) : maxMl;
+  const step = insulin ? 10 : maxMl / 10;
+  const labels: { value: number; pos: number }[] = [];
+  for (let v = step; v <= maxValue + 1e-6; v += step) {
+    const frac = v / maxValue;
+    labels.push({ value: v, pos: needleStart - frac * barrelW });
+  }
+  // Minor ticks every step/2
+  const minorPositions: number[] = [];
+  for (let v = step / 2; v < maxValue; v += step / 2) {
+    const frac = v / maxValue;
+    minorPositions.push(needleStart - frac * barrelW);
+  }
+
   return (
     <svg viewBox="0 0 320 80" className="w-full h-auto">
       <defs>
@@ -47,71 +69,71 @@ function MiniSyringe({ fillPct, insulin }: { fillPct: number; insulin: boolean }
           <stop offset="0%" stopColor="#bde3f9" />
           <stop offset="100%" stopColor="#3FA8D6" />
         </linearGradient>
-        <linearGradient id="fcGlass" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
-          <stop offset="60%" stopColor="#ffffff" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="0.05" />
-        </linearGradient>
         <clipPath id="fcClip">
-          <rect x={barrelX} y="32" width={barrelW} height="22" rx="4" />
+          <rect x={barrelX} y={barrelY} width={barrelW} height={barrelH} rx="4" />
         </clipPath>
       </defs>
 
       {/* needle */}
-      <rect x="270" y="42" width="40" height="3" fill="#9B8EC4" rx="1" />
+      <rect x={needleStart} y="42" width="40" height="3" fill="#9B8EC4" rx="1" />
       <polygon points="310,43.5 318,42 318,45" fill="#2D1F4A" />
-      <rect x="262" y="36" width="12" height="14" rx="2" fill="#9B8EC4" />
+      <rect x={needleStart - 8} y="36" width="12" height="14" rx="2" fill="#9B8EC4" />
 
       {/* barrel */}
-      <rect x={barrelX} y="32" width={barrelW} height="22" rx="4" fill="#ffffff" stroke="#C9BFE5" strokeWidth="1.2" />
+      <rect x={barrelX} y={barrelY} width={barrelW} height={barrelH} rx="4" fill="#ffffff" stroke="#7A6BA8" strokeWidth="1.4" />
 
-      {/* fluid */}
+      {/* fluid — flush to needle base */}
       <g clipPath="url(#fcClip)">
-        <motion.rect
-          y="32"
-          height="22"
+        <rect
+          y={barrelY}
+          height={barrelH}
           fill="url(#fcFluid)"
-          initial={false}
-          animate={{ x: barrelX + barrelW * (1 - f), width: barrelW * f }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          x={fluidX}
+          width={fluidW}
+          style={{ transition: "x 700ms cubic-bezier(0.22,1,0.36,1), width 700ms cubic-bezier(0.22,1,0.36,1)" }}
         />
       </g>
 
-      {/* glass shimmer */}
-      <rect x={barrelX} y="32" width={barrelW} height="22" rx="4" fill="url(#fcGlass)" pointerEvents="none" />
+      {/* minor ticks */}
+      {minorPositions.map((x, i) => (
+        <g key={`m-${i}`}>
+          <line x1={x} y1={barrelY + 1} x2={x} y2={barrelY + 5} stroke="#2D1F4A" strokeOpacity="0.5" strokeWidth="0.9" />
+          <line x1={x} y1={barrelY + barrelH - 5} x2={x} y2={barrelY + barrelH - 1} stroke="#2D1F4A" strokeOpacity="0.5" strokeWidth="0.9" />
+        </g>
+      ))}
 
-      {/* ticks */}
-      {Array.from({ length: tickCount + 1 }).map((_, i) => {
-        const x = barrelX + (i / tickCount) * barrelW;
-        const major = i % 5 === 0;
-        return (
-          <g key={i}>
-            <line x1={x} y1="32" x2={x} y2={major ? 38 : 36} stroke="#2D1F4A" strokeOpacity={major ? 0.55 : 0.3} strokeWidth={major ? 0.9 : 0.6} />
-            <line x1={x} y1={major ? 48 : 50} x2={x} y2="54" stroke="#2D1F4A" strokeOpacity={major ? 0.55 : 0.3} strokeWidth={major ? 0.9 : 0.6} />
-            {major && (
-              <text x={x} y="28" textAnchor="middle" fontSize="6.5" fill="#9B8EC4" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                {insulin ? Math.round((i / tickCount) * 100) : ((i / tickCount)).toFixed(1)}
-              </text>
-            )}
-          </g>
-        );
-      })}
+      {/* major ticks + labels */}
+      {labels.map(({ value, pos }) => (
+        <g key={value}>
+          <line x1={pos} y1={barrelY + 1} x2={pos} y2={barrelY + 9} stroke="#1a1432" strokeOpacity="0.85" strokeWidth="1.4" />
+          <line x1={pos} y1={barrelY + barrelH - 9} x2={pos} y2={barrelY + barrelH - 1} stroke="#1a1432" strokeOpacity="0.85" strokeWidth="1.4" />
+          <text
+            x={pos}
+            y={barrelY - 4}
+            textAnchor="middle"
+            fontSize="8"
+            fontWeight="700"
+            fill="#1a1432"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            {insulin ? value : value.toFixed(1)}
+          </text>
+        </g>
+      ))}
 
       {/* stopper + rod */}
-      <motion.rect
-        y="33" width="6" height="20" fill="#2D1F4A" rx="1"
-        initial={false}
-        animate={{ x: barrelX + barrelW * (1 - f) - 6 }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      <rect
+        y={barrelY + 1} width="6" height={barrelH - 2} fill="#2D1F4A" rx="1"
+        x={stopperX}
+        style={{ transition: "x 700ms cubic-bezier(0.22,1,0.36,1)" }}
       />
-      <motion.rect
-        y="42" height="3" fill="#9B8EC4" rx="1" x="6"
-        initial={false}
-        animate={{ width: Math.max(0, barrelX + barrelW * (1 - f) - 12) }}
-        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      <rect
+        y="42" height="3" fill="#9B8EC4" rx="1" x="8"
+        width={Math.max(0, stopperX - 10)}
+        style={{ transition: "width 700ms cubic-bezier(0.22,1,0.36,1)" }}
       />
       <rect x="2" y="26" width="6" height="34" rx="1.5" fill="#9B8EC4" />
-      <rect x={barrelX - 4} y="24" width="6" height="38" rx="1.5" fill="#9B8EC4" />
+      <rect x={barrelX - 4} y="24" width="6" height={barrelH + 16} rx="1.5" fill="#9B8EC4" />
     </svg>
   );
 }
