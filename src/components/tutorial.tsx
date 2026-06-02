@@ -284,8 +284,9 @@ function buildSteps(device: DeviceKind): TourStep[] {
       route: "/dashboard/my-vials",
       selector: "floating-calc",
       title: "Never guess a dose.",
-      body: "Tap the calculator on any page (or Calculate Dose on a vial) and Sayne shows your exact draw volume on your syringe. No math required.",
+      body: "Tap the calculator on any page (or Calculate Dose on a vial) and Sayne shows your exact draw volume on your syringe. Whether you use mcg, mg, units, or mL, your syringe will adjust automatically. No math required.",
       note: "On the go and need a quick calculator? It lives on every page so you can pull it up anytime.",
+      visual: <CalculatorPreviewVisual />,
     },
     {
       id: "today",
