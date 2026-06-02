@@ -77,9 +77,20 @@ export function SyringeVisualizer({
     return Math.round(((score - 70) / 30) * 60); // up to ~60 days at 100%
   }, [days_until_degraded, score]);
 
-  // Generate ticks based on syringe spec
-  const tickCount = Math.round(maxMl / spec.majorTickMl) + 1;
-  const ticks = Array.from({ length: tickCount }, (_, i) => i * spec.majorTickMl);
+  // Numbering: start at the increment closest to the needle base (right) and
+  // step toward the plunger (left). For insulin syringes that means
+  // 10, 20, 30, … units. For mL syringes it's the spec's majorTickMl step.
+  const labelStep = spec.unitMarks ? 10 : spec.majorTickMl; // 10u for insulin, e.g. 0.1 mL for tuberculin
+  const labelMax = spec.unitMarks ? Math.round(maxMl * 100) : maxMl;
+  const ticks: { value: number; fracFromNeedle: number }[] = [];
+  for (let v = labelStep; v <= labelMax + 1e-6; v += labelStep) {
+    ticks.push({ value: v, fracFromNeedle: v / labelMax });
+  }
+  // Minor ticks halfway between majors
+  const minorTicks: number[] = [];
+  for (let v = labelStep / 2; v < labelMax; v += labelStep / 2) {
+    if (Math.abs((v / (labelStep / 2)) % 2) > 0.5) minorTicks.push(v / labelMax);
+  }
 
   return (
     <div className="w-[60%] sm:w-full max-w-xl mx-auto">
