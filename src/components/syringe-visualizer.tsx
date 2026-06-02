@@ -229,47 +229,57 @@ export function SyringeVisualizer({
             pointerEvents="none"
           />
 
-          {/* Measurement markings — 0.1 mL increments */}
+          {/* Measurement markings — numbering starts at 10 at the needle base */}
           <g>
-            {ticks.map((t, i) => {
-              const x = barrelX + (t / maxMl) * barrelW;
-              const isMajor = i % 5 === 0;
+            {/* Minor ticks */}
+            {minorTicks.map((frac, i) => {
+              const x = barrelX + barrelW - frac * barrelW;
               return (
-                <g key={t}>
+                <g key={`mn-${i}`}>
+                  <line x1={x} y1={barrelY + 2} x2={x} y2={barrelY + 7} stroke="#1a1432" strokeOpacity="0.55" strokeWidth="0.9" />
+                  <line x1={x} y1={barrelY + barrelH - 7} x2={x} y2={barrelY + barrelH - 2} stroke="#1a1432" strokeOpacity="0.55" strokeWidth="0.9" />
+                </g>
+              );
+            })}
+            {/* Major ticks + labels */}
+            {ticks.map(({ value, fracFromNeedle }) => {
+              const x = barrelX + barrelW - fracFromNeedle * barrelW;
+              return (
+                <g key={value}>
                   <line
                     x1={x}
                     y1={barrelY + 2}
                     x2={x}
-                    y2={barrelY + (isMajor ? 10 : 6)}
-                    stroke="#2D1F4A"
-                    strokeOpacity={isMajor ? 0.55 : 0.3}
-                    strokeWidth={isMajor ? 0.9 : 0.6}
+                    y2={barrelY + 12}
+                    stroke="#1a1432"
+                    strokeOpacity="0.9"
+                    strokeWidth="1.4"
                   />
                   <line
                     x1={x}
-                    y1={barrelY + barrelH - (isMajor ? 10 : 6)}
+                    y1={barrelY + barrelH - 12}
                     x2={x}
                     y2={barrelY + barrelH - 2}
-                    stroke="#2D1F4A"
-                    strokeOpacity={isMajor ? 0.55 : 0.3}
-                    strokeWidth={isMajor ? 0.9 : 0.6}
+                    stroke="#1a1432"
+                    strokeOpacity="0.9"
+                    strokeWidth="1.4"
                   />
-                  {isMajor && (
-                    <text
-                      x={x}
-                      y={barrelY - 5}
-                      textAnchor="middle"
-                      fontSize="6.5"
-                      fill="#9B8EC4"
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                    >
-                      {spec.unitMarks ? `${Math.round(t * 100)}` : t.toFixed(1)}
-                    </text>
-                  )}
+                  <text
+                    x={x}
+                    y={barrelY - 4}
+                    textAnchor="middle"
+                    fontSize="9"
+                    fontWeight="700"
+                    fill="#1a1432"
+                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                  >
+                    {spec.unitMarks ? value : value.toFixed(1)}
+                  </text>
                 </g>
               );
             })}
           </g>
+
 
           {/* Plunger — exits the LEFT (open) end, stopper follows fluid edge */}
           <g>
