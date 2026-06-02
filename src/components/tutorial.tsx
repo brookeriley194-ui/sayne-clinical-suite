@@ -44,10 +44,79 @@ type TourStep = {
   title: string;
   italicSub?: string;
   body: string;
+  note?: string;                // optional callout shown below body
+  visual?: ReactNode;           // optional inline visual
   cta?: string;                 // override Next label
   mobileOnly?: boolean;
   beforeShow?: () => void | Promise<void>;
 };
+
+/* ----------------------- Inline visual: draining vial ---------------------- */
+function DrainingVialVisual() {
+  return (
+    <div className="flex items-center justify-center my-3">
+      <div className="relative" style={{ width: 64, height: 96 }}>
+        {/* glow */}
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-full blur-2xl opacity-60 animate-pulse"
+          style={{ background: "radial-gradient(circle, rgba(137,207,240,0.55), transparent 70%)" }}
+        />
+        <svg viewBox="0 0 64 96" width="64" height="96" className="relative">
+          {/* cap */}
+          <rect x="20" y="2" width="24" height="8" rx="2" fill="#9aa3b2" />
+          <rect x="22" y="10" width="20" height="6" rx="1" fill="#cdd3dc" />
+          {/* body */}
+          <rect x="14" y="16" width="36" height="74" rx="6" fill="rgba(255,255,255,0.06)" stroke="#C9A8F5" strokeWidth="1.5" />
+          {/* liquid clip */}
+          <defs>
+            <clipPath id="vialClip">
+              <rect x="15.5" y="17.5" width="33" height="71" rx="5" />
+            </clipPath>
+            <linearGradient id="liquidGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#9CD7F0" />
+              <stop offset="100%" stopColor="#3FA8D6" />
+            </linearGradient>
+          </defs>
+          <g clipPath="url(#vialClip)">
+            <motion.rect
+              x="14"
+              y="20"
+              width="36"
+              height="70"
+              fill="url(#liquidGrad)"
+              initial={{ y: 20 }}
+              animate={{ y: [20, 40, 55, 70, 20] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+            {/* surface shimmer */}
+            <motion.ellipse
+              cx="32"
+              rx="16"
+              ry="1.6"
+              fill="rgba(255,255,255,0.55)"
+              initial={{ cy: 22 }}
+              animate={{ cy: [22, 42, 57, 72, 22] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </g>
+          {/* drop falling out */}
+          <motion.circle
+            cx="32"
+            cy="92"
+            r="2.2"
+            fill="#3FA8D6"
+            initial={{ cy: 92, opacity: 0 }}
+            animate={{ cy: [92, 96, 92], opacity: [0, 1, 0] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeIn" }}
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+
 
 function buildSteps(device: DeviceKind): TourStep[] {
   return [
