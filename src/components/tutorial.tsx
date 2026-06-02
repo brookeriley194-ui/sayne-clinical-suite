@@ -598,11 +598,29 @@ export function Tutorial({
                 {step.italicSub}
               </p>
             )}
+
+            {/* For the calculator step, the tip sits right under the title */}
+            {step.id === "calculator" && step.note && (
+              <div
+                className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
+                style={{
+                  background: "rgba(201,168,245,0.12)",
+                  border: "1px solid rgba(201,168,245,0.35)",
+                  color: "var(--foreground)",
+                }}
+              >
+                <span className="font-mono uppercase tracking-wider text-[9px] mr-1" style={{ color: "#8a6dc9" }}>
+                  Tip
+                </span>
+                {step.note}
+              </div>
+            )}
+
             <p className="text-sm text-muted-foreground leading-relaxed mt-2">
               {step.body}
             </p>
             {step.visual}
-            {step.note && (
+            {step.id !== "calculator" && step.note && (
               <div
                 className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
                 style={{
