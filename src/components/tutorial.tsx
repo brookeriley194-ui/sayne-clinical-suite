@@ -321,18 +321,26 @@ export function Tutorial({
   const cardH = 220;
   const pos = !isCenter && rect ? tooltipPosition(rect, cardW, cardH) : null;
 
-  if (!open || !step) return null;
+  const [showChoice, setShowChoice] = useState(false);
+
+  if (!open || !step) {
+    return showChoice ? <CompletionChoice onClose={() => { setShowChoice(false); onClose(); }} /> : null;
+  }
 
   const isLast = index === steps.length - 1;
   const finish = () => {
     try { localStorage.setItem(TUTORIAL_FLAG, "true"); } catch {}
-    navigate({ to: "/dashboard/my-vials" }).catch(() => {});
+    setShowChoice(true);
+  };
+  const skip = () => {
+    try { localStorage.setItem(TUTORIAL_FLAG, "true"); } catch {}
     onClose();
   };
   const next = () => (isLast ? finish() : setIndex((i) => i + 1));
   const prev = () => (index === 0 ? null : setIndex((i) => i - 1));
 
   const ctaLabel = step.cta ?? (isLast ? "Start Using Sayne →" : "Next");
+
 
   // Spotlight padding around the highlighted element
   const SP = 8;
