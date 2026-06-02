@@ -1,10 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { X, Smartphone, Share } from "lucide-react";
+import { X, Smartphone, Share, Layers, FlaskConical, Sparkles } from "lucide-react";
 
 export const TUTORIAL_FLAG = "sayne_tutorial_completed";
+
 
 type DeviceKind = "ios" | "android" | "desktop";
 function detectDevice(): DeviceKind {
@@ -43,10 +44,79 @@ type TourStep = {
   title: string;
   italicSub?: string;
   body: string;
+  note?: string;                // optional callout shown below body
+  visual?: ReactNode;           // optional inline visual
   cta?: string;                 // override Next label
   mobileOnly?: boolean;
   beforeShow?: () => void | Promise<void>;
 };
+
+/* ----------------------- Inline visual: draining vial ---------------------- */
+function DrainingVialVisual() {
+  return (
+    <div className="flex items-center justify-center my-3">
+      <div className="relative" style={{ width: 64, height: 96 }}>
+        {/* glow */}
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-full blur-2xl opacity-60 animate-pulse"
+          style={{ background: "radial-gradient(circle, rgba(137,207,240,0.55), transparent 70%)" }}
+        />
+        <svg viewBox="0 0 64 96" width="64" height="96" className="relative">
+          {/* cap */}
+          <rect x="20" y="2" width="24" height="8" rx="2" fill="#9aa3b2" />
+          <rect x="22" y="10" width="20" height="6" rx="1" fill="#cdd3dc" />
+          {/* body */}
+          <rect x="14" y="16" width="36" height="74" rx="6" fill="rgba(255,255,255,0.06)" stroke="#C9A8F5" strokeWidth="1.5" />
+          {/* liquid clip */}
+          <defs>
+            <clipPath id="vialClip">
+              <rect x="15.5" y="17.5" width="33" height="71" rx="5" />
+            </clipPath>
+            <linearGradient id="liquidGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#9CD7F0" />
+              <stop offset="100%" stopColor="#3FA8D6" />
+            </linearGradient>
+          </defs>
+          <g clipPath="url(#vialClip)">
+            <motion.rect
+              x="14"
+              y="20"
+              width="36"
+              height="70"
+              fill="url(#liquidGrad)"
+              initial={{ y: 20 }}
+              animate={{ y: [20, 40, 55, 70, 20] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+            {/* surface shimmer */}
+            <motion.ellipse
+              cx="32"
+              rx="16"
+              ry="1.6"
+              fill="rgba(255,255,255,0.55)"
+              initial={{ cy: 22 }}
+              animate={{ cy: [22, 42, 57, 72, 22] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </g>
+          {/* drop falling out */}
+          <motion.circle
+            cx="32"
+            cy="92"
+            r="2.2"
+            fill="#3FA8D6"
+            initial={{ cy: 92, opacity: 0 }}
+            animate={{ cy: [92, 96, 92], opacity: [0, 1, 0] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeIn" }}
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+
 
 function buildSteps(device: DeviceKind): TourStep[] {
   return [
@@ -62,9 +132,10 @@ function buildSteps(device: DeviceKind): TourStep[] {
     {
       id: "import-from-ai",
       route: "/dashboard/protocols",
-      selector: "import-from-ai",
+      selector: "stack-actions",
       title: "Start with your protocol.",
-      body: "Most people start here. Got a protocol from Claude, ChatGPT, or Gemini? Paste it and Sayne organizes it into a stack automatically — no manual entry.",
+      body: "Most people start here. Got a protocol from Claude, ChatGPT, or Gemini? Paste it into Import from AI and Sayne organizes it into a stack automatically. No AI protocol? Tap Build a Stack to create one manually.",
+      note: "Don't want to build a stack yet? We got you — head to My Vials to add your vials first.",
     },
     {
       id: "stack-card",
@@ -79,6 +150,7 @@ function buildSteps(device: DeviceKind): TourStep[] {
       selector: "scan-receipt",
       title: "Track your inventory.",
       body: "Your vials track remaining doses and real-time potency. Add them manually, or tap Import Receipt to upload a purchase receipt and Sayne adds them automatically.",
+      note: "Didn't import all your vials from the My Stacks tab? No worries — you can upload the rest right here.",
     },
     {
       id: "calculator",
@@ -86,14 +158,18 @@ function buildSteps(device: DeviceKind): TourStep[] {
       selector: "floating-calc",
       title: "Never guess a dose.",
       body: "Tap the calculator on any page (or Calculate Dose on a vial) and Sayne shows your exact draw volume on your syringe. No math required.",
+      note: "On the go and need a quick calculator? It lives on every page so you can pull it up anytime.",
     },
     {
       id: "today",
       route: "/dashboard/today",
       selector: "today-calendar",
       title: "Your daily command center.",
-      body: "Today shows your AM and PM doses. Check them off as you take them — Sayne automatically updates your vial inventory and builds your tracking history.",
+      body: "Today shows your AM and PM doses. Check them off as you take them — and don't forget to log them daily so you don't break your streak.",
+      note: "Vials automatically drain as you log doses. When inventory hits a low threshold, Sayne reminds you to reorder so you never run out mid-protocol.",
+      visual: <DrainingVialVisual />,
     },
+
     {
       id: "research-log",
       route: "/dashboard/protocols",
@@ -245,18 +321,26 @@ export function Tutorial({
   const cardH = 220;
   const pos = !isCenter && rect ? tooltipPosition(rect, cardW, cardH) : null;
 
-  if (!open || !step) return null;
+  const [showChoice, setShowChoice] = useState(false);
+
+  if (!open || !step) {
+    return showChoice ? <CompletionChoice onClose={() => { setShowChoice(false); onClose(); }} /> : null;
+  }
 
   const isLast = index === steps.length - 1;
   const finish = () => {
     try { localStorage.setItem(TUTORIAL_FLAG, "true"); } catch {}
-    navigate({ to: "/dashboard/my-vials" }).catch(() => {});
+    setShowChoice(true);
+  };
+  const skip = () => {
+    try { localStorage.setItem(TUTORIAL_FLAG, "true"); } catch {}
     onClose();
   };
   const next = () => (isLast ? finish() : setIndex((i) => i + 1));
   const prev = () => (index === 0 ? null : setIndex((i) => i - 1));
 
   const ctaLabel = step.cta ?? (isLast ? "Start Using Sayne →" : "Next");
+
 
   // Spotlight padding around the highlighted element
   const SP = 8;
@@ -347,7 +431,7 @@ export function Tutorial({
                 Step {index + 1} of {steps.length}
               </span>
               <button
-                onClick={finish}
+                onClick={skip}
                 className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
               >
                 Skip tour <X className="h-3 w-3" />
@@ -388,6 +472,23 @@ export function Tutorial({
             <p className="text-sm text-muted-foreground leading-relaxed mt-2">
               {step.body}
             </p>
+            {step.visual}
+            {step.note && (
+              <div
+                className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
+                style={{
+                  background: "rgba(201,168,245,0.12)",
+                  border: "1px solid rgba(201,168,245,0.35)",
+                  color: "var(--foreground)",
+                }}
+              >
+                <span className="font-mono uppercase tracking-wider text-[9px] mr-1" style={{ color: "#8a6dc9" }}>
+                  Tip
+                </span>
+                {step.note}
+              </div>
+            )}
+
 
             {/* Footer */}
             <div className="mt-4 flex items-center justify-between gap-2">
@@ -415,3 +516,152 @@ export function Tutorial({
     </div>
   );
 }
+
+/* --------------------- Completion Choice Modal --------------------- */
+
+type ChoiceKey = "stack" | "vials" | "feed";
+
+function CompletionChoice({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const [burst, setBurst] = useState<ChoiceKey | null>(null);
+
+  const choices: { key: ChoiceKey; label: string; sub: string; to: string; Icon: typeof Layers }[] = [
+    {
+      key: "stack",
+      label: "I already have a stack protocol — let's build.",
+      sub: "Go to My Stacks and create or import your protocol.",
+      to: "/dashboard/protocols",
+      Icon: Layers,
+    },
+    {
+      key: "vials",
+      label: "I don't have a stack protocol — add vials.",
+      sub: "Start by logging the vials you already have.",
+      to: "/dashboard/my-vials",
+      Icon: FlaskConical,
+    },
+    {
+      key: "feed",
+      label: "I want to explore stacks.",
+      sub: "Browse community protocols on the Stack Feed.",
+      to: "/dashboard/stack-feed",
+      Icon: Sparkles,
+    },
+  ];
+
+  const pick = (c: (typeof choices)[number]) => {
+    if (burst) return;
+    setBurst(c.key);
+    window.setTimeout(() => {
+      navigate({ to: c.to }).catch(() => {});
+      onClose();
+    }, 650);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" role="dialog" aria-modal>
+      {/* Backdrop */}
+      <div className="absolute inset-0" style={{ background: "rgba(15,12,30,0.72)", backdropFilter: "blur(6px)" }} />
+
+      {/* Ambient pulsing glow behind card */}
+      <motion.div
+        aria-hidden
+        className="absolute"
+        style={{
+          width: 520,
+          height: 520,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(201,168,245,0.45), transparent 65%)",
+          filter: "blur(40px)",
+        }}
+        animate={{ scale: [1, 1.08, 1], opacity: [0.55, 0.85, 0.55] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1] }}
+        className="relative w-full max-w-md rounded-[18px] p-6"
+        style={{
+          background: "var(--card)",
+          border: "1.5px solid #C9A8F5",
+          boxShadow:
+            "0 30px 80px -20px rgba(120,90,200,0.55), 0 0 0 1px rgba(201,168,245,0.25)",
+        }}
+      >
+        <div className="text-center mb-5">
+          <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: "#8a6dc9" }}>
+            You're all set
+          </span>
+          <h3 className="font-display text-2xl font-bold leading-tight mt-1">Where do you want to start?</h3>
+          <p className="text-sm text-muted-foreground mt-1">Pick the path that fits you — you can always switch later.</p>
+        </div>
+
+        <div className="space-y-3">
+          {choices.map((c) => {
+            const active = burst === c.key;
+            return (
+              <button
+                key={c.key}
+                onClick={() => pick(c)}
+                className="relative w-full text-left rounded-xl px-4 py-3 flex items-start gap-3 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{
+                  background: "rgba(201,168,245,0.08)",
+                  border: "1px solid rgba(201,168,245,0.35)",
+                }}
+              >
+                <span
+                  className="mt-0.5 h-9 w-9 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ background: "rgba(201,168,245,0.22)" }}
+                >
+                  <c.Icon className="h-5 w-5" style={{ color: "#6b4ca8" }} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-semibold text-sm leading-snug">{c.label}</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">{c.sub}</span>
+                </span>
+
+                {/* glowing ring on hover */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-xl opacity-0 hover:opacity-100 transition-opacity"
+                  style={{
+                    boxShadow:
+                      "0 0 0 1px rgba(201,168,245,0.6), 0 0 24px 2px rgba(201,168,245,0.45)",
+                  }}
+                />
+
+                {/* purple burst on click */}
+                <AnimatePresence>
+                  {active && (
+                    <motion.span
+                      aria-hidden
+                      initial={{ opacity: 0.9, scale: 0.2 }}
+                      animate={{ opacity: 0, scale: 2.4 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.65, ease: "easeOut" }}
+                      className="pointer-events-none absolute inset-0 rounded-xl"
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(201,168,245,0.75), rgba(201,168,245,0) 65%)",
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="mt-5 mx-auto block text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          Maybe later
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
