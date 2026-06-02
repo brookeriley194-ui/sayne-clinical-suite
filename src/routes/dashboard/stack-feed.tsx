@@ -407,7 +407,7 @@ function TemplateCard({ template, onImport }: { template: StackTemplate; onImpor
           Educational template. Not medical advice.
         </div>
         <Button onClick={onImport} size="sm" className="gap-1.5 text-[#3b2766] hover:opacity-90" style={{ backgroundColor: C.lavender }}>
-          <Download className="h-3.5 w-3.5" /> Import This Template
+          <Download className="h-3.5 w-3.5" /> Import This Stack
         </Button>
       </div>
     </div>
