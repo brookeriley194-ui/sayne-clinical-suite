@@ -1386,32 +1386,16 @@ function ParsedRow({
   return (
     <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
       <div className="text-xs uppercase tracking-wider text-muted-foreground pt-1.5">{label}</div>
-      <div className="min-w-0">
-        {detected ? (
-          <div
-            className="text-sm font-medium"
-            style={{
-              color: NAVY,
-              fontFamily: label === "Compound"
-                ? "'Space Grotesk', sans-serif"
-                : label === "Dose"
-                ? "'JetBrains Mono', monospace"
-                : undefined,
-            }}
+      <div className="min-w-0 space-y-1.5">
+        {!detected && (
+          <span
+            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
+            style={{ backgroundColor: PINK, color: "#7a2d3d" }}
           >
-            {String(value)}
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <span
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold"
-              style={{ backgroundColor: PINK, color: "#7a2d3d" }}
-            >
-              Not found
-            </span>
-            {children}
-          </div>
+            Not found
+          </span>
         )}
+        {children}
       </div>
     </div>
   );
