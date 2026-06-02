@@ -116,6 +116,133 @@ function DrainingVialVisual() {
   );
 }
 
+/* ------------------- Inline visual: calculator preview ------------------- */
+function CalculatorPreviewVisual() {
+  // Cycle through a few "draw volumes" to show the syringe adjusting
+  const [step, setStep] = useState(0);
+  const frames = useMemo(
+    () => [
+      { unit: "mcg", value: "250", fill: 0.25, ml: "0.25", units: 25 },
+      { unit: "mg",  value: "1",   fill: 0.50, ml: "0.50", units: 50 },
+      { unit: "units", value: "75", fill: 0.75, ml: "0.75", units: 75 },
+      { unit: "mL",  value: "0.40", fill: 0.40, ml: "0.40", units: 40 },
+    ],
+    [],
+  );
+  useEffect(() => {
+    const id = window.setInterval(() => setStep((s) => (s + 1) % frames.length), 1600);
+    return () => window.clearInterval(id);
+  }, [frames.length]);
+  const f = frames[step];
+
+  return (
+    <div
+      className="mt-3 rounded-lg p-3"
+      style={{
+        background: "color-mix(in oklab, var(--primary) 6%, transparent)",
+        border: "1px solid rgba(201,168,245,0.30)",
+      }}
+    >
+      {/* Unit toggle */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+          Desired dose
+        </span>
+        <div className="inline-flex rounded-md border bg-background p-0.5">
+          {(["mcg", "mg", "IU", "units", "mL"] as const).map((u) => (
+            <span
+              key={u}
+              className={`px-1.5 py-0.5 text-[9px] rounded transition-colors ${
+                f.unit === u ? "text-primary-foreground" : "text-muted-foreground"
+              }`}
+              style={f.unit === u ? { background: "#C9A8F5", color: "#2D1F4A" } : undefined}
+            >
+              {u}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Animated value */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${f.unit}-${f.value}`}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.25 }}
+          className="font-mono text-lg tabular-nums mb-2"
+        >
+          {f.value} <span className="text-xs text-muted-foreground">{f.unit}</span>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Mini syringe with animated blue fill */}
+      <svg viewBox="0 0 200 40" className="w-full h-auto">
+        <defs>
+          <linearGradient id="tourSyrFluid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#bde3f9" />
+            <stop offset="100%" stopColor="#3FA8D6" />
+          </linearGradient>
+          <clipPath id="tourSyrClip">
+            <rect x="20" y="14" width="140" height="14" rx="3" />
+          </clipPath>
+        </defs>
+        {/* needle */}
+        <rect x="160" y="20" width="22" height="2" fill="#9B8EC4" rx="1" />
+        <rect x="156" y="16" width="6" height="10" fill="#9B8EC4" rx="1" />
+        {/* barrel */}
+        <rect x="20" y="14" width="140" height="14" rx="3" fill="#ffffff" stroke="#C9BFE5" strokeWidth="1" />
+        {/* fluid (fills from needle end → animated) */}
+        <g clipPath="url(#tourSyrClip)">
+          <motion.rect
+            y="14"
+            height="14"
+            fill="url(#tourSyrFluid)"
+            initial={false}
+            animate={{ x: 20 + 140 * (1 - f.fill), width: 140 * f.fill }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          />
+        </g>
+        {/* stopper */}
+        <motion.rect
+          y="14"
+          width="4"
+          height="14"
+          fill="#2D1F4A"
+          initial={false}
+          animate={{ x: 20 + 140 * (1 - f.fill) - 4 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        />
+        {/* plunger rod */}
+        <motion.rect
+          y="20"
+          height="2"
+          fill="#9B8EC4"
+          initial={false}
+          animate={{ width: Math.max(0, 20 + 140 * (1 - f.fill) - 8) }}
+          x="8"
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        />
+        {/* flange */}
+        <rect x="6" y="10" width="4" height="22" rx="1" fill="#9B8EC4" />
+      </svg>
+
+      {/* Readout */}
+      <div className="flex items-center justify-between mt-1 text-[11px]">
+        <span className="text-muted-foreground">Draw</span>
+        <span className="font-mono tabular-nums">
+          <span className="text-base text-foreground">{f.ml}</span>
+          <span className="text-muted-foreground ml-1">mL</span>
+          <span className="text-muted-foreground mx-1">·</span>
+          <span className="text-foreground">{f.units}</span>
+          <span className="text-muted-foreground ml-1">u</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 
 
 function buildSteps(device: DeviceKind): TourStep[] {
@@ -157,8 +284,9 @@ function buildSteps(device: DeviceKind): TourStep[] {
       route: "/dashboard/my-vials",
       selector: "floating-calc",
       title: "Never guess a dose.",
-      body: "Tap the calculator on any page (or Calculate Dose on a vial) and Sayne shows your exact draw volume on your syringe. No math required.",
+      body: "Tap the calculator on any page (or Calculate Dose on a vial) and Sayne shows your exact draw volume on your syringe. Whether you use mcg, mg, units, or mL, your syringe will adjust automatically. No math required.",
       note: "On the go and need a quick calculator? It lives on every page so you can pull it up anytime.",
+      visual: <CalculatorPreviewVisual />,
     },
     {
       id: "today",
@@ -318,7 +446,8 @@ export function Tutorial({
 
   // Card size estimate (used to compute placement)
   const cardW = Math.min(360, (typeof window !== "undefined" ? window.innerWidth : 360) - 24);
-  const cardH = 220;
+  const isCalcStep = step?.id === "calculator";
+  const cardH = isCalcStep ? 460 : 220;
   const pos = !isCenter && rect ? tooltipPosition(rect, cardW, cardH) : null;
 
   const [showChoice, setShowChoice] = useState(false);
@@ -469,11 +598,29 @@ export function Tutorial({
                 {step.italicSub}
               </p>
             )}
+
+            {/* For the calculator step, the tip sits right under the title */}
+            {step.id === "calculator" && step.note && (
+              <div
+                className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
+                style={{
+                  background: "rgba(201,168,245,0.12)",
+                  border: "1px solid rgba(201,168,245,0.35)",
+                  color: "var(--foreground)",
+                }}
+              >
+                <span className="font-mono uppercase tracking-wider text-[9px] mr-1" style={{ color: "#8a6dc9" }}>
+                  Tip
+                </span>
+                {step.note}
+              </div>
+            )}
+
             <p className="text-sm text-muted-foreground leading-relaxed mt-2">
               {step.body}
             </p>
             {step.visual}
-            {step.note && (
+            {step.id !== "calculator" && step.note && (
               <div
                 className="mt-3 rounded-md px-3 py-2 text-xs leading-relaxed"
                 style={{
