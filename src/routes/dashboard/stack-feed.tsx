@@ -15,6 +15,7 @@ import {
   STACK_TEMPLATES, TEMPLATE_CATEGORIES, maxDuration, allTemplateCompounds,
   type StackTemplate,
 } from "@/lib/stack-templates";
+import { PEPTIDES } from "@/lib/peptides";
 
 export const Route = createFileRoute("/dashboard/stack-feed")({
   component: StackFeedPage,
@@ -33,7 +34,7 @@ const C = {
   mood: "#FFD580",
 };
 
-const COMPOUNDS = ["BPC-157", "TB-500", "MOTS-C", "Ipamorelin", "CJC-1295", "Selank", "Semax", "PT-141", "Tesamorelin", "GHK-Cu", "SS-31 (Elamipretide)", "Epitalon (Epithalon)", "KPV", "DSIP", "Thymosin Alpha-1", "Glutathione", "Semaglutide", "Tirzepatide", "NAD+", "MK-677 (Ibutamoren)", "AOD-9604"];
+const COMPOUNDS = PEPTIDES.filter((p) => p !== "Other" && p !== "Bacteriostatic Water");
 const GOALS = ["Energy", "Recovery", "Sleep", "Gut Health", "Cognitive", "Immune", "Body Composition", "Anti-aging", "Sexual Health", "Anti-inflammatory", "Stress", "Fat Loss", "Metabolic Health", "Skin & Hair"];
 const DURATIONS = [
   { label: "Under 4 weeks", min: 0, max: 27 },
@@ -341,9 +342,18 @@ function StackFeedPage() {
             </div>
 
             <FilterGroup label="Compound" color={C.babyBlue}>
-              {COMPOUNDS.map((c) => (
-                <Chip key={c} active={compounds.has(c)} color={C.babyBlue} onClick={() => toggle(compounds, c, setCompounds)}>{c}</Chip>
-              ))}
+              {(() => {
+                const needle = q.trim().toLowerCase();
+                const visible = needle
+                  ? COMPOUNDS.filter((c) => c.toLowerCase().includes(needle) || compounds.has(c))
+                  : COMPOUNDS;
+                if (visible.length === 0) {
+                  return <p className="text-xs text-muted-foreground">No compounds match "{q}".</p>;
+                }
+                return visible.map((c) => (
+                  <Chip key={c} active={compounds.has(c)} color={C.babyBlue} onClick={() => toggle(compounds, c, setCompounds)}>{c}</Chip>
+                ));
+              })()}
             </FilterGroup>
 
             <FilterGroup label="Goal" color={C.mint}>
