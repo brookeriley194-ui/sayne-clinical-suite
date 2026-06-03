@@ -102,6 +102,7 @@ export const PEPTIDES: readonly string[] = [
   "Oxiracetam",
   "PEG-IGF",
   "Palmitoyl Pentapeptide-4",
+  "Palmitoyl Tetrapeptide-20 (Greyverse)",
   "Pentadecapeptide BPC",
   "Tetracosactide",
   "Triptorelin",

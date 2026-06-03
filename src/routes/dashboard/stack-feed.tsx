@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Heart, Search, Users2, X, Download, ArrowRight, Sparkles, BookOpen } from "lucide-react";
+import { Heart, Search, Users2, X, Download, ArrowRight, Sparkles, BookOpen, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -158,13 +158,31 @@ function StackFeedPage() {
     });
   }, [q, compounds, goals, durIdx]);
 
-  // Group templates by category preserving order
+  // Split advanced from starter, then group starters by category
+  const advancedTemplates = useMemo(
+    () => filteredTemplates.filter((t) => t.is_advanced),
+    [filteredTemplates],
+  );
   const groupedTemplates = useMemo(() => {
+    const starters = filteredTemplates.filter((t) => !t.is_advanced);
     const m = new Map<string, StackTemplate[]>();
     for (const cat of TEMPLATE_CATEGORIES) m.set(cat, []);
-    for (const t of filteredTemplates) m.get(t.category)!.push(t);
+    for (const t of starters) {
+      if (!m.has(t.category)) m.set(t.category, []);
+      m.get(t.category)!.push(t);
+    }
     return Array.from(m.entries()).filter(([, arr]) => arr.length > 0);
   }, [filteredTemplates]);
+
+  // Group advanced by category for display
+  const groupedAdvanced = useMemo(() => {
+    const m = new Map<string, StackTemplate[]>();
+    for (const t of advancedTemplates) {
+      if (!m.has(t.category)) m.set(t.category, []);
+      m.get(t.category)!.push(t);
+    }
+    return Array.from(m.entries());
+  }, [advancedTemplates]);
 
   function toggle<T>(set: Set<T>, v: T, setter: (s: Set<T>) => void) {
     const n = new Set(set);
@@ -210,7 +228,51 @@ function StackFeedPage() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="templates" className="space-y-5">
+            <TabsContent value="templates" className="space-y-6">
+              {/* Advanced tier */}
+              {groupedAdvanced.length > 0 && (
+                <section className="space-y-4">
+                  <div
+                    className="rounded-xl px-4 py-3 border text-sm leading-relaxed"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(168,85,247,0.08))",
+                      borderColor: "rgba(124,58,237,0.45)",
+                      color: "var(--foreground)",
+                    }}
+                  >
+                    <div
+                      className="flex items-center gap-2 mb-1 font-semibold"
+                      style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#6d28d9" }}
+                    >
+                      <FlaskConical className="h-4 w-4" /> Advanced Stacks
+                    </div>
+                    Complex, multi-compound protocols for experienced researchers. Reference structures only — not personal results or medical advice.
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#7c3aed" }} />
+                    <h2 className="text-xs uppercase tracking-[0.18em] font-mono" style={{ color: "#7c3aed" }}>
+                      Advanced Tier
+                    </h2>
+                    <span className="text-[10px] text-muted-foreground font-mono">{advancedTemplates.length}</span>
+                  </div>
+
+                  {groupedAdvanced.map(([category, list]) => (
+                    <div key={category} className="space-y-3">
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-mono pl-3">
+                        {category}
+                      </div>
+                      <div className="space-y-3">
+                        {list.map((tmpl) => (
+                          <TemplateCard key={tmpl.id} template={tmpl} onImport={() => setImportTemplate(tmpl)} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {/* Starter templates header */}
               <div
                 className="rounded-xl px-4 py-3 border text-sm leading-relaxed"
                 style={{ backgroundColor: `${C.lavender}1f`, borderColor: `${C.lavender}55`, color: "var(--foreground)" }}
@@ -221,7 +283,7 @@ function StackFeedPage() {
                 Starter templates to help you get going. These are common protocol structures for reference, not personal results or medical advice.
               </div>
 
-              {groupedTemplates.length === 0 ? (
+              {groupedTemplates.length === 0 && groupedAdvanced.length === 0 ? (
                 <div className="rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
                   No templates match your filters.
                 </div>
@@ -342,13 +404,29 @@ function Chip({ active, color, onClick, children }: { active: boolean; color: st
 /* ============ template card ============ */
 function TemplateCard({ template, onImport }: { template: StackTemplate; onImport: () => void }) {
   const dur = maxDuration(template);
+  const isAdv = !!template.is_advanced;
   return (
     <div
       className="rounded-2xl border bg-card p-5 hover:shadow-sm transition-shadow relative"
-      style={{ borderColor: `${C.lavender}55` }}
+      style={
+        isAdv
+          ? {
+              borderColor: "rgba(124,58,237,0.45)",
+              boxShadow: "0 0 0 1px rgba(124,58,237,0.08) inset",
+            }
+          : { borderColor: `${C.lavender}55` }
+      }
     >
-      {/* Template badge */}
-      <div className="absolute top-4 right-4">
+      {/* Badges */}
+      <div className="absolute top-4 right-4 flex flex-wrap gap-1.5 justify-end max-w-[60%]">
+        {isAdv && (
+          <span
+            className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-full font-semibold"
+            style={{ backgroundColor: "#7c3aed", color: "#ffffff" }}
+          >
+            <FlaskConical className="h-3 w-3" /> Advanced
+          </span>
+        )}
         <span
           className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2 py-1 rounded-full font-semibold"
           style={{ backgroundColor: `${C.lavender}`, color: "#3b2766" }}
@@ -358,7 +436,7 @@ function TemplateCard({ template, onImport }: { template: StackTemplate; onImpor
       </div>
 
       {/* Title */}
-      <div className="pr-24 mb-2">
+      <div className={isAdv ? "pr-40 mb-2" : "pr-24 mb-2"}>
         <h3
           className="text-xl font-bold leading-tight"
           style={{ fontFamily: "'Space Grotesk', sans-serif" }}
@@ -401,13 +479,36 @@ function TemplateCard({ template, onImport }: { template: StackTemplate; onImpor
         ))}
       </div>
 
+      {/* Advanced disclaimer */}
+      {isAdv && (
+        <div
+          className="rounded-lg px-3 py-2 mb-3 text-[11px] leading-relaxed border"
+          style={{
+            backgroundColor: "rgba(124,58,237,0.07)",
+            borderColor: "rgba(124,58,237,0.25)",
+            color: "#5b21b6",
+          }}
+        >
+          Advanced educational template for experienced researchers. Not medical advice. Doses are reference points, not recommendations.
+        </div>
+      )}
+
       {/* Footer */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="text-[10px] italic text-muted-foreground">
           Educational template. Not medical advice.
         </div>
-        <Button onClick={onImport} size="sm" className="gap-1.5 text-[#3b2766] hover:opacity-90" style={{ backgroundColor: C.lavender }}>
-          <Download className="h-3.5 w-3.5" /> Import This Stack
+        <Button
+          onClick={onImport}
+          size="sm"
+          className="gap-1.5 hover:opacity-90"
+          style={
+            isAdv
+              ? { backgroundColor: "#7c3aed", color: "#ffffff" }
+              : { backgroundColor: C.lavender, color: "#3b2766" }
+          }
+        >
+          <Download className="h-3.5 w-3.5" /> Import This Template
         </Button>
       </div>
     </div>
