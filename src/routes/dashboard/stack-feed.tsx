@@ -158,13 +158,31 @@ function StackFeedPage() {
     });
   }, [q, compounds, goals, durIdx]);
 
-  // Group templates by category preserving order
+  // Split advanced from starter, then group starters by category
+  const advancedTemplates = useMemo(
+    () => filteredTemplates.filter((t) => t.is_advanced),
+    [filteredTemplates],
+  );
   const groupedTemplates = useMemo(() => {
+    const starters = filteredTemplates.filter((t) => !t.is_advanced);
     const m = new Map<string, StackTemplate[]>();
     for (const cat of TEMPLATE_CATEGORIES) m.set(cat, []);
-    for (const t of filteredTemplates) m.get(t.category)!.push(t);
+    for (const t of starters) {
+      if (!m.has(t.category)) m.set(t.category, []);
+      m.get(t.category)!.push(t);
+    }
     return Array.from(m.entries()).filter(([, arr]) => arr.length > 0);
   }, [filteredTemplates]);
+
+  // Group advanced by category for display
+  const groupedAdvanced = useMemo(() => {
+    const m = new Map<string, StackTemplate[]>();
+    for (const t of advancedTemplates) {
+      if (!m.has(t.category)) m.set(t.category, []);
+      m.get(t.category)!.push(t);
+    }
+    return Array.from(m.entries());
+  }, [advancedTemplates]);
 
   function toggle<T>(set: Set<T>, v: T, setter: (s: Set<T>) => void) {
     const n = new Set(set);
