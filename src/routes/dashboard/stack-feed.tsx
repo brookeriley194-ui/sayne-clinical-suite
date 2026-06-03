@@ -342,9 +342,18 @@ function StackFeedPage() {
             </div>
 
             <FilterGroup label="Compound" color={C.babyBlue}>
-              {COMPOUNDS.map((c) => (
-                <Chip key={c} active={compounds.has(c)} color={C.babyBlue} onClick={() => toggle(compounds, c, setCompounds)}>{c}</Chip>
-              ))}
+              {(() => {
+                const needle = q.trim().toLowerCase();
+                const visible = needle
+                  ? COMPOUNDS.filter((c) => c.toLowerCase().includes(needle) || compounds.has(c))
+                  : COMPOUNDS;
+                if (visible.length === 0) {
+                  return <p className="text-xs text-muted-foreground">No compounds match "{q}".</p>;
+                }
+                return visible.map((c) => (
+                  <Chip key={c} active={compounds.has(c)} color={C.babyBlue} onClick={() => toggle(compounds, c, setCompounds)}>{c}</Chip>
+                ));
+              })()}
             </FilterGroup>
 
             <FilterGroup label="Goal" color={C.mint}>
