@@ -19,6 +19,7 @@ export type StackTemplate = {
   description: string;
   compounds: TemplateCompound[];
   is_template: true;
+  is_advanced?: boolean;
 };
 
 const t = (
@@ -29,6 +30,15 @@ const t = (
   description: string,
   compounds: TemplateCompound[],
 ): StackTemplate => ({ id, category, name, goal_tags, description, compounds, is_template: true });
+
+const adv = (
+  id: string,
+  category: string,
+  name: string,
+  goal_tags: string[],
+  description: string,
+  compounds: TemplateCompound[],
+): StackTemplate => ({ id, category, name, goal_tags, description, compounds, is_template: true, is_advanced: true });
 
 export const STACK_TEMPLATES: StackTemplate[] = [
   // ===== RECOVERY & HEALING =====
