@@ -212,7 +212,7 @@ export const STACK_TEMPLATES: StackTemplate[] = [
       { compound: "Semaglutide", dose: 0.25, dose_unit: "mg", frequency: "Once Weekly", time_of_day: "AM", route: "Subcutaneous", duration_days: 84 },
       { compound: "MOTS-C", dose: 10, dose_unit: "mg", frequency: "Twice Weekly", time_of_day: "AM", route: "Subcutaneous", duration_days: 84 },
     ]),
-  t("bod-6", "Body Composition & Metabolic", "The Scotty Stack",
+  { ...t("bod-6", "Body Composition & Recomposition", "The Scotty Stack",
     ["Fat Loss", "Body Composition", "Muscle Growth", "Metabolic Health"],
     "A comprehensive body-composition template combining growth-hormone stimulation (Tesamorelin, CJC-1295, Ipamorelin) with a targeted fat-loss fragment (AOD-9604) and metabolic and satiety modulators (Retatrutide, Cagrilintide). Structured to support lean recomposition while managing appetite. An advanced multi-compound reference template.",
     [
@@ -221,7 +221,7 @@ export const STACK_TEMPLATES: StackTemplate[] = [
       { compound: "AOD-9604", dose: 300, dose_unit: "mcg", frequency: "Once Daily", time_of_day: "AM", route: "Subcutaneous", duration_days: 84 },
       { compound: "Retatrutide", dose: 2, dose_unit: "mg", frequency: "Once Weekly", time_of_day: "AM", route: "Subcutaneous", duration_days: 84 },
       { compound: "Cagrilintide", dose: 1.5, dose_unit: "mg", frequency: "Once Weekly", time_of_day: "AM", route: "Subcutaneous", duration_days: 84 },
-    ]),
+    ]), is_advanced: true },
 
   // ===== ANTI-AGING & LONGEVITY =====
   t("age-1", "Anti-Aging & Longevity", "Longevity Starter (Epitalon)",
