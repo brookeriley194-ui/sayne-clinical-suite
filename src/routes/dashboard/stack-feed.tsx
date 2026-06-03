@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Heart, Search, Users2, X, Download, ArrowRight, Sparkles, BookOpen } from "lucide-react";
+import { Heart, Search, Users2, X, Download, ArrowRight, Sparkles, BookOpen, FlaskConical } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
