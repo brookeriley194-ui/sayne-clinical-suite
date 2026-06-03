@@ -15,6 +15,7 @@ import {
   STACK_TEMPLATES, TEMPLATE_CATEGORIES, maxDuration, allTemplateCompounds,
   type StackTemplate,
 } from "@/lib/stack-templates";
+import { PEPTIDES } from "@/lib/peptides";
 
 export const Route = createFileRoute("/dashboard/stack-feed")({
   component: StackFeedPage,
