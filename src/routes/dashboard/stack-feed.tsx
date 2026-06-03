@@ -228,7 +228,51 @@ function StackFeedPage() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="templates" className="space-y-5">
+            <TabsContent value="templates" className="space-y-6">
+              {/* Advanced tier */}
+              {groupedAdvanced.length > 0 && (
+                <section className="space-y-4">
+                  <div
+                    className="rounded-xl px-4 py-3 border text-sm leading-relaxed"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(124,58,237,0.15), rgba(168,85,247,0.08))",
+                      borderColor: "rgba(124,58,237,0.45)",
+                      color: "var(--foreground)",
+                    }}
+                  >
+                    <div
+                      className="flex items-center gap-2 mb-1 font-semibold"
+                      style={{ fontFamily: "'Space Grotesk', sans-serif", color: "#6d28d9" }}
+                    >
+                      <FlaskConical className="h-4 w-4" /> Advanced Stacks
+                    </div>
+                    Complex, multi-compound protocols for experienced researchers. Reference structures only — not personal results or medical advice.
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#7c3aed" }} />
+                    <h2 className="text-xs uppercase tracking-[0.18em] font-mono" style={{ color: "#7c3aed" }}>
+                      Advanced Tier
+                    </h2>
+                    <span className="text-[10px] text-muted-foreground font-mono">{advancedTemplates.length}</span>
+                  </div>
+
+                  {groupedAdvanced.map(([category, list]) => (
+                    <div key={category} className="space-y-3">
+                      <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-mono pl-3">
+                        {category}
+                      </div>
+                      <div className="space-y-3">
+                        {list.map((tmpl) => (
+                          <TemplateCard key={tmpl.id} template={tmpl} onImport={() => setImportTemplate(tmpl)} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {/* Starter templates header */}
               <div
                 className="rounded-xl px-4 py-3 border text-sm leading-relaxed"
                 style={{ backgroundColor: `${C.lavender}1f`, borderColor: `${C.lavender}55`, color: "var(--foreground)" }}
@@ -239,7 +283,7 @@ function StackFeedPage() {
                 Starter templates to help you get going. These are common protocol structures for reference, not personal results or medical advice.
               </div>
 
-              {groupedTemplates.length === 0 ? (
+              {groupedTemplates.length === 0 && groupedAdvanced.length === 0 ? (
                 <div className="rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
                   No templates match your filters.
                 </div>
