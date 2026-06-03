@@ -34,7 +34,7 @@ const C = {
   mood: "#FFD580",
 };
 
-const COMPOUNDS = ["BPC-157", "TB-500", "MOTS-C", "Ipamorelin", "CJC-1295", "Selank", "Semax", "PT-141", "Tesamorelin", "GHK-Cu", "SS-31 (Elamipretide)", "Epitalon (Epithalon)", "KPV", "DSIP", "Thymosin Alpha-1", "Glutathione", "Semaglutide", "Tirzepatide", "NAD+", "MK-677 (Ibutamoren)", "AOD-9604"];
+const COMPOUNDS = PEPTIDES.filter((p) => p !== "Other" && p !== "Bacteriostatic Water");
 const GOALS = ["Energy", "Recovery", "Sleep", "Gut Health", "Cognitive", "Immune", "Body Composition", "Anti-aging", "Sexual Health", "Anti-inflammatory", "Stress", "Fat Loss", "Metabolic Health", "Skin & Hair"];
 const DURATIONS = [
   { label: "Under 4 weeks", min: 0, max: 27 },
