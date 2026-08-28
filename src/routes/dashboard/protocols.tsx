@@ -1221,11 +1221,94 @@ function ImportFromAIModal({
           <DialogDescription
             style={{ color: `color-mix(in oklab, ${LAVENDER} 70%, var(--muted-foreground))` }}
           >
-            Got a protocol from Claude, ChatGPT, or Gemini? Paste it below and Sayne will organize it automatically.
+            Got a protocol from Claude, ChatGPT, or Gemini? Paste it below — or upload a screenshot and Sayne will read it for you.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 pt-2">
+          {/* Upload a screenshot */}
+          <div
+            className="rounded-[14px] border border-dashed p-4 space-y-3"
+            style={{
+              backgroundColor: `color-mix(in oklab, ${BABY_BLUE} 10%, transparent)`,
+              borderColor: `color-mix(in oklab, ${BABY_BLUE} 55%, transparent)`,
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); void handleImage(e.dataTransfer.files?.[0]); }}
+          >
+            <div className="flex items-center gap-3">
+              <ImageIcon className="h-5 w-5 shrink-0" style={{ color: BABY_BLUE }} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium" style={{ color: NAVY }}>Upload a screenshot or photo</div>
+                <div className="text-xs text-muted-foreground">
+                  We'll read the text out of the image so you can double-check it before importing.
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={reading}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" />
+                {reading ? "Reading…" : "Choose image"}
+              </Button>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture={undefined}
+              className="hidden"
+              onChange={(e) => void handleImage(e.target.files?.[0])}
+            />
+            {imagePreview && (
+              <div className="flex items-start gap-3">
+                <img
+                  src={imagePreview}
+                  alt="Uploaded protocol screenshot"
+                  className="h-24 w-24 object-cover rounded-[10px] border"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setImagePreview(null); setNeedsReview(false); setOcrConfidence(null); }}
+                >
+                  <X className="h-4 w-4" />
+                  Remove
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {needsReview && (
+            <div
+              className="rounded-[12px] p-3 text-xs space-y-2"
+              style={{
+                backgroundColor: `color-mix(in oklab, ${PINK} 22%, transparent)`,
+                color: NAVY,
+              }}
+            >
+              <div className="font-medium">
+                Double-check the text below before parsing
+                {ocrConfidence === "low" ? " — the image was hard to read." : "."}
+              </div>
+              <div className="text-muted-foreground">
+                Fix any misread compounds, doses, or units directly in the box, then confirm.
+              </div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <Checkbox
+                  checked={!needsReview ? true : reviewConfirmed}
+                  onCheckedChange={(v) => setReviewConfirmed(v === true)}
+                  className="mt-0.5"
+                />
+                <span>I've checked the text read from my image and it's correct.</span>
+              </label>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Textarea
               value={text}
@@ -1243,10 +1326,11 @@ function ImportFromAIModal({
 
           <Button
             onClick={handleParse}
-            disabled={parsing}
+            disabled={parsing || reading || (needsReview && !reviewConfirmed)}
             className="w-full hover:opacity-90"
             style={{ backgroundColor: LAVENDER, color: NAVY }}
           >
+
             <Sparkles className="h-4 w-4" />
             {parsing ? "Parsing…" : "Parse My Protocol"}
           </Button>
