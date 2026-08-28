@@ -400,6 +400,7 @@ export function ProtocolCompletionModal({
   open, onOpenChange, protocol,
 }: { open: boolean; onOpenChange: (o: boolean) => void; protocol: JournalProtocol | null }) {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     if (!open || !protocol) return;
@@ -459,7 +460,6 @@ export function ProtocolCompletionModal({
     w.document.close();
   };
 
-  const [shareOpen, setShareOpen] = useState(false);
   const keepPrivate = async () => {
     await supabase.from("protocols").update({ ongoing: false }).eq("id", protocol.id);
     toast.success("Protocol archived privately");
