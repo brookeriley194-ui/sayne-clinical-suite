@@ -677,7 +677,7 @@ export function Tutorial({
 
 type ChoiceKey = "stack" | "vials" | "feed";
 
-function CompletionChoice({ onClose }: { onClose: () => void }) {
+export function CompletionChoice({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const [burst, setBurst] = useState<ChoiceKey | null>(null);
 
