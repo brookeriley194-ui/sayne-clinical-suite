@@ -119,7 +119,7 @@ function DashboardLayout() {
   const initial = (user?.email ?? "?").slice(0, 1).toUpperCase();
 
   return (
-    <div className="h-screen flex bg-background">
+    <div className="min-h-[100dvh] md:h-screen flex bg-background">
       {/* Sidebar */}
       <aside className="w-64 shrink-0 border-r p-4 hidden md:flex md:flex-col gap-1"
              style={{ backgroundColor: "var(--sidebar)", borderColor: "color-mix(in oklab, var(--border) 60%, transparent)" }}>
@@ -171,7 +171,7 @@ function DashboardLayout() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-16 border-b flex items-center justify-between px-6"
+        <header className="h-16 border-b flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 md:static"
                 style={{ backgroundColor: "var(--card)", borderColor: "color-mix(in oklab, var(--border) 60%, transparent)" }}>
           <div className="md:hidden"><SayneLogo /></div>
           <div className="ml-auto flex items-center gap-3">
@@ -202,14 +202,52 @@ function DashboardLayout() {
           </div>
         </header>
 
-        <main className="flex-1 p-6 md:p-8 overflow-auto">
+        <main
+          className="flex-1 p-4 md:p-8 md:overflow-auto"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)" }}
+        >
           <Outlet />
           <SayneFooter />
         </main>
       </div>
+
+      {/* Mobile bottom nav */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t flex items-stretch"
+        style={{
+          backgroundColor: "var(--card)",
+          borderColor: "color-mix(in oklab, var(--border) 60%, transparent)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+      >
+        {items.map((it) => {
+          const active = pathname === it.to;
+          const Icon = it.icon;
+          return (
+            <Link
+              key={it.to}
+              to={it.to}
+              className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium"
+              style={{ color: active ? "var(--foreground)" : "var(--muted-foreground)" }}
+            >
+              <Icon className="h-5 w-5" style={it.accent ? { color: it.accent } : undefined} />
+              <span className="truncate max-w-full px-1">{it.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
       <FloatingCalculator />
       <InstallBanner />
       <Tutorial open={tutorialOpen} startStep={tutorialStart} onClose={() => setTutorialOpen(false)} />
+      {choiceOpen && (
+        <CompletionChoice
+          onClose={() => {
+            setChoiceOpen(false);
+            if (pendingTutorial) { setPendingTutorial(false); setTutorialStart(0); setTutorialOpen(true); }
+          }}
+        />
+      )}
     </div>
   );
 }
