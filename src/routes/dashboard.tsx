@@ -72,7 +72,7 @@ function DashboardLayout() {
         const { count } = await supabase
           .from("vials")
           .select("*", { count: "exact", head: true });
-        if (!cancelled && (count ?? 0) === 0) { setTutorialStart(0); setTutorialOpen(true); }
+        if (!cancelled && (count ?? 0) === 0) setPendingTutorial(true);
       } catch { /* noop */ }
     })();
     return () => { cancelled = true; };
@@ -80,6 +80,7 @@ function DashboardLayout() {
 
   // "Where do you want to start?" — shown once per login session
   const [choiceOpen, setChoiceOpen] = useState(false);
+  const [pendingTutorial, setPendingTutorial] = useState(false);
   useEffect(() => {
     if (!user) return;
     try {
