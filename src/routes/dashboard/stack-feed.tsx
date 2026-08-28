@@ -92,7 +92,7 @@ function StackFeedPage() {
   async function load() {
     setLoading(true);
     const { data, error } = await supabase
-      .from("shared_stacks")
+      .from("shared_stacks_feed")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(200);
