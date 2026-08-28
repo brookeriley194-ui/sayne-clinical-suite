@@ -48,7 +48,7 @@ export function InstallBanner() {
     <div
       className="fixed left-3 right-3 z-50 sayne-card flex items-center gap-3 px-3 py-2.5 md:hidden"
       style={{
-        bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+        bottom: "calc(env(safe-area-inset-bottom, 0px) + 76px)",
         borderTop: "2px solid #C9A8F5",
         borderTopLeftRadius: 14,
         borderTopRightRadius: 14,
