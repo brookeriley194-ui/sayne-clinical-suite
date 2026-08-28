@@ -67,7 +67,7 @@ function SignupPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Account created — check your email to confirm.");
+    toast.success("Welcome to Sayne!");
   }
 
   return (

@@ -162,7 +162,7 @@ function LiquidNav() {
           <a href="#features" className="hover:text-foreground transition-colors">Features</a>
           <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
           <Link to="/login" className="hover:text-foreground transition-colors">Stack Feed</Link>
-          <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
+          
         </nav>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm" className="bg-white/60 backdrop-blur border-[color:var(--border)]">
@@ -1002,7 +1002,7 @@ function Footer() {
         </div>
         <div className="flex flex-col md:flex-row items-center gap-3 md:gap-5">
           {[
-            { to: "/pricing", label: "Pricing" },
+            
             { to: "/privacy", label: "Privacy Policy" },
             { to: "/terms", label: "Terms of Service" },
             { to: "/disclaimer", label: "Disclaimer" },
