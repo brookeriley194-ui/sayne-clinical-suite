@@ -1021,6 +1021,68 @@ function ImportFromAIModal({
   const [agreed, setAgreed] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Image upload → OCR
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const [needsReview, setNeedsReview] = useState(false);
+  const [ocrConfidence, setOcrConfidence] = useState<"high" | "medium" | "low" | null>(null);
+  const readImage = useServerFn(extractProtocolText);
+
+  async function downscale(file: File): Promise<string> {
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result));
+      fr.onerror = () => reject(new Error("Could not read that file"));
+      fr.readAsDataURL(file);
+    });
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("bad image"));
+        el.src = dataUrl;
+      });
+      const MAX = 1800;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return dataUrl;
+      ctx.drawImage(img, 0, 0, w, h);
+      return canvas.toDataURL("image/jpeg", 0.9);
+    } catch {
+      return dataUrl;
+    }
+  }
+
+  async function handleImage(file: File | null | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please upload an image (PNG, JPG, HEIC screenshot)"); return; }
+    if (file.size > 12 * 1024 * 1024) { toast.error("Image too large — keep it under 12MB"); return; }
+    setReading(true);
+    try {
+      const image = await downscale(file);
+      setImagePreview(image);
+      const res = await readImage({ data: { image } });
+      if (res.error) { toast.error(res.error); return; }
+      if (!res.text) { toast.error("No protocol text found in that image — try a clearer screenshot."); return; }
+      setText(res.text);
+      setOcrConfidence(res.confidence);
+      setNeedsReview(true);
+      setParsedList(null);
+      toast.success("Text read from your image — check it below before parsing.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not read that image");
+    } finally {
+      setReading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+
   async function loadVials() {
     const { data } = await supabase
       .from("vials")
