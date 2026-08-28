@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, ClipboardPaste, Sparkles, Check, BookOpen, Share2, CircleDot, Pencil } from "lucide-react";
+import { Plus, ClipboardPaste, Sparkles, Check, BookOpen, Share2, CircleDot, Pencil, Upload, X, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { extractProtocolText } from "@/lib/ocr.functions";
 import { PageHeader } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1021,6 +1023,70 @@ function ImportFromAIModal({
   const [agreed, setAgreed] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Image upload → OCR
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const [needsReview, setNeedsReview] = useState(false);
+  const [ocrConfidence, setOcrConfidence] = useState<"high" | "medium" | "low" | null>(null);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const readImage = useServerFn(extractProtocolText);
+
+  async function downscale(file: File): Promise<string> {
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result));
+      fr.onerror = () => reject(new Error("Could not read that file"));
+      fr.readAsDataURL(file);
+    });
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("bad image"));
+        el.src = dataUrl;
+      });
+      const MAX = 1800;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return dataUrl;
+      ctx.drawImage(img, 0, 0, w, h);
+      return canvas.toDataURL("image/jpeg", 0.9);
+    } catch {
+      return dataUrl;
+    }
+  }
+
+  async function handleImage(file: File | null | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please upload an image (PNG, JPG, HEIC screenshot)"); return; }
+    if (file.size > 12 * 1024 * 1024) { toast.error("Image too large — keep it under 12MB"); return; }
+    setReading(true);
+    try {
+      const image = await downscale(file);
+      setImagePreview(image);
+      const res = await readImage({ data: { image } });
+      if (res.error) { toast.error(res.error); return; }
+      if (!res.text) { toast.error("No protocol text found in that image — try a clearer screenshot."); return; }
+      setText(res.text);
+      setOcrConfidence(res.confidence);
+      setNeedsReview(true);
+      setReviewConfirmed(false);
+      setParsedList(null);
+      toast.success("Text read from your image — check it below before parsing.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not read that image");
+    } finally {
+      setReading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+
   async function loadVials() {
     const { data } = await supabase
       .from("vials")
@@ -1032,6 +1098,8 @@ function ImportFromAIModal({
   useEffect(() => {
     if (!open) {
       setText(""); setParsedList(null); setAgreed(false);
+      setImagePreview(null); setNeedsReview(false); setOcrConfidence(null); setReading(false); setReviewConfirmed(false);
+
       setParsing(false); setSaving(false); setStackName("");
       return;
     }
@@ -1157,11 +1225,94 @@ function ImportFromAIModal({
           <DialogDescription
             style={{ color: `color-mix(in oklab, ${LAVENDER} 70%, var(--muted-foreground))` }}
           >
-            Got a protocol from Claude, ChatGPT, or Gemini? Paste it below and Sayne will organize it automatically.
+            Got a protocol from Claude, ChatGPT, or Gemini? Paste it below — or upload a screenshot and Sayne will read it for you.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 pt-2">
+          {/* Upload a screenshot */}
+          <div
+            className="rounded-[14px] border border-dashed p-4 space-y-3"
+            style={{
+              backgroundColor: `color-mix(in oklab, ${BABY_BLUE} 10%, transparent)`,
+              borderColor: `color-mix(in oklab, ${BABY_BLUE} 55%, transparent)`,
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); void handleImage(e.dataTransfer.files?.[0]); }}
+          >
+            <div className="flex items-center gap-3">
+              <ImageIcon className="h-5 w-5 shrink-0" style={{ color: BABY_BLUE }} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium" style={{ color: NAVY }}>Upload a screenshot or photo</div>
+                <div className="text-xs text-muted-foreground">
+                  We'll read the text out of the image so you can double-check it before importing.
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={reading}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload className="h-4 w-4" />
+                {reading ? "Reading…" : "Choose image"}
+              </Button>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture={undefined}
+              className="hidden"
+              onChange={(e) => void handleImage(e.target.files?.[0])}
+            />
+            {imagePreview && (
+              <div className="flex items-start gap-3">
+                <img
+                  src={imagePreview}
+                  alt="Uploaded protocol screenshot"
+                  className="h-24 w-24 object-cover rounded-[10px] border"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setImagePreview(null); setNeedsReview(false); setOcrConfidence(null); }}
+                >
+                  <X className="h-4 w-4" />
+                  Remove
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {needsReview && (
+            <div
+              className="rounded-[12px] p-3 text-xs space-y-2"
+              style={{
+                backgroundColor: `color-mix(in oklab, ${PINK} 22%, transparent)`,
+                color: NAVY,
+              }}
+            >
+              <div className="font-medium">
+                Double-check the text below before parsing
+                {ocrConfidence === "low" ? " — the image was hard to read." : "."}
+              </div>
+              <div className="text-muted-foreground">
+                Fix any misread compounds, doses, or units directly in the box, then confirm.
+              </div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <Checkbox
+                  checked={!needsReview ? true : reviewConfirmed}
+                  onCheckedChange={(v) => setReviewConfirmed(v === true)}
+                  className="mt-0.5"
+                />
+                <span>I've checked the text read from my image and it's correct.</span>
+              </label>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Textarea
               value={text}
@@ -1179,10 +1330,11 @@ function ImportFromAIModal({
 
           <Button
             onClick={handleParse}
-            disabled={parsing}
+            disabled={parsing || reading || (needsReview && !reviewConfirmed)}
             className="w-full hover:opacity-90"
             style={{ backgroundColor: LAVENDER, color: NAVY }}
           >
+
             <Sparkles className="h-4 w-4" />
             {parsing ? "Parsing…" : "Parse My Protocol"}
           </Button>
