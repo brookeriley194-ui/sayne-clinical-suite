@@ -1094,6 +1094,8 @@ function ImportFromAIModal({
   useEffect(() => {
     if (!open) {
       setText(""); setParsedList(null); setAgreed(false);
+      setImagePreview(null); setNeedsReview(false); setOcrConfidence(null); setReading(false);
+
       setParsing(false); setSaving(false); setStackName("");
       return;
     }
