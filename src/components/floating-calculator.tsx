@@ -169,8 +169,12 @@ export function FloatingCalculator() {
         data-tour="floating-calc"
         onClick={() => setOpen(true)}
         aria-label="Open dose calculator"
-        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-        style={{ backgroundColor: LAVENDER, color: "#1a1a2e" }}
+        className="fixed right-4 md:right-6 z-40 h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+        style={{
+          backgroundColor: LAVENDER,
+          color: "#1a1a2e",
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
+        }}
       >
         <Calculator className="size-6" />
       </button>
