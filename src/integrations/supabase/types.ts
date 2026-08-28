@@ -481,7 +481,69 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      shared_stacks_feed: {
+        Row: {
+          anonymous_id: string | null
+          avg_energy: number | null
+          avg_mood: number | null
+          avg_recovery: number | null
+          avg_sleep: number | null
+          compound: string | null
+          created_at: string | null
+          dose_mcg: number | null
+          dose_unit: string | null
+          duration_days: number | null
+          frequency: string | null
+          goal_tags: string[] | null
+          id: string | null
+          import_count: number | null
+          overall_score: number | null
+          protocol_id: string | null
+          route: string | null
+          summary: string | null
+        }
+        Insert: {
+          anonymous_id?: string | null
+          avg_energy?: number | null
+          avg_mood?: number | null
+          avg_recovery?: number | null
+          avg_sleep?: number | null
+          compound?: string | null
+          created_at?: string | null
+          dose_mcg?: number | null
+          dose_unit?: string | null
+          duration_days?: number | null
+          frequency?: string | null
+          goal_tags?: string[] | null
+          id?: string | null
+          import_count?: number | null
+          overall_score?: number | null
+          protocol_id?: string | null
+          route?: string | null
+          summary?: string | null
+        }
+        Update: {
+          anonymous_id?: string | null
+          avg_energy?: number | null
+          avg_mood?: number | null
+          avg_recovery?: number | null
+          avg_sleep?: number | null
+          compound?: string | null
+          created_at?: string | null
+          dose_mcg?: number | null
+          dose_unit?: string | null
+          duration_days?: number | null
+          frequency?: string | null
+          goal_tags?: string[] | null
+          id?: string | null
+          import_count?: number | null
+          overall_score?: number | null
+          protocol_id?: string | null
+          route?: string | null
+          summary?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
