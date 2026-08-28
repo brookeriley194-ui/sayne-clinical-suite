@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, ClipboardPaste, Sparkles, Check, BookOpen, Share2, CircleDot, Pencil } from "lucide-react";
+import { Plus, ClipboardPaste, Sparkles, Check, BookOpen, Share2, CircleDot, Pencil, Upload, X, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { extractProtocolText } from "@/lib/ocr.functions";
 import { PageHeader } from "@/components/dashboard-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1027,6 +1029,7 @@ function ImportFromAIModal({
   const [reading, setReading] = useState(false);
   const [needsReview, setNeedsReview] = useState(false);
   const [ocrConfidence, setOcrConfidence] = useState<"high" | "medium" | "low" | null>(null);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const readImage = useServerFn(extractProtocolText);
 
   async function downscale(file: File): Promise<string> {
@@ -1072,6 +1075,7 @@ function ImportFromAIModal({
       setText(res.text);
       setOcrConfidence(res.confidence);
       setNeedsReview(true);
+      setReviewConfirmed(false);
       setParsedList(null);
       toast.success("Text read from your image — check it below before parsing.");
     } catch (e) {
@@ -1094,7 +1098,7 @@ function ImportFromAIModal({
   useEffect(() => {
     if (!open) {
       setText(""); setParsedList(null); setAgreed(false);
-      setImagePreview(null); setNeedsReview(false); setOcrConfidence(null); setReading(false);
+      setImagePreview(null); setNeedsReview(false); setOcrConfidence(null); setReading(false); setReviewConfirmed(false);
 
       setParsing(false); setSaving(false); setStackName("");
       return;
