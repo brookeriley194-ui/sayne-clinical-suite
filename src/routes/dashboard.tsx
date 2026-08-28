@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingCalculator } from "@/components/floating-calculator";
-import { Tutorial, TUTORIAL_FLAG } from "@/components/tutorial";
+import { Tutorial, TUTORIAL_FLAG, CompletionChoice } from "@/components/tutorial";
 import { InstallBanner } from "@/components/install-banner";
 import { SayneFooter } from "@/components/sayne-footer";
 
@@ -76,6 +76,17 @@ function DashboardLayout() {
       } catch { /* noop */ }
     })();
     return () => { cancelled = true; };
+  }, [user]);
+
+  // "Where do you want to start?" — shown once per login session
+  const [choiceOpen, setChoiceOpen] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    try {
+      if (sessionStorage.getItem("sayne_start_choice_shown") === "true") return;
+      sessionStorage.setItem("sayne_start_choice_shown", "true");
+    } catch { /* noop */ }
+    setChoiceOpen(true);
   }, [user]);
 
   // Global event so any page can re-open the tutorial without unmounting it on navigation.
