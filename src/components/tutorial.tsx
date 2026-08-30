@@ -410,7 +410,11 @@ function tooltipPosition(rect: Rect | null, cardW: number, cardH: number) {
     top = Math.min(Math.max(rect.y, 12), vh - cardH - 12);
     left = Math.max(rect.x - pad - cardW, 12);
   }
+  // Final clamp so the card can never sit off-screen
+  top = Math.max(12, Math.min(top, Math.max(12, vh - cardH - 12)));
+  left = Math.max(12, Math.min(left, Math.max(12, vw - cardW - 12)));
   return { top, left };
+
 }
 
 /* --------------------------------- Tour ----------------------------------- */
