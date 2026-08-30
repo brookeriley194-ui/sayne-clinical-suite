@@ -26,7 +26,6 @@ function SignupPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"doctor" | "researcher">("doctor");
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +42,7 @@ function SignupPage() {
       toast.error("Please agree to the Terms of Service and Privacy Policy to continue.");
       return;
     }
-    const parsed = schema.safeParse({ email, password, role });
+    const parsed = schema.safeParse({ email, password, role: "researcher" });
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
       return;
