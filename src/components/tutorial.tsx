@@ -563,19 +563,28 @@ export function Tutorial({
           transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
           className="absolute pointer-events-auto"
           style={
-            isCenter || !pos
+            isPhone
               ? {
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: `min(${cardW + 40}px, calc(100vw - 24px))`,
+                  // Bottom sheet on phones — always fully on-screen
+                  left: 12,
+                  right: 12,
+                  bottom: "calc(12px + env(safe-area-inset-bottom))",
+                  width: "auto",
                 }
-              : { top: pos.top, left: pos.left, width: cardW }
+              : isCenter || !pos
+                ? {
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: `min(${cardW + 40}px, calc(100vw - 24px))`,
+                  }
+                : { top: pos.top, left: pos.left, width: cardW }
           }
         >
           <div
-            className="bg-card rounded-[16px] p-5"
+            className="bg-card rounded-[16px] p-5 overflow-y-auto"
             style={{
+              maxHeight: "calc(100dvh - 24px - env(safe-area-inset-bottom))",
               border: "1.5px solid #C9A8F5",
               boxShadow:
                 "0 24px 60px -20px rgba(120,90,200,0.45), 0 8px 24px -10px rgba(120,90,200,0.25)",
@@ -733,7 +742,12 @@ export function CompletionChoice({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" role="dialog" aria-modal>
+    <div
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-3 sm:p-4"
+      style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom))" }}
+      role="dialog"
+      aria-modal
+    >
       {/* Backdrop */}
       <div className="absolute inset-0" style={{ background: "rgba(15,12,30,0.72)", backdropFilter: "blur(6px)" }} />
 
@@ -756,8 +770,9 @@ export function CompletionChoice({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 12, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1] }}
-        className="relative w-full max-w-md rounded-[18px] p-6"
+        className="relative w-full max-w-md rounded-[18px] p-5 sm:p-6 overflow-y-auto"
         style={{
+          maxHeight: "calc(100dvh - 24px - env(safe-area-inset-bottom))",
           background: "var(--card)",
           border: "1.5px solid #C9A8F5",
           boxShadow:
