@@ -18,7 +18,7 @@ export function SayneFooter() {
         </div>
         <nav className="flex flex-col md:flex-row items-center gap-3 md:gap-5">
           {[
-            
+            { to: "/getting-started", label: "Getting Started" },
             { to: "/privacy", label: "Privacy Policy" },
             { to: "/terms", label: "Terms of Service" },
             { to: "/disclaimer", label: "Disclaimer" },

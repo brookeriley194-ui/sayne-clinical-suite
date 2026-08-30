@@ -16,6 +16,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as GettingStartedRouteImport } from './routes/getting-started'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DisclaimerRouteImport } from './routes/disclaimer'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -66,6 +67,11 @@ const LoginRoute = LoginRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GettingStartedRoute = GettingStartedRouteImport.update({
+  id: '/getting-started',
+  path: '/getting-started',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/disclaimer': typeof DisclaimerRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/getting-started': typeof GettingStartedRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRouteWithChildren
   '/disclaimer': typeof DisclaimerRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/getting-started': typeof GettingStartedRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/disclaimer': typeof DisclaimerRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/getting-started': typeof GettingStartedRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/disclaimer'
     | '/forgot-password'
+    | '/getting-started'
     | '/home'
     | '/login'
     | '/pricing'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/disclaimer'
     | '/forgot-password'
+    | '/getting-started'
     | '/home'
     | '/login'
     | '/pricing'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/disclaimer'
     | '/forgot-password'
+    | '/getting-started'
     | '/home'
     | '/login'
     | '/pricing'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   DisclaimerRoute: typeof DisclaimerRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  GettingStartedRoute: typeof GettingStartedRoute
   HomeRoute: typeof HomeRoute
   LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
@@ -367,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/getting-started': {
+      id: '/getting-started'
+      path: '/getting-started'
+      fullPath: '/getting-started'
+      preLoaderRoute: typeof GettingStartedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -521,6 +541,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   DisclaimerRoute: DisclaimerRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  GettingStartedRoute: GettingStartedRoute,
   HomeRoute: HomeRoute,
   LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
