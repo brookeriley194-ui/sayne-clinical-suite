@@ -583,8 +583,8 @@ export function Tutorial({
         >
           <div
             className="bg-card rounded-[16px] p-5 overflow-y-auto"
-            style={{ maxHeight: "calc(100dvh - 24px - env(safe-area-inset-bottom))" }}
             style={{
+              maxHeight: "calc(100dvh - 24px - env(safe-area-inset-bottom))",
               border: "1.5px solid #C9A8F5",
               boxShadow:
                 "0 24px 60px -20px rgba(120,90,200,0.45), 0 8px 24px -10px rgba(120,90,200,0.25)",
