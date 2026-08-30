@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  LayoutGrid, Users, FlaskConical, BarChart3, FileText, Beaker, LogOut, Home, Layers, Settings as SettingsIcon, Users2,
+  LayoutGrid, Users, FlaskConical, BarChart3, FileText, Beaker, LogOut, Home, Layers, Settings as SettingsIcon, Users2, BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { FloatingCalculator } from "@/components/floating-calculator";
@@ -37,6 +37,7 @@ const navByRole: Record<AppRole, NavItem[]> = {
     { to: "/dashboard/my-vials", label: "My Vials", icon: Beaker },
     { to: "/dashboard/protocols", label: "My Stacks", icon: Layers },
     { to: "/dashboard/stack-feed", label: "Stack Feed", icon: Users2, accent: "#C9A8F5" },
+    { to: "/getting-started", label: "Guide", icon: BookOpen, bottom: true },
     { to: "/dashboard/settings", label: "Settings", icon: SettingsIcon, bottom: true },
   ],
 };
