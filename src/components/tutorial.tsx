@@ -742,7 +742,12 @@ export function CompletionChoice({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" role="dialog" aria-modal>
+    <div
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-3 sm:p-4"
+      style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom))" }}
+      role="dialog"
+      aria-modal
+    >
       {/* Backdrop */}
       <div className="absolute inset-0" style={{ background: "rgba(15,12,30,0.72)", backdropFilter: "blur(6px)" }} />
 
@@ -765,8 +770,9 @@ export function CompletionChoice({ onClose }: { onClose: () => void }) {
         initial={{ opacity: 0, y: 12, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1] }}
-        className="relative w-full max-w-md rounded-[18px] p-6"
+        className="relative w-full max-w-md rounded-[18px] p-5 sm:p-6 overflow-y-auto"
         style={{
+          maxHeight: "calc(100dvh - 24px - env(safe-area-inset-bottom))",
           background: "var(--card)",
           border: "1.5px solid #C9A8F5",
           boxShadow:
