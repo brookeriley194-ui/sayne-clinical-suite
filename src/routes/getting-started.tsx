@@ -12,7 +12,6 @@ import {
   Sparkles,
   CheckCircle2,
   Image,
-  Upload,
 } from "lucide-react";
 
 export const Route = createFileRoute("/getting-started")({
