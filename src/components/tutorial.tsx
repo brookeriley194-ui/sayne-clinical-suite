@@ -448,11 +448,25 @@ export function Tutorial({
   const isCenter = step?.placement === "center" || !step?.selector;
   const rect = useSpotlight(isCenter ? undefined : step?.selector, open);
 
+  // Track viewport so the card can become a bottom sheet on phones
+  const [vw, setVw] = useState<number>(() => (typeof window !== "undefined" ? window.innerWidth : 1024));
+  useEffect(() => {
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+  const isPhone = vw < 768;
+
   // Card size estimate (used to compute placement)
-  const cardW = Math.min(360, (typeof window !== "undefined" ? window.innerWidth : 360) - 24);
+  const cardW = Math.min(360, vw - 24);
   const isCalcStep = step?.id === "calculator";
   const cardH = isCalcStep ? 460 : 220;
-  const pos = !isCenter && rect ? tooltipPosition(rect, cardW, cardH) : null;
+  const pos = !isCenter && !isPhone && rect ? tooltipPosition(rect, cardW, cardH) : null;
+
 
   const [showChoice, setShowChoice] = useState(false);
 
