@@ -563,18 +563,27 @@ export function Tutorial({
           transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
           className="absolute pointer-events-auto"
           style={
-            isCenter || !pos
+            isPhone
               ? {
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  width: `min(${cardW + 40}px, calc(100vw - 24px))`,
+                  // Bottom sheet on phones — always fully on-screen
+                  left: 12,
+                  right: 12,
+                  bottom: "calc(12px + env(safe-area-inset-bottom))",
+                  width: "auto",
                 }
-              : { top: pos.top, left: pos.left, width: cardW }
+              : isCenter || !pos
+                ? {
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: `min(${cardW + 40}px, calc(100vw - 24px))`,
+                  }
+                : { top: pos.top, left: pos.left, width: cardW }
           }
         >
           <div
-            className="bg-card rounded-[16px] p-5"
+            className="bg-card rounded-[16px] p-5 overflow-y-auto"
+            style={{ maxHeight: "calc(100dvh - 24px - env(safe-area-inset-bottom))" }}
             style={{
               border: "1.5px solid #C9A8F5",
               boxShadow:
