@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
+  Image,
 } from "lucide-react";
 
 export const Route = createFileRoute("/getting-started")({
@@ -107,6 +108,76 @@ function GettingStartedPage() {
           </ul>
         </section>
 
+        {/* Choose your starting path */}
+        <section className="rounded-2xl border p-6 md:p-8" style={{ backgroundColor: `${BABY_BLUE}12`, borderColor: BABY_BLUE }}>
+          <h2 className="font-display text-2xl font-bold mb-3">You do not have to start with vials</h2>
+          <p className="mb-4">
+            A lot of people think they need to enter every vial before they can do anything else. You do not. Sayne lets you start however you prefer:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-xl border p-5" style={{ backgroundColor: "#fff", borderColor: "#DDD5F0" }}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="size-9 rounded-lg grid place-items-center" style={{ backgroundColor: `${LAVENDER}25` }}>
+                  <Layers className="size-5" style={{ color: LAVENDER }} />
+                </div>
+                <h3 className="font-display text-lg font-bold">Start with a stack</h3>
+              </div>
+              <p className="text-sm" style={{ color: MUTED }}>
+                Have a protocol in mind? Build or import a stack first, then add vials later when you are ready. This is the fastest way to see your schedule and doses.
+              </p>
+            </div>
+            <div className="rounded-xl border p-5" style={{ backgroundColor: "#fff", borderColor: "#DDD5F0" }}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="size-9 rounded-lg grid place-items-center" style={{ backgroundColor: `${BABY_BLUE}25` }}>
+                  <Beaker className="size-5" style={{ color: BABY_BLUE }} />
+                </div>
+                <h3 className="font-display text-lg font-bold">Start with vials</h3>
+              </div>
+              <p className="text-sm" style={{ color: MUTED }}>
+                Already have vials on hand? Add them one by one, then build stacks from the compounds you already own.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* AI import */}
+        <section className="rounded-2xl border p-6 md:p-8" style={{ backgroundColor: "#fff", borderColor: "#DDD5F0" }}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="size-10 rounded-xl grid place-items-center" style={{ backgroundColor: `${LAVENDER}30` }}>
+              <Image className="size-5" style={{ color: LAVENDER }} />
+            </div>
+            <h2 className="font-display text-2xl font-bold">Import a protocol from a screenshot</h2>
+          </div>
+          <p className="mb-4">
+            If you have a protocol saved as a photo, screenshot, PDF, or note, you can let Sayne read it for you instead of typing everything by hand.
+          </p>
+          <ol className="space-y-3 text-sm" style={{ color: MUTED }}>
+            <li className="flex items-start gap-3">
+              <span className="font-bold" style={{ color: INK }}>1.</span>
+              <span>Go to <strong>My Stacks</strong> and tap the import option.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-bold" style={{ color: INK }}>2.</span>
+              <span>Upload or drag in a screenshot, photo, or document that shows the protocol text.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-bold" style={{ color: INK }}>3.</span>
+              <span>Sayne reads the image and turns it into editable compound names, doses, and frequencies.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-bold" style={{ color: INK }}>4.</span>
+              <span><strong>Review and edit every line before saving.</strong> You can change compound names, amounts, units, and which days of the week the dose happens.</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-bold" style={{ color: INK }}>5.</span>
+              <span>Once it looks right, confirm and Sayne builds the stack for you.</span>
+            </li>
+          </ol>
+          <p className="mt-4 text-sm" style={{ color: MUTED }}>
+            The AI is helpful, but it is not perfect. Always double-check the extracted text against your original source before you save it.
+          </p>
+        </section>
+
         {/* Step by step */}
         <section>
           <h2 className="font-display text-2xl font-bold mb-6">Your first 10 minutes</h2>
@@ -115,26 +186,24 @@ function GettingStartedPage() {
               Sign up as a researcher. Sayne is currently in free early access, so you get full access to every feature while we gather feedback.
             </Step>
 
-            <Step number={2} title="Add your first vial" color={BABY_BLUE}>
-              A <strong>vial</strong> is just a small bottle containing your research compound. Tap <strong>My Vials</strong> and add:
+            <Step number={2} title="Pick your starting point" color={BABY_BLUE}>
+              Choose whichever feels easier:
               <ul className="list-disc ml-5 mt-2 space-y-1" style={{ color: MUTED }}>
-                <li>The compound name (for example, BPC-157 or TB-500)</li>
-                <li>How many milligrams (mg) of powder were in the vial</li>
-                <li>How much bacteriostatic water you added, if you have reconstituted it</li>
-                <li>The status: sealed, open, empty, or expired</li>
+                <li><strong>Import a stack:</strong> Use a screenshot, pick a Stack Feed template, or paste a protocol with AI.</li>
+                <li><strong>Add a vial:</strong> Go to <strong>My Vials</strong> and record the compound, amount, and water used.</li>
               </ul>
               <p className="mt-2" style={{ color: MUTED }}>
-                Tip: If you have a receipt or label, you can use the AI import to read the text automatically.
+                You can always switch between these and fill in missing details later.
               </p>
             </Step>
 
-            <Step number={3} title="Build your first stack" color={MINT}>
-              A <strong>stack</strong> is simply a group of compounds you are researching together, along with a schedule. Go to <strong>My Stacks</strong> and create a new stack. For each compound, you can:
+            <Step number={3} title="Build or edit your stack" color={MINT}>
+              A <strong>stack</strong> is simply a group of compounds you are researching together, along with a schedule. In <strong>My Stacks</strong> you can:
               <ul className="list-disc ml-5 mt-2 space-y-1" style={{ color: MUTED }}>
                 <li>Pick the compound name</li>
                 <li>Set a dose amount (for example, 250 micrograms)</li>
                 <li>Choose how often you plan to take it — daily, every other day, or custom days of the week</li>
-                <li>Link it to one of your vials so Sayne knows which bottle to pull from</li>
+                <li>Link it to a vial so Sayne knows which bottle to pull from (this can be added later)</li>
               </ul>
             </Step>
 
